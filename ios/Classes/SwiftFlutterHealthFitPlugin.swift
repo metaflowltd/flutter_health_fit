@@ -34,7 +34,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 (aHeight:Double?) in
                 var dic = Dictionary<String,Any>()
                 if dob != nil {
-                    dic["dob"] = dob!.description
+                    dic["dob"] = Date.ISOStringFromDate(dob!)
                 }
                 if gender != nil {
                     dic["gender"] = gender!.asServerParam
@@ -116,4 +116,14 @@ extension Date {
     var startDay: Date {
         return Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: self)!
     }
+    
+    public static func ISOStringFromDate(_ date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone.ReferenceType.default
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        
+        return dateFormatter.string(from: date)
+    }
+
 }
