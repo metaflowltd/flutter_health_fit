@@ -12,6 +12,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isAuthed = false;
   String _basicHealthString = "";
+
+  String _activityData;
   @override
   initState() {
     super.initState();
@@ -32,8 +34,6 @@ class _MyAppState extends State<MyApp> {
 //    // message was in flight, we want to discard the reply rather than calling
 //    // setState to update our non-existent appearance.
 //    if (!mounted) return;
-
-
   }
 
   _authorizeHealthOrFit() async {
@@ -43,11 +43,19 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-
-  _getUserBasicHealthData() async{
+  _getUserBasicHealthData() async {
     var basicHealth = await FlutterHealthFit.getBasicHealthData;
     setState(() {
-       _basicHealthString = basicHealth.toString();
+      _basicHealthString = basicHealth.toString();
+    });
+  }
+
+  _getActivityHealthData() async {
+    var steps = await FlutterHealthFit.getSteps;
+    var running = await FlutterHealthFit.getWalkingAndRunningDistance;
+    var cycle = await FlutterHealthFit.geCyclingDistance;
+    setState(() {
+      _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle";
     });
   }
 
@@ -60,12 +68,14 @@ class _MyAppState extends State<MyApp> {
         ),
         body: new Center(
           child: new Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               new Text('Authed: $_isAuthed\n'),
               new RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
               new RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
-              new Text('Basic health: $_basicHealthString\n'),
-
+              new Text('\n$_basicHealthString\n\n'),
+              new RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
+              new Text('\n$_activityData\n'),
             ],
           ),
         ),
