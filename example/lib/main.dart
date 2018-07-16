@@ -10,8 +10,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isAuthed = false;
+
+  bool _isAuthorized = false;
   String _basicHealthString = "";
+
   @override
   initState() {
     super.initState();
@@ -37,12 +39,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   _authorizeHealthOrFit() async {
-    bool authed = await FlutterHealthFit.authorize;
+    bool isAuthorized = await FlutterHealthFit.authorize;
     setState(() {
-      _isAuthed = authed;
+      _isAuthorized = isAuthorized;
     });
   }
-
 
   _getUserBasicHealthData() async{
     var basicHealth = await FlutterHealthFit.getBasicHealthData;
@@ -53,19 +54,18 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      home: new Scaffold(
-        appBar: new AppBar(
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
           title: new Text('Plugin example app'),
         ),
-        body: new Center(
-          child: new Column(
+        body: Center(
+          child: Column(
             children: <Widget>[
-              new Text('Authed: $_isAuthed\n'),
-              new RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-              new RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
+              new Text('Authorized: $_isAuthorized\n'),
+              new RaisedButton(child: new Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+              new RaisedButton(child: new Text("Get basic data"), onPressed: _getUserBasicHealthData),
               new Text('Basic health: $_basicHealthString\n'),
-
             ],
           ),
         ),
