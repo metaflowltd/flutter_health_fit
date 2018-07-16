@@ -18,6 +18,4 @@ class FlutterHealthFit {
   static Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
   }
-
-
 }
