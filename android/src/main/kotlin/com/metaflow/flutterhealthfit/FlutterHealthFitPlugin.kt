@@ -3,7 +3,6 @@ package com.metaflow.flutterhealthfit
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
@@ -47,16 +46,26 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
     override fun onMethodCall(call: MethodCall, result: Result) {
 
-        Toast.makeText(activity, call.method, Toast.LENGTH_SHORT).show()
-
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
 
             "requestAuthorization" -> connect(result)
 
-            "getBasicHealthData" -> result.success("Android got getBasicHealthData")
+            "getBasicHealthData" -> result.success(HashMap<String, String>())
 
-            "getActivity" -> getYesterdaysStepsTotal(result)
+            "getActivity" -> {
+                val name = call.argument<String>("name")
+
+                when (name) {
+                    "steps" -> getYesterdaysStepsTotal(result)
+
+                    else ->  {
+                        val map = HashMap<String, Double>()
+                        map["value"] = 0.0
+                        result.success(map)
+                    }
+                }
+            }
 
             else -> result.notImplemented()
         }
@@ -145,8 +154,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val count = dp.getValue(aggregatedDataType.fields[0])
 
                 Log.d(TAG, "returning $count steps for $dayString")
+                val map = HashMap<String, Double>()
+                map["value"] = count.asInt().toDouble()
 
-                result.success(count.asInt())
+                result.success(map)
             } else {
                 result.error("No data", "No data found for $dayString", null)
             }
