@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => new _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
 
   bool _isAuthorized = false;
   String _basicHealthString = "";
+  String _activityData;
 
   @override
   initState() {
@@ -64,18 +65,18 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: new Text('Plugin example app'),
+          title: Text('Plugin example app'),
         ),
         body: Center(
           child: Column(
-             mainAxisAlignment: MainAxisAlignment.center,
+             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              new Text('Authorized: $_isAuthorized\n'),
-              new RaisedButton(child: new Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-              new RaisedButton(child: new Text("Get basic data"), onPressed: _getUserBasicHealthData),
-              new Text('Basic health: $_basicHealthString\n'),
-               new RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
-              new Text('\n$_activityData\n'),
+              Text('Authorized: $_isAuthorized\n'),
+              RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+              RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
+              Text('Basic health: $_basicHealthString\n'),
+              RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
+              Text('\n$_activityData\n'),
             ],
           ),
         ),
