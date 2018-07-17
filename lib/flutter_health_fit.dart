@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+enum _ActivityType{ steps, cycling, walkRun, heartRate }
+
 class FlutterHealthFit {
   static const MethodChannel _channel =
       const MethodChannel('flutter_health_fit');
@@ -18,4 +20,26 @@ class FlutterHealthFit {
   static Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
   }
+
+  static Future<double> get getSteps async {
+    return await _getActivityData(_ActivityType.steps, "count");
+  }
+
+  static Future<double> get getWalkingAndRunningDistance async {
+    return await _getActivityData(_ActivityType.walkRun, "m");
+  }
+
+  static Future<double> get geCyclingDistance async {
+    return await _getActivityData(_ActivityType.cycling, "m");
+  }
+
+
+  static Future<double> _getActivityData(_ActivityType activityType, String units) async {
+    var result = await _channel.invokeMethod('getSteps', { "name" : activityType.toString().split(".").last, "units" : units  });
+    if (result == null || result.isEmpty){
+      return null;
+    }
+    return result["value"];
+  }
+
 }
