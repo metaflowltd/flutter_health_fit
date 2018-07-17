@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+// Current day's accumulated values
 enum _ActivityType{ steps, cycling, walkRun, heartRate }
 
 class FlutterHealthFit {
   static const MethodChannel _channel =
       const MethodChannel('flutter_health_fit');
+
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;
@@ -32,9 +34,8 @@ class FlutterHealthFit {
     return await _getActivityData(_ActivityType.cycling, "m");
   }
 
-
   static Future<double> _getActivityData(_ActivityType activityType, String units) async {
-    var result = await _channel.invokeMethod('getSteps', { "name" : activityType.toString().split(".").last, "units" : units  });
+    var result = await _channel.invokeMethod('getActivity', { "name" : activityType.toString().split(".").last, "units" : units  });
     if (result == null || result.isEmpty){
       return null;
     }

@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => new _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isAuthed = false;
-  String _basicHealthString = "";
 
+  bool _isAuthorized = false;
+  String _basicHealthString = "";
   String _activityData;
+
   @override
   initState() {
     super.initState();
@@ -37,13 +38,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   _authorizeHealthOrFit() async {
-    bool authed = await FlutterHealthFit.authorize;
+    bool isAuthorized = await FlutterHealthFit.authorize;
     setState(() {
-      _isAuthed = authed;
+      _isAuthorized = isAuthorized;
     });
   }
 
-  _getUserBasicHealthData() async {
+  _getUserBasicHealthData() async{
     var basicHealth = await FlutterHealthFit.getBasicHealthData;
     setState(() {
       _basicHealthString = basicHealth.toString();
@@ -61,21 +62,21 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      home: new Scaffold(
-        appBar: new AppBar(
-          title: new Text('Plugin example app'),
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Plugin example app'),
         ),
-        body: new Center(
-          child: new Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        body: Center(
+          child: Column(
+             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              new Text('Authed: $_isAuthed\n'),
-              new RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-              new RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
-              new Text('\n$_basicHealthString\n\n'),
-              new RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
-              new Text('\n$_activityData\n'),
+              Text('Authorized: $_isAuthorized\n'),
+              RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+              RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
+              Text('Basic health: $_basicHealthString\n'),
+              RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
+              Text('\n$_activityData\n'),
             ],
           ),
         ),
