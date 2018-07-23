@@ -42,7 +42,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
     }
 
-    private var connectResult: Result? = null
+    private var deferredResult: Result? = null
 
     override fun onMethodCall(call: MethodCall, result: Result) {
 
@@ -77,13 +77,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 recordData { success ->
                     Log.i(TAG, "Record data success: $success!")
 
-                    if (success) connectResult?.success(true) else connectResult?.error("no record", "Record data operation denied", null)
+                    if (success)
+                        deferredResult?.success(true)
+                    else
+                        deferredResult?.error("no record", "Record data operation denied", null)
+
+                    deferredResult = null
                 }
             } else {
-                connectResult?.error("canceled", "User cancelled or app not authorized", null)
+                deferredResult?.error("canceled", "User cancelled or app not authorized", null)
+                deferredResult = null
             }
-
-            connectResult = null
 
             return true
         }
@@ -95,7 +99,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         val fitnessOptions = getFitnessOptions()
 
         if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), getFitnessOptions())) {
-            connectResult = result
+            deferredResult = result
 
             GoogleSignIn.requestPermissions(
                     activity,
