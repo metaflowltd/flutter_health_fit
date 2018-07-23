@@ -5,9 +5,9 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="No Filters" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e155a79f-ebb9-419e-8a98-6cda1f499975" name="Default" comment="">
+    <list default="true" id="e155a79f-ebb9-419e-8a98-6cda1f499975" name="Default" comment="returning yesterdays total steps from Google fit">
+      <change beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" afterPath="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" />
     </list>
     <ignored path="$PROJECT_DIR$/.dart_tool/" />
     <ignored path="$PROJECT_DIR$/.idea/" />
@@ -27,7 +27,7 @@
       <file leaf-file-name="flutter_health_fit.dart" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/flutter_health_fit.dart">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="570">
+            <state relative-caret-position="540">
               <caret line="38" column="33" lean-forward="false" selection-start-line="38" selection-start-column="33" selection-end-line="38" selection-end-column="33" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
@@ -36,11 +36,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="FlutterHealthFitPlugin.kt" pinned="false" current-in-tab="true">
+      <file leaf-file-name="FlutterHealthFitPlugin.kt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="37">
-              <caret line="44" column="16" lean-forward="false" selection-start-line="44" selection-start-column="16" selection-end-line="44" selection-end-column="16" />
+            <state relative-caret-position="645">
+              <caret line="62" column="20" lean-forward="false" selection-start-line="62" selection-start-column="20" selection-end-line="62" selection-end-column="20" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="285">
+              <caret line="19" column="8" lean-forward="true" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
               <folding />
             </state>
           </provider>
@@ -89,7 +99,7 @@
       <file leaf-file-name="main.dart" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/example/lib/main.dart">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="855">
+            <state relative-caret-position="825">
               <caret line="57" column="17" lean-forward="false" selection-start-line="57" selection-start-column="17" selection-end-line="57" selection-end-column="17" />
               <folding>
                 <element signature="e#0#39#0" expanded="true" />
@@ -146,12 +156,13 @@
         <option value="$PROJECT_DIR$/example/lib/main.dart" />
         <option value="$PROJECT_DIR$/lib/flutter_health_fit.dart" />
         <option value="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" />
+        <option value="$PROJECT_DIR$/.gitignore" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="1990" />
+    <option name="width" value="2560" />
     <option name="height" value="1057" />
   </component>
   <component name="ProjectLevelVcsManager">
@@ -175,107 +186,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane">
-        <subPane>
-          <expand>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-              <item name="flutterhealthfit" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-              <item name="java" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-              <item name="java" type="462c0819:PsiDirectoryNode" />
-              <item name="plugins" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="android" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
-              <item name="flutterhealthfitexample" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="example" type="462c0819:PsiDirectoryNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="ios" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-        <option name="show-excluded-files" value="false" />
-      </pane>
-      <pane id="Scratches" />
+      <pane id="PackagesPane" />
       <pane id="AndroidView">
         <subPane>
           <expand>
@@ -313,7 +224,47 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="android" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="android" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="android" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="flutterhealthfit" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="ios" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="lib" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+        <option name="show-excluded-files" value="false" />
+      </pane>
+      <pane id="Scratches" />
       <pane id="Scope" />
     </panes>
   </component>
@@ -322,7 +273,8 @@
     <property name="dart.analysis.tool.window.force.activate" value="false" />
     <property name="show.migrate.to.gradle.popup" value="false" />
     <property name="io.flutter.reload.alreadyRun" value="true" />
-    <property name="settings.editor.selected.configurable" value="dart.settings" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="add_unversioned_files" value="true" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -542,16 +494,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/example/lib/main.dart">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="615">
-          <caret line="41" column="42" lean-forward="false" selection-start-line="41" selection-start-column="42" selection-end-line="41" selection-end-column="42" />
-          <folding>
-            <element signature="e#0#39#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
@@ -912,7 +854,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/flutter_health_fit.dart">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="570">
+        <state relative-caret-position="540">
           <caret line="38" column="33" lean-forward="false" selection-start-line="38" selection-start-column="33" selection-end-line="38" selection-end-column="33" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
@@ -954,7 +896,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/example/lib/main.dart">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="855">
+        <state relative-caret-position="825">
           <caret line="57" column="17" lean-forward="false" selection-start-line="57" selection-start-column="17" selection-end-line="57" selection-end-column="17" />
           <folding>
             <element signature="e#0#39#0" expanded="true" />
@@ -972,8 +914,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="37">
-          <caret line="44" column="16" lean-forward="false" selection-start-line="44" selection-start-column="16" selection-end-line="44" selection-end-column="16" />
+        <state relative-caret-position="645">
+          <caret line="62" column="20" lean-forward="false" selection-start-line="62" selection-start-column="20" selection-end-line="62" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="19" column="8" lean-forward="true" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
           <folding />
         </state>
       </provider>
