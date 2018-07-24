@@ -150,20 +150,25 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         val dayString = dateFormat.format(Date(startCal.timeInMillis))
 
         Thread {
-            val readDataResult = Tasks.await<DataReadResponse>(response)
-            Log.d(TAG, "buckets count: ${readDataResult.buckets.size}")
+            try {
+                val readDataResult = Tasks.await<DataReadResponse>(response)
+                Log.d(TAG, "buckets count: ${readDataResult.buckets.size}")
 
-            if (!readDataResult.buckets.isEmpty()) {
-                val dp = readDataResult.buckets[0].dataSets[0].dataPoints[0]
-                val count = dp.getValue(aggregatedDataType.fields[0])
+                if (!readDataResult.buckets.isEmpty()) {
+                    val dp = readDataResult.buckets[0].dataSets[0].dataPoints[0]
+                    val count = dp.getValue(aggregatedDataType.fields[0])
 
-                Log.d(TAG, "returning $count steps for $dayString")
-                val map = HashMap<String, Double>()
-                map["value"] = count.asInt().toDouble()
+                    Log.d(TAG, "returning $count steps for $dayString")
+                    val map = HashMap<String, Double>()
+                    map["value"] = count.asInt().toDouble()
 
-                result.success(map)
-            } else {
-                result.error("No data", "No data found for $dayString", null)
+                    result.success(map)
+                } else {
+                    result.error("No data", "No data found for $dayString", null)
+                }
+            }
+            catch(e: Throwable) {
+                result.error("failed", e.message, null)
             }
 
         }.start()
