@@ -11,20 +11,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e155a79f-ebb9-419e-8a98-6cda1f499975" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_for_Android.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/example_lib_main_dart.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/.idea/libraries/Dart_SDK.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/.idea/libraries/Flutter_for_Android.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/.idea/runConfigurations/main_dart.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_health_fit.iml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_health_fit.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/flutter_health_fit.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/flutter_health_fit.dart" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.dart_tool/" />
     <ignored path="$PROJECT_DIR$/.idea/" />
@@ -41,11 +31,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="flutter_health_fit.dart" pinned="false" current-in-tab="false">
+      <file leaf-file-name="flutter_health_fit.dart" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/lib/flutter_health_fit.dart">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="585">
-              <caret line="41" column="24" selection-start-line="41" selection-start-column="19" selection-end-line="41" selection-end-column="24" />
+            <state relative-caret-position="615">
+              <caret line="54" column="5" lean-forward="true" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -53,11 +43,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="FlutterHealthFitPlugin.kt" pinned="false" current-in-tab="true">
+      <file leaf-file-name="FlutterHealthFitPlugin.kt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
-              <caret line="61" column="30" lean-forward="true" selection-start-line="61" selection-start-column="30" selection-end-line="61" selection-end-column="30" />
+            <state relative-caret-position="268">
+              <caret line="98" column="26" selection-start-line="98" selection-start-column="12" selection-end-line="98" selection-end-column="26" />
             </state>
           </provider>
         </entry>
@@ -103,9 +93,9 @@
       <list>
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/example/lib/main.dart" />
-        <option value="$PROJECT_DIR$/lib/flutter_health_fit.dart" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/pubspec.yaml" />
+        <option value="$PROJECT_DIR$/lib/flutter_health_fit.dart" />
         <option value="$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt" />
       </list>
     </option>
@@ -126,28 +116,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane">
-        <subPane>
-          <expand>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-        <option name="show-excluded-files" value="false" />
-      </pane>
-      <pane id="Scope" />
       <pane id="AndroidView">
         <subPane>
           <expand>
@@ -184,6 +152,28 @@
           </expand>
           <select />
         </subPane>
+      </pane>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="flutter_health_fit" type="462c0819:PsiDirectoryNode" />
+              <item name="lib" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="flutter_health_fit" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+        <option name="show-excluded-files" value="false" />
       </pane>
       <pane id="PackagesPane" />
     </panes>
@@ -336,15 +326,23 @@
       <option name="project" value="LOCAL" />
       <updated>1535613323171</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="fix onActivityResult">
+      <created>1538638299108</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1538638299109</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="2560" height="1057" extended-state="6" />
+    <frame x="0" y="23" width="2560" height="1057" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="Android Profiler" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32952183" />
+      <window_info anchor="bottom" id="Messages" order="8" visible="true" weight="0.32916668" />
       <window_info anchor="right" id="Palette&#9;" order="3" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Build Variants" order="2" side_tool="true" />
@@ -359,14 +357,13 @@
       <window_info id="Captures" order="2" />
       <window_info id="Capture Tool" order="2" />
       <window_info id="Designer" order="2" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.09928515" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.09928515" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Device File Explorer" order="3" side_tool="true" />
       <window_info anchor="right" id="Theme Preview" order="3" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3981289" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="right" id="Flutter Inspector" order="3" visible="true" weight="0.10127085" />
-      <window_info anchor="bottom" id="Messages" order="8" visible="true" weight="0.32952183" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -387,7 +384,8 @@
     <MESSAGE value="updating git ignore" />
     <MESSAGE value="catch exceptions" />
     <MESSAGE value="updated dependencies" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated dependencies" />
+    <MESSAGE value="fix onActivityResult" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix onActivityResult" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
@@ -648,14 +646,14 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/README.md">
-      <provider editor-type-id="text-editor">
-        <state />
-      </provider>
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
           <first_editor />
           <second_editor />
         </state>
+      </provider>
+      <provider editor-type-id="text-editor">
+        <state />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/example/lib/main.dart">
@@ -745,16 +743,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lib/flutter_health_fit.dart">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="41" column="24" selection-start-line="41" selection-start-column="19" selection-end-line="41" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/flutter/packages/flutter/lib/src/services/platform_channel.dart">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3945">
@@ -816,8 +804,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/android/src/main/kotlin/com/metaflow/flutterhealthfit/FlutterHealthFitPlugin.kt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="61" column="30" lean-forward="true" selection-start-line="61" selection-start-column="30" selection-end-line="61" selection-end-column="30" />
+        <state relative-caret-position="268">
+          <caret line="98" column="26" selection-start-line="98" selection-start-column="12" selection-end-line="98" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/flutter_health_fit.dart">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="615">
+          <caret line="54" column="5" lean-forward="true" selection-start-line="54" selection-start-column="5" selection-end-line="54" selection-end-column="5" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

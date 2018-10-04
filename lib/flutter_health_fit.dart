@@ -35,11 +35,29 @@ class FlutterHealthFit {
   }
 
   static Future<double> _getActivityData(_ActivityType activityType, String units) async {
-    var result = await _channel.invokeMethod('getActivity', { "name" : activityType.toString().split(".").last, "units" : units  });
+    var result;
+
+    try {
+      result = await _channel.invokeMethod(
+          'getActivity',
+          {
+            "name": activityType
+                .toString()
+                .split(".")
+                .last,
+            "units": units
+          }
+      );
+    }
+    catch (e) {
+      print(e.toString());
+      return null;
+    }
+
     if (result == null || result.isEmpty){
       return null;
     }
+
     return result["value"];
   }
-
 }

@@ -98,7 +98,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     private fun connect(result: Result) {
         val fitnessOptions = getFitnessOptions()
 
-        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), getFitnessOptions())) {
+        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), fitnessOptions)) {
             deferredResult = result
 
             GoogleSignIn.requestPermissions(
