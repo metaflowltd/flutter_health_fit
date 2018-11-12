@@ -16,7 +16,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(success)
             }
         }
-        if call.method == "getSteps"{
+        if call.method == "getActivity"{
             self.getSteps(call, result: result)
         }
         
