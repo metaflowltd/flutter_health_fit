@@ -73,7 +73,6 @@ class _MyAppState extends State<MyApp> {
              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Text('Authorized: $_isAuthorized\n'),
-              Text('Authorized Map: $_isAuthorizedMap\n'),
               RaisedButton(child: Text("Authorize Health"), onPressed: (){_authorizeHealthOrFit();
               }),
               RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
