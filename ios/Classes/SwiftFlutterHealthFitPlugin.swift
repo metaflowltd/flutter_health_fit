@@ -17,7 +17,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         }
         if call.method == "getActivity"{
-            self.getSteps(call, result: result)
+            self.getActivity(call, result: result)
         }
         
         if call.method == "getBasicHealthData" {
@@ -52,7 +52,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func getSteps(_ call: FlutterMethodCall, result: @escaping FlutterResult){
+    func getActivity(_ call: FlutterMethodCall, result: @escaping FlutterResult){
         guard let params = call.arguments as? Dictionary<String,String> else {
             result(nil)
             return
@@ -77,6 +77,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             type = HKQuantityTypeIdentifier.distanceCycling
         case "walkRun":
             type = HKQuantityTypeIdentifier.distanceWalkingRunning
+        case "climbed":
+            type = HKQuantityTypeIdentifier.flightsClimbed
         case "heartRate":
             type = HKQuantityTypeIdentifier.heartRate
         default:

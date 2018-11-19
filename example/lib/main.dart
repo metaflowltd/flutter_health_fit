@@ -55,8 +55,9 @@ class _MyAppState extends State<MyApp> {
     var steps = await FlutterHealthFit.getSteps;
     var running = await FlutterHealthFit.getWalkingAndRunningDistance;
     var cycle = await FlutterHealthFit.geCyclingDistance;
+    var climbed = await FlutterHealthFit.getClimbed;
     setState(() {
-      _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle";
+      _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle climbed: $climbed";
     });
   }
 
@@ -72,7 +73,9 @@ class _MyAppState extends State<MyApp> {
              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Text('Authorized: $_isAuthorized\n'),
-              RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+              Text('Authorized Map: $_isAuthorizedMap\n'),
+              RaisedButton(child: Text("Authorize Health"), onPressed: (){_authorizeHealthOrFit();
+              }),
               RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
               Text('Basic health: $_basicHealthString\n'),
               RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
