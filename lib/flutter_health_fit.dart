@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 // Current day's accumulated values
-enum _ActivityType{ steps, cycling, walkRun, heartRate, climbed }
+enum _ActivityType{ steps, cycling, walkRun, heartRate, flights }
 
 class FlutterHealthFit {
   static const MethodChannel _channel =
@@ -34,8 +34,8 @@ class FlutterHealthFit {
     return await _getActivityData(_ActivityType.cycling, "m");
   }
 
-  static Future<double> get getClimbed async {
-    return await _getActivityData(_ActivityType.climbed, "count");
+  static Future<double> get getFlights async {
+    return await _getActivityData(_ActivityType.flights, "count");
   }
 
   static Future<double> _getActivityData(_ActivityType activityType, String units) async {

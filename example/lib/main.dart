@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
+//import 'package:flutter/services.dart';
+
 
 void main() => runApp(MyApp());
 
@@ -55,9 +56,9 @@ class _MyAppState extends State<MyApp> {
     var steps = await FlutterHealthFit.getSteps;
     var running = await FlutterHealthFit.getWalkingAndRunningDistance;
     var cycle = await FlutterHealthFit.geCyclingDistance;
-    var climbed = await FlutterHealthFit.getClimbed;
+    var flights = await FlutterHealthFit.getFlights;
     setState(() {
-      _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle climbed: $climbed";
+      _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle flights: $flights";
     });
   }
 

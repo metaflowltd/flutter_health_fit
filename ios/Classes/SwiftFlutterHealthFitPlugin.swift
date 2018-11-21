@@ -77,7 +77,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             type = HKQuantityTypeIdentifier.distanceCycling
         case "walkRun":
             type = HKQuantityTypeIdentifier.distanceWalkingRunning
-        case "climbed":
+        case "flights":
             type = HKQuantityTypeIdentifier.flightsClimbed
         case "heartRate":
             type = HKQuantityTypeIdentifier.heartRate
