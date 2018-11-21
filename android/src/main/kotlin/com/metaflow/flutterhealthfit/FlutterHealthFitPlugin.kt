@@ -27,8 +27,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     companion object {
         const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
 
-        val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
-        val flightsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
+        val dataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
 
         val TAG = FlutterHealthFitPlugin::class.java.simpleName
@@ -59,8 +58,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
                 when (name) {
                     "steps" -> getYesterdaysStepsTotal(result)
-
-                    "flights" -> getYesterdaysStepsTotal(result)
 
                     else ->  {
                         val map = HashMap<String, Double>()
