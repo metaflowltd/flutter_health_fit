@@ -59,7 +59,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 when (name) {
                     "steps" -> getYesterdaysStepsTotal(result)
 
-                    else ->  {
+                    else -> {
                         val map = HashMap<String, Double>()
                         map["value"] = 0.0
                         result.success(map)
@@ -139,10 +139,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 59)
 
         val request = DataReadRequest.Builder()
-                        .aggregate(dataType, aggregatedDataType)
-                        .bucketByTime(1, TimeUnit.DAYS)
-                        .setTimeRange(startCal.timeInMillis, endCal.timeInMillis, TimeUnit.MILLISECONDS)
-                        .build()
+                .aggregate(dataType, aggregatedDataType)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setTimeRange(startCal.timeInMillis, endCal.timeInMillis, TimeUnit.MILLISECONDS)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -162,13 +162,21 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     val map = HashMap<String, Double>()
                     map["value"] = count.asInt().toDouble()
 
-                    result.success(map)
+                    activity.runOnUiThread {
+                        result.success(map)
+                    }
+
                 } else {
-                    result.error("No data", "No data found for $dayString", null)
+                    activity.runOnUiThread {
+                        result.error("No data", "No data found for $dayString", null)
+                    }
                 }
-            }
-            catch(e: Throwable) {
-                result.error("failed", e.message, null)
+            } catch (e: Throwable) {
+                Log.e(TAG, "failed: ${e.message}")
+
+                activity.runOnUiThread {
+                    result.error("failed", e.message, null)
+                }
             }
 
         }.start()
