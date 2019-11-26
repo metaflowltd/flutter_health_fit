@@ -36,7 +36,4 @@
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="false" project-jdk-name="Android API 28 Platform" project-jdk-type="Android SDK" />
-  <component name="ProjectType">
-    <option name="id" value="io.flutter" />
-  </component>
 </project>
