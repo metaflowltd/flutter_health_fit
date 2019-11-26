@@ -34,6 +34,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         @JvmStatic
         fun registerWith(registrar: Registrar) {
+            if (registrar.activity() == null) return;
+
             val plugin = FlutterHealthFitPlugin(registrar.activity())
             registrar.addActivityResultListener(plugin)
 
