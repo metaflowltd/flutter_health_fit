@@ -3,6 +3,7 @@ import UIKit
 import HealthKit
 
 
+@available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_health_fit", binaryMessenger: registrar.messenger())
@@ -23,8 +24,59 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         if call.method == "getBasicHealthData" {
             self.getBasicHealthData(result: result)
         }
+        
+        if call.method == "startDateInDays" {
+            self.getStepsBeforeDays(result: result, startDateInDays: 7)
+        }
     }
     
+    func makeNumberNegative(number: Int) -> Int {
+        return number > 0 ? (0 - number) : number
+    }
+    
+    func getStepsBeforeDays(result: @escaping FlutterResult, startDateInDays: Int) {
+        let healthStore = HKHealthStore()
+        let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        
+        let startDateInDays = makeNumberNegative(number: startDateInDays)
+        
+        let now = Date()
+        let startDate = Calendar.current.date(byAdding: .day, value: -14, to: now)!
+        
+        var interval = DateComponents()
+        interval.day = 1
+        
+        var anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: now)
+        anchorComponents.hour = 0
+        let anchorDate = Calendar.current.date(from: anchorComponents)!
+        
+        let query = HKStatisticsCollectionQuery(quantityType: stepsQuantityType,
+                                                quantitySamplePredicate: nil,
+                                                options: [.cumulativeSum],
+                                                anchorDate: anchorDate,
+                                                intervalComponents: interval)
+        query.initialResultsHandler = { _, results, error in
+            guard let results = results else {
+                NSLog("error", "Error returned")
+                return
+            }
+            var dic = [String: Int]()
+            results.enumerateStatistics(from: startDate, to: now) { statistics, _ in
+                if let sum = statistics.sumQuantity() {
+                    let steps = sum.doubleValue(for: HKUnit.count())
+                    print("Amount of steps: \(steps), date: \(statistics.startDate)")
+                    
+                    dic[steps.toString()] = Int(statistics.startDate.timeIntervalSince1970 * 1000)
+                    
+                }
+            }
+            result(dic)
+        }
+        
+        healthStore.execute(query)
+    }
+    
+
     func getBasicHealthData(result: @escaping FlutterResult){
         let dob = HealthkitReader.sharedInstance.getDOB()
         let gender = HealthkitReader.sharedInstance.getBioLogicalSex()
@@ -117,5 +169,10 @@ extension Date {
     
     var startDay: Date {
         return Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: self)!
+    }
+}
+private extension Double {
+    func toString() -> String {
+        return String(format: "%.1f",self)
     }
 }
