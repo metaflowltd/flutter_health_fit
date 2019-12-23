@@ -27,10 +27,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         if call.method == "startDateInDays" {
             if call.method == "startDateInDays" {
-                        guard let args = call.arguments else {
-                            return
-                        }
-
                         let myArgs = args as? [String:Int]
                         let days = myArgs?["someDays"] ?? 7
                         self.getStepsBeforeDays(result: result, startDateInDays: days)
