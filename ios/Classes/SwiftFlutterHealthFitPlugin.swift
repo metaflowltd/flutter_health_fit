@@ -41,7 +41,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let startDateInDays = makeNumberNegative(number: startDateInDays)
         
         let now = Date()
-        let startDate = Calendar.current.date(byAdding: .day, value: -14, to: now)!
+        let startDate = Calendar.current.date(byAdding: .day, value: -7, to: now)!
         
         var interval = DateComponents()
         interval.day = 1
