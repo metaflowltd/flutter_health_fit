@@ -34,7 +34,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func makeNumberNegative(number: Int) -> Int {
+    func toNegative(number: Int) -> Int {
         return number > 0 ? (0 - number) : number
     }
     
@@ -42,10 +42,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let healthStore = HKHealthStore()
         let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
         
-        let startDateInDays = makeNumberNegative(number: startDateInDays)
-        
         let now = Date()
-        let startDate = Calendar.current.date(byAdding: .day, value: -7, to: now)!
+        let startDate = Calendar.current.date(byAdding: .day, value: toNegative(number: startDateInDays), to: now)!
         
         var interval = DateComponents()
         interval.day = 1
