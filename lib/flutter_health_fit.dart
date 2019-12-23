@@ -27,7 +27,7 @@ class FlutterHealthFit {
   }
 
   static Future<Map<dynamic, dynamic>> getStepsBeforeDays(int startDateInDays) async {
-    final data = await _channel.invokeMethod("startDateInDays");
+    final data = await _channel.invokeMethod("startDateInDays",startDateInDays);
     return data;
   }
   static Future<double> get getWalkingAndRunningDistance async {
