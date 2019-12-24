@@ -28,7 +28,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         if call.method == "startDateInDays" {
             if call.method == "startDateInDays" {
                         let myArgs = call.arguments as? [String:Int]
-                        let days = myArgs?["someDays"] ?? 7
+                        let days = myArgs?["sendDays"] ?? 7
                         self.getStepsBeforeDays(result: result, startDateInDays: days)
                     }
         }
