@@ -28,7 +28,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         if call.method == "startDateInDays" {
             if call.method == "startDateInDays" {
                         let myArgs = call.arguments as? [String:Int]
-                        let days = myArgs?["sendDays"] ?? 7
+                        let days = myArgs?["daysAgo"] ?? 7
                         self.getStepsBeforeDays(result: result, startDateInDays: days)
                     }
         }
@@ -59,7 +59,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                 intervalComponents: interval)
         query.initialResultsHandler = { _, results, error in
             guard let results = results else {
-                NSLog("error", "Error returned")
+                print("[getStepsBeforeDays] can't calculate steps: \(error)")
                 return
             }
             var dic = [String: Int]()
