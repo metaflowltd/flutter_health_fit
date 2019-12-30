@@ -58,11 +58,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                 anchorDate: anchorDate,
                                                 intervalComponents: interval)
         query.initialResultsHandler = { _, results, error in
+            var dic = [Int: String]()
             guard let results = results else {
                 print("[getStepsBeforeDays] can't calculate steps: \(error)")
+                result(dic)
                 return
             }
-            var dic = [Int: String]()
+
             results.enumerateStatistics(from: startDate, to: now) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
                     let steps = sum.doubleValue(for: HKUnit.count())
