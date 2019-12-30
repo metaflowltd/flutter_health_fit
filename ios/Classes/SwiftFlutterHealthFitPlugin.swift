@@ -64,11 +64,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
             var dic = [String: Int]()
             results.enumerateStatistics(from: startDate, to: now) { statistics, _ in
-                if let sum = statistics.sumQuantity() {
+                if let sum = statistics?.sumQuantity() {
                     let steps = sum.doubleValue(for: HKUnit.count())
                     print("Amount of steps: \(steps), date: \(statistics.startDate)")
                     
-                    dic[steps.toString()] = Int(statistics.startDate.timeIntervalSince1970 * 1000)
+                    let timestamp = Int(statistics.startDate.timeIntervalSince1970 * 1000)
+
+                    dic[timestamp] = steps.toString()
                     
                 }
             }
