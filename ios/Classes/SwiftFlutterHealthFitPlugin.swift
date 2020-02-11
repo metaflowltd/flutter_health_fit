@@ -17,38 +17,38 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(success)
             }
         }
-        if call.method == "getActivity"{
+        else if call.method == "isAuthorized" {
+            result(FlutterMethodNotImplemented)
+        }
+        else if call.method == "getActivity"{
             self.getActivity(call, result: result)
         }
         
-        if call.method == "getBasicHealthData" {
+        else if call.method == "getBasicHealthData" {
             self.getBasicHealthData(result: result)
         }
         
-        if call.method == "startDateInDays" {
-            if call.method == "startDateInDays" {
-                        let myArgs = call.arguments as? [String:Int]
-                        let days = myArgs?["daysAgo"] ?? 7
-                        self.getStepsBeforeDays(result: result, startDateInDays: days)
-                    }
+        else if call.method == "getSteps" {
+            let myArgs = call.arguments as! [String:Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = TimeInterval(startMillis) / 1000
+            let end = TimeInterval(endMillis) / 1000
+            self.getSteps(result: result, start: start, end: end)
         }
     }
-    
-    func toNegative(number: Int) -> Int {
-        return number > 0 ? (0 - number) : number
-    }
-    
-    func getStepsBeforeDays(result: @escaping FlutterResult, startDateInDays: Int) {
+
+    func getSteps(result: @escaping FlutterResult, start: TimeInterval, end: TimeInterval) {
         let healthStore = HKHealthStore()
         let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
         
-        let now = Date()
-        let startDate = Calendar.current.date(byAdding: .day, value: toNegative(number: startDateInDays), to: now)!
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
         
         var interval = DateComponents()
         interval.day = 1
         
-        var anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: now)
+        var anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: Date())
         anchorComponents.hour = 0
         let anchorDate = Calendar.current.date(from: anchorComponents)!
         
@@ -58,21 +58,22 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                 anchorDate: anchorDate,
                                                 intervalComponents: interval)
         query.initialResultsHandler = { _, results, error in
-            var dic = [Int: String]()
+            var dic = [Int: Int]()
             guard let results = results else {
-                print("[getStepsBeforeDays] can't calculate steps: \(error)")
-                result(dic)
+                let error = error! as NSError
+                print("[getSteps] got error: \(error)")
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 return
             }
 
-            results.enumerateStatistics(from: startDate, to: now) { statistics, _ in
+            results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
                     let steps = sum.doubleValue(for: HKUnit.count())
                     print("Amount of steps: \(steps), date: \(statistics.startDate)")
                     
                     let timestamp = Int(statistics.startDate.timeIntervalSince1970 * 1000)
 
-                    dic[timestamp] = steps.toString()
+                    dic[timestamp] = Int(steps)
                     
                 }
             }
