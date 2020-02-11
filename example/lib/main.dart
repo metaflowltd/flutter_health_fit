@@ -14,14 +14,14 @@ class _MyAppState extends State<MyApp> {
   String _activityData;
 
   Future _authorizeHealthOrFit() async {
-    bool isAuthorized = await FlutterHealthFit.authorize();
+    bool isAuthorized = await FlutterHealthFit().authorize();
     setState(() {
       _isAuthorized = isAuthorized;
     });
   }
 
   Future _getUserBasicHealthData() async {
-    var basicHealth = await FlutterHealthFit.getBasicHealthData;
+    var basicHealth = await FlutterHealthFit().getBasicHealthData;
     setState(() {
       _basicHealthString = basicHealth.toString();
     });
@@ -31,10 +31,10 @@ class _MyAppState extends State<MyApp> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
-    var steps = await FlutterHealthFit.getStepsByDay(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
-    var running = await FlutterHealthFit.getWalkingAndRunningDistance;
-    var cycle = await FlutterHealthFit.geCyclingDistance;
-    var flights = await FlutterHealthFit.getFlights;
+    var steps = await FlutterHealthFit().getStepsByDay(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
+    var running = await FlutterHealthFit().getWalkingAndRunningDistance;
+    var cycle = await FlutterHealthFit().getCyclingDistance;
+    var flights = await FlutterHealthFit().getFlights;
     setState(() {
       _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle flights: $flights";
     });
