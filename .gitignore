@@ -1,7 +1,7 @@
 .DS_Store
 .atom/
 .dart_tool/
-.idea
+.idea/
 .vscode/
 .packages
 .pub/
@@ -10,6 +10,10 @@ ios/.generated/
 packages
 .flutter-plugins
 pubspec.lock
+gradle/
+gradlew*
+*.iml
+flutter_export_environment.sh
 
 ### VisualStudioCode ###
 .vscode/*
