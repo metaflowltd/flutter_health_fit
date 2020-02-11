@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 // Current day's accumulated values
-enum _ActivityType{ steps, cycling, walkRun, heartRate, flights }
+enum _ActivityType{ cycling, walkRun, heartRate, flights }
 
 class FlutterHealthFit {
   static const MethodChannel _channel =
@@ -14,7 +14,11 @@ class FlutterHealthFit {
     return version;
   }
 
-  static Future<bool> get authorize async {
+  static Future<bool> get isAuthorized async {
+    return await _channel.invokeMethod("isAuthorized");
+  }
+
+  static Future<bool> authorize() async {
     return await _channel.invokeMethod('requestAuthorization');
   }
 
@@ -22,12 +26,13 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  static Future<double> get getSteps async {
-    return await _getActivityData(_ActivityType.steps, "count");
-  }
-
-  static Future<Map<dynamic, dynamic>> getStepsBeforeDays(int daysAgo) async {
-    return await _channel.invokeMethod("startDateInDays", {"daysAgo": daysAgo});
+  static Future<Map<DateTime, int>> getStepsByDay(int start, int end) async {
+    Map stepsByTimestamp = await _channel.invokeMethod("getSteps", {"start": start, "end": end});
+    return stepsByTimestamp.cast<int, int>().map((int key, int value) {
+      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      return MapEntry(dateTime, value);
+    });
   }
 
   static Future<double> get getWalkingAndRunningDistance async {

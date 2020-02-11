@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
-//import 'package:flutter/services.dart';
-
 
 void main() => runApp(MyApp());
 
@@ -11,49 +9,29 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
   bool _isAuthorized = false;
   String _basicHealthString = "";
   String _activityData;
 
-  @override
-  initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  initPlatformState() async {
-//    String platformVersion;
-//    // Platform messages may fail, so we use a try/catch PlatformException.
-//    try {
-//      platformVersion = await FlutterHealthFit.platformVersion;
-//    } on PlatformException {
-//      platformVersion = 'Failed to get platform version.';
-//    }
-//
-//    // If the widget was removed from the tree while the asynchronous platform
-//    // message was in flight, we want to discard the reply rather than calling
-//    // setState to update our non-existent appearance.
-//    if (!mounted) return;
-  }
-
-  _authorizeHealthOrFit() async {
-    bool isAuthorized = await FlutterHealthFit.authorize;
+  Future _authorizeHealthOrFit() async {
+    bool isAuthorized = await FlutterHealthFit.authorize();
     setState(() {
       _isAuthorized = isAuthorized;
     });
   }
 
-  _getUserBasicHealthData() async{
+  Future _getUserBasicHealthData() async {
     var basicHealth = await FlutterHealthFit.getBasicHealthData;
     setState(() {
       _basicHealthString = basicHealth.toString();
     });
   }
 
-  _getActivityHealthData() async {
-    var steps = await FlutterHealthFit.getSteps;
+  Future _getActivityHealthData() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    var steps = await FlutterHealthFit.getStepsByDay(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
     var running = await FlutterHealthFit.getWalkingAndRunningDistance;
     var cycle = await FlutterHealthFit.geCyclingDistance;
     var flights = await FlutterHealthFit.getFlights;
@@ -71,11 +49,10 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: Column(
-             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Text('Authorized: $_isAuthorized\n'),
-              RaisedButton(child: Text("Authorize Health"), onPressed: (){_authorizeHealthOrFit();
-              }),
+              RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
               RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
               Text('Basic health: $_basicHealthString\n'),
               RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
