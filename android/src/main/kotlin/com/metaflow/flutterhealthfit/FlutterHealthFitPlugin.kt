@@ -22,6 +22,10 @@ import java.text.DateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+enum class LumenTimeUnit(val value: Int) {
+    MINUTES(0),
+    DAYS(1),
+}
 
 class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener {
 
@@ -64,10 +68,34 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 result.success(map)
             }
 
-            "getSteps" -> {
+            "getStepsBySegment" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getStepsInRange(start, end, result)
+                val duration = call.argument<Int>("duration")!!
+                val unitInt = call.argument<Int>("unit")!!
+                val lumenTimeUnit = LumenTimeUnit.values().first { it.value == unitInt }
+                val timeUnit = mapOf(LumenTimeUnit.DAYS to TimeUnit.DAYS, LumenTimeUnit.MINUTES to TimeUnit.MINUTES)[lumenTimeUnit]!!
+                getStepsInRange(start, end, duration, timeUnit) { map: Map<Long, Int>?, e: Throwable? ->
+                    if (map != null) {
+                        result.success(map)
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
+            "getTotalStepsInInterval" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                val duration = (end - start).toInt()
+                getStepsInRange(start, end, duration, TimeUnit.MILLISECONDS) { map: Map<Long, Int>?, e: Throwable? ->
+                    if (map != null) {
+                        assert(map.size <= 1) {"getTotalStepsInInterval should return only one interval. Found: ${map.size}"}
+                        result.success(map.values.firstOrNull())
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
             }
 
             else -> result.notImplemented()
@@ -131,7 +159,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     }
 
     @SuppressLint("UseSparseArrays") // Dart doesn't know sparse arrays
-    private fun getStepsInRange(start: Long, end: Long, result: Result) {
+    private fun getStepsInRange(start: Long, end: Long, duration: Int, unit: TimeUnit, result: (Map<Long, Int>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
         val ds = DataSource.Builder()
@@ -143,7 +171,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         val request = DataReadRequest.Builder()
                 .aggregate(ds, DataType.AGGREGATE_STEP_COUNT_DELTA)
-                .bucketByTime(1, TimeUnit.DAYS)
+                .bucketByTime(duration, unit)
                 .setTimeRange(start, end, TimeUnit.MILLISECONDS)
                 .build()
 
@@ -159,20 +187,24 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
                 val map = HashMap<Long, Int>() // need to return to Dart so can't use sparse array
                 for (bucket in readDataResult.buckets) {
-                    val dp = bucket.dataSets[0].dataPoints[0]
-                    val count = dp.getValue(aggregatedDataType.fields[0])
+                    val dp = bucket.dataSets.firstOrNull()?.dataPoints?.firstOrNull()
+                    if (dp != null) {
+                        val count = dp.getValue(aggregatedDataType.fields[0])
 
-                    Log.d(TAG, "returning $count steps for $dayString")
-                    map[dp.getStartTime(TimeUnit.MILLISECONDS)] = count.asInt()
+                        Log.d(TAG, "returning $count steps for $dayString")
+                        map[dp.getStartTime(TimeUnit.MILLISECONDS)] = count.asInt()
+                    } else {
+                        Log.d(TAG, "no steps for $dayString")
+                    }
                 }
                 activity.runOnUiThread {
-                    result.success(map)
+                    result(map, null)
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
 
                 activity.runOnUiThread {
-                    result.error("failed", e.message, null)
+                    result(null, e)
                 }
             }
 

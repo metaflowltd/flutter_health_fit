@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
-    var steps = await FlutterHealthFit().getStepsByDay(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
+    var steps = await FlutterHealthFit().getStepsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch, 1, TimeUnit.days);
     var running = await FlutterHealthFit().getWalkingAndRunningDistance;
     var cycle = await FlutterHealthFit().getCyclingDistance;
     var flights = await FlutterHealthFit().getFlights;

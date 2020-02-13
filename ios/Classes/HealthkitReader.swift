@@ -9,6 +9,11 @@
 import UIKit
 import HealthKit
 
+enum TimeUnit: Int {
+    case minutes
+    case days
+}
+
 class HealthkitReader: NSObject {
     
     static let sharedInstance = HealthkitReader()
@@ -95,38 +100,65 @@ class HealthkitReader: NSObject {
         }
     }
     
+    var healthKitTypesToRead : Set<HKObjectType> {
+        return Set([
+                HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
+                HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
+                HKObjectType.workoutType(),
+                HealthkitReader.weightQuantityType(),
+                HealthkitReader.heightQuantityType(),
+                HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!
+            ] + quantityTypesToRead())
+    }
     
-    func requestHealthAuthorization(_ complition:@escaping ((Bool)->())){
-        
-//        HKCategoryType.characteristicType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)
-        
-        HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)
-        let healthKitTypesToWrite : Set<HKSampleType> =  [
-            HKObjectType.workoutType()
-        ]
-        
-        var healthKitTypesToRead : Set<HKObjectType> = [
-            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
-            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
-//            HKCategoryType.categoryTypeForIdentifier(HKCategoryTypeIdentifierSleepAnalysis)!,
-            HKObjectType.workoutType(),
-            HealthkitReader.weightQuantityType(),
-            HealthkitReader.heightQuantityType(),
-            HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!
-        ]
-        
-        for type in self.quantityTypesToRead(){
-            healthKitTypesToRead.insert(type)
-        }
-        
+    var healthKitTypesToWrite : Set<HKSampleType> {
+        return [HKObjectType.workoutType()]
+    }
+
+    func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
         self.hasRequestedHealthKit = true
         
         self.healthStore.requestAuthorization(toShare: healthKitTypesToWrite, read: healthKitTypesToRead, completion: { success, error in
-            complition(success)
+            completion(success)
         })
     }
     
+    @available(iOS 12.0, *)
+    func getRequestStatusForAuthorization(completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
+        healthStore.getRequestStatusForAuthorization(toShare: healthKitTypesToWrite, read: healthKitTypesToRead, completion: completion)
+    }
     
+    
+    func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let sampleType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+        
+        let query = HKStatisticsQuery(quantityType: sampleType,
+                                      quantitySamplePredicate: predicate,
+                                      options: .cumulativeSum) { query, queryResult, error in
+                                        
+                                        guard let queryResult = queryResult else {
+                                            let error = error! as NSError
+                                            print("[getTotalStepsInInterval] got error: \(error)")
+                                            completion(nil, error)
+                                            return
+                                        }
+                                        
+                                        var steps = 0.0
+                                        
+                                        if let quantity = queryResult.sumQuantity() {
+                                            let unit = HKUnit.count()
+                                            steps = quantity.doubleValue(for: unit)
+                                            print("Amount of steps: \(steps), since: \(queryResult.startDate) until: \(queryResult.endDate)")
+                                        }
+                                        
+                                        completion(Int(steps), nil)
+        }
+        
+        healthStore.execute(query)
+    }
     
     func readHealthKitWokoutOfType(_ workoutType:HKWorkoutActivityType, completion:@escaping (([HKWorkout])->())){
         

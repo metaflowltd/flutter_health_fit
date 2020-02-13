@@ -17,8 +17,23 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(success)
             }
         }
-        else if call.method == "isAuthorized" {
-            result(FlutterMethodNotImplemented)
+        else if call.method == "isAuthorized" { // only checks if requested! no telling if authorized!
+            if #available(iOS 12.0, *) {
+                HealthkitReader.sharedInstance.getRequestStatusForAuthorization { (status: HKAuthorizationRequestStatus, error: Error?) in
+                    switch status {
+                    case .shouldRequest:
+                        result(false)
+                    case .unnecessary:
+                        result(true)
+                    case .unknown:
+                        let error = error! as NSError
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                }
+            } else {
+                // Fallback on earlier versions
+                result(HealthkitReader.sharedInstance.hasRequestedHealthKit)
+            }
         }
         else if call.method == "getActivity"{
             self.getActivity(call, result: result)
@@ -28,28 +43,55 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             self.getBasicHealthData(result: result)
         }
         
-        else if call.method == "getSteps" {
-            let myArgs = call.arguments as! [String:Int]
+        else if call.method == "getStepsBySegment" {
+            let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
-            let start = TimeInterval(startMillis) / 1000
-            let end = TimeInterval(endMillis) / 1000
-            self.getSteps(result: result, start: start, end: end)
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            let duration = myArgs["duration"]!
+            let unitInt = myArgs["unit"]!
+            let unit = TimeUnit(rawValue: unitInt)!
+            self.getStepsBySegment(result: result, start: start, end: end, duration: duration, unit: unit)
+        }
+        
+        else if call.method == "getTotalStepsInInterval" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getTotalStepsInInterval(start: start, end: end) { (steps: Int?, error: Error?) in
+                if let steps = steps {
+                    result(steps)
+                } else {
+                    let error = error! as NSError
+                    print("[getStepsByDay] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+            }
         }
     }
 
-    func getSteps(result: @escaping FlutterResult, start: TimeInterval, end: TimeInterval) {
+    func getStepsBySegment(result: @escaping FlutterResult, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit) {
         let healthStore = HKHealthStore()
         let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         
+        var anchorComponents: DateComponents
         var interval = DateComponents()
-        interval.day = 1
+        switch unit {
+        case .days:
+            anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: Date())
+            anchorComponents.hour = 0
+            interval.day = duration
+        case .minutes:
+            anchorComponents = Calendar.current.dateComponents([.day, .month, .year, .hour, .second], from: Date())
+            interval.minute = duration
+        }
         
-        var anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: Date())
-        anchorComponents.hour = 0
         let anchorDate = Calendar.current.date(from: anchorComponents)!
         
         let query = HKStatisticsCollectionQuery(quantityType: stepsQuantityType,
@@ -61,7 +103,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             var dic = [Int: Int]()
             guard let results = results else {
                 let error = error! as NSError
-                print("[getSteps] got error: \(error)")
+                print("[getStepsBySegment] got error: \(error)")
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 return
             }
@@ -69,7 +111,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
                     let steps = sum.doubleValue(for: HKUnit.count())
-                    print("Amount of steps: \(steps), date: \(statistics.startDate)")
+                    print("Amount of steps: \(steps), since: \(statistics.startDate) until: \(statistics.endDate)")
                     
                     let timestamp = Int(statistics.startDate.timeIntervalSince1970 * 1000)
 
@@ -82,7 +124,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         healthStore.execute(query)
     }
-    
 
     func getBasicHealthData(result: @escaping FlutterResult){
         let dob = HealthkitReader.sharedInstance.getDOB()
@@ -167,6 +208,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     }
     
     
+}
+
+extension Int {
+    var toTimeInterval: TimeInterval {
+        return TimeInterval(self) / 1000.0
+    }
 }
 
 extension Date {
