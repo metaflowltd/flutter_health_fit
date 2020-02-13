@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+enum TimeUnit { minutes, days }
+
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
@@ -14,6 +16,13 @@ class FlutterHealthFit {
 
   static final _singleton = FlutterHealthFit.internal();
 
+  /// NOTE: On iOS this only tells whether [authorize] has been called on the requested data types.
+  /// There is no getter for the user's actual response.
+  /// The caller has to ask the user before calling [authorize] and maintain the response internally.
+  /// This method is only for the case when you want to collect new data types that were not asked originally
+  /// (for example, in an app update).
+  ///
+  /// On Android this method works as expected.
   Future<bool> get isAuthorized async {
     final status = await _channel.invokeMethod("isAuthorized");
     return status;
@@ -27,13 +36,18 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<Map<DateTime, int>> getStepsByDay(int start, int end) async {
-    Map stepsByTimestamp = await _channel.invokeMethod("getSteps", {"start": start, "end": end});
+  Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
+    Map stepsByTimestamp = await _channel.invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return stepsByTimestamp.cast<int, int>().map((int key, int value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
       return MapEntry(dateTime, value);
     });
+  }
+
+  Future<int> getTotalStepsInInterval(int start, int end) async {
+    final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
+    return steps;
   }
 
   Future<double> get getWalkingAndRunningDistance async {
