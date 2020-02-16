@@ -45,6 +45,24 @@ class FlutterHealthFit {
     });
   }
 
+  Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
+    Map flightsByTimestamp = await _channel.invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+    return flightsByTimestamp.cast<int, int>().map((int key, int value) {
+      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      return MapEntry(dateTime, value);
+    });
+  }
+
+  Future<Map<DateTime, double>> getCyclingBySegment(int start, int end, int duration, TimeUnit unit) async {
+    Map cyclingByTimestamp = await _channel.invokeMethod("getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+    return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
+      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      return MapEntry(dateTime, value);
+    });
+  }
+
   Future<int> getTotalStepsInInterval(int start, int end) async {
     final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
     return steps;
@@ -52,14 +70,6 @@ class FlutterHealthFit {
 
   Future<double> get getWalkingAndRunningDistance async {
     return await _getActivityData(_ActivityType.walkRun, "m");
-  }
-
-  Future<double> get getCyclingDistance async {
-    return await _getActivityData(_ActivityType.cycling, "m");
-  }
-
-  Future<double> get getFlights async {
-    return await _getActivityData(_ActivityType.flights, "count");
   }
 
   Future<double> _getActivityData(_ActivityType activityType, String units) async {
