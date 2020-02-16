@@ -33,8 +33,8 @@ class _MyAppState extends State<MyApp> {
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     var steps = await FlutterHealthFit().getStepsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch, 1, TimeUnit.days);
     var running = await FlutterHealthFit().getWalkingAndRunningDistance;
-    var cycle = await FlutterHealthFit().getCyclingDistance;
-    var flights = await FlutterHealthFit().getFlights;
+    var cycle = await FlutterHealthFit().getCyclingBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch, 1, TimeUnit.days);
+    var flights = await FlutterHealthFit().getFlightsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch, 1, TimeUnit.days);
     setState(() {
       _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle flights: $flights";
     });

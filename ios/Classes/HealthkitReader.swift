@@ -30,15 +30,28 @@ class HealthkitReader: NSObject {
         return authStatus == .sharingAuthorized
     }
     
+    var stepsQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .stepCount)!
+    }
+
+    var cyclingDistanceQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .distanceCycling)!
+        
+    }
+
+    var flightsClimbedQuantityType : HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!
+    }
+    
     func quantityTypesToRead() -> [HKQuantityType]{
         return [
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.distanceWalkingRunning)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.distanceCycling)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.basalEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.activeEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.flightsClimbed)!,
-            HKQuantityType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRate)!
+            stepsQuantityType,
+            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
+            cyclingDistanceQuantityType,
+            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
+            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
+            flightsClimbedQuantityType,
+            HKQuantityType.quantityType(forIdentifier: .heartRate)!
         ]
     }
     
@@ -129,10 +142,58 @@ class HealthkitReader: NSObject {
     }
     
     
+    func getQuantityBySegment(quantityType: HKQuantityType, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit, completion: @escaping ([Int: Double]?, Error?) -> ()) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        
+        var anchorComponents: DateComponents
+        var interval = DateComponents()
+        switch unit {
+        case .days:
+            anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: Date())
+            anchorComponents.hour = 0
+            interval.day = duration
+        case .minutes:
+            anchorComponents = Calendar.current.dateComponents([.day, .month, .year, .hour, .second], from: Date())
+            interval.minute = duration
+        }
+        
+        let anchorDate = Calendar.current.date(from: anchorComponents)!
+        
+        let query = HKStatisticsCollectionQuery(quantityType: quantityType,
+                                                quantitySamplePredicate: nil,
+                                                options: [.cumulativeSum],
+                                                anchorDate: anchorDate,
+                                                intervalComponents: interval)
+        query.initialResultsHandler = { _, results, error in
+            guard let results = results else {
+                completion(nil, error)
+                return
+            }
+
+            var dic = [Int: Double]()
+            results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
+                if let sum = statistics.sumQuantity() {
+                    let unit: HKUnit = quantityType.is(compatibleWith: HKUnit.count()) ? HKUnit.count() : HKUnit.meterUnit(with: .kilo)
+                    let quantity = sum.doubleValue(for: unit)
+                    print("Amount of \(quantityType): \(quantity), since: \(statistics.startDate) until: \(statistics.endDate)")
+                    
+                    let timestamp = Int(statistics.startDate.timeIntervalSince1970 * 1000)
+
+                    dic[timestamp] = quantity
+                    
+                }
+            }
+            completion(dic, nil)
+        }
+        
+        healthStore.execute(query)
+    }
+
     func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
-        let sampleType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        let sampleType = stepsQuantityType
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
         
         let query = HKStatisticsQuery(quantityType: sampleType,

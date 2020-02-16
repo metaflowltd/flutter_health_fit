@@ -84,6 +84,14 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
 
+            "getFlightsBySegment" -> {
+                result.success(emptyMap<Long, Int>())
+            }
+
+            "getCyclingDistanceBySegment" -> {
+                result.success(emptyMap<Long, Double>())
+            }
+
             "getTotalStepsInInterval" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
