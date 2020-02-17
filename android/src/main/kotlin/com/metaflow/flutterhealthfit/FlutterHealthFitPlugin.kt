@@ -18,7 +18,6 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import java.text.DateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -74,7 +73,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val duration = call.argument<Int>("duration")!!
                 val unitInt = call.argument<Int>("unit")!!
                 val lumenTimeUnit = LumenTimeUnit.values().first { it.value == unitInt }
-                val timeUnit = mapOf(LumenTimeUnit.DAYS to TimeUnit.DAYS, LumenTimeUnit.MINUTES to TimeUnit.MINUTES)[lumenTimeUnit]!!
+                val timeUnit = mapOf(LumenTimeUnit.DAYS to TimeUnit.DAYS, LumenTimeUnit.MINUTES to TimeUnit.MINUTES).getValue(lumenTimeUnit)
                 getStepsInRange(start, end, duration, timeUnit) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         result.success(map)
@@ -185,9 +184,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
-        val dateFormat = DateFormat.getDateInstance()
-        val dayString = dateFormat.format(Date(start))
-
         Thread {
             try {
                 val readDataResult = Tasks.await<DataReadResponse>(response)
@@ -199,10 +195,15 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     if (dp != null) {
                         val count = dp.getValue(aggregatedDataType.fields[0])
 
-                        Log.d(TAG, "returning $count steps for $dayString")
-                        map[dp.getStartTime(TimeUnit.MILLISECONDS)] = count.asInt()
+                        val startTime = dp.getStartTime(TimeUnit.MILLISECONDS)
+                        val startDate = Date(startTime)
+                        val endDate = Date(dp.getEndTime(TimeUnit.MILLISECONDS))
+                        Log.d(TAG, "returning $count steps for $startDate - $endDate")
+                        map[startTime] = count.asInt()
                     } else {
-                        Log.d(TAG, "no steps for $dayString")
+                        val startDay = Date(start)
+                        val endDay = Date(end)
+                        Log.d(TAG, "no steps for $startDay - $endDay")
                     }
                 }
                 activity.runOnUiThread {
