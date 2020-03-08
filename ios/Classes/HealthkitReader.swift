@@ -124,21 +124,17 @@ class HealthkitReader: NSObject {
             ] + quantityTypesToRead())
     }
     
-    var healthKitTypesToWrite : Set<HKSampleType> {
-        return [HKObjectType.workoutType()]
-    }
-
     func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
         self.hasRequestedHealthKit = true
         
-        self.healthStore.requestAuthorization(toShare: healthKitTypesToWrite, read: healthKitTypesToRead, completion: { success, error in
+        self.healthStore.requestAuthorization(toShare: nil, read: healthKitTypesToRead, completion: { success, error in
             completion(success)
         })
     }
     
     @available(iOS 12.0, *)
     func getRequestStatusForAuthorization(completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
-        healthStore.getRequestStatusForAuthorization(toShare: healthKitTypesToWrite, read: healthKitTypesToRead, completion: completion)
+        healthStore.getRequestStatusForAuthorization(toShare: Set(), read: healthKitTypesToRead, completion: completion)
     }
     
     
