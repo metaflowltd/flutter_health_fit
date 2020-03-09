@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataSource
@@ -135,27 +136,32 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
     private fun isAuthorized(): Boolean {
         val fitnessOptions = getFitnessOptions()
-        return GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), fitnessOptions)
+        val account = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+        return GoogleSignIn.hasPermissions(account, fitnessOptions)
     }
 
     private fun connect(result: Result) {
         val fitnessOptions = getFitnessOptions()
 
-        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(activity), fitnessOptions)) {
+        if (!isAuthorized()) {
             deferredResult = result
 
-            GoogleSignIn.requestPermissions(
-                    activity,
-                    GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
-                    GoogleSignIn.getLastSignedInAccount(activity),
-                    fitnessOptions)
+            val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
+            client.signOut().addOnCompleteListener {
+                GoogleSignIn.requestPermissions(
+                        activity,
+                        GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                        GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
+                        fitnessOptions)
+            }
         } else {
             result.success(true)
         }
     }
 
     private fun recordData(callback: (Boolean) -> Unit) {
-        Fitness.getRecordingClient(activity, GoogleSignIn.getLastSignedInAccount(activity)!!)
+        val fitnessOptions = getFitnessOptions()
+        Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
                 .subscribe(dataType)
                 .addOnSuccessListener {
                     callback(true)
