@@ -32,7 +32,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     companion object {
         const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
 
-        val dataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
+        val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
+        val weightDataType: DataType = DataType.TYPE_WEIGHT
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
 
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
@@ -68,6 +69,18 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 result.success(map)
             }
 
+            "getWeight" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                getWeight(start, end) { lastWeight: Float?, e: Throwable? ->
+                    if (lastWeight != null) {
+                        result.success(lastWeight)
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
             "getStepsBySegment" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
@@ -98,7 +111,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val duration = (end - start).toInt()
                 getStepsInRange(start, end, duration, TimeUnit.MILLISECONDS) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
-                        assert(map.size <= 1) {"getTotalStepsInInterval should return only one interval. Found: ${map.size}"}
+                        assert(map.size <= 1) { "getTotalStepsInInterval should return only one interval. Found: ${map.size}" }
                         result.success(map.values.firstOrNull())
                     } else {
                         result.error("failed", e?.message, null)
@@ -113,8 +126,19 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
-                recordData { success ->
-                    Log.i(TAG, "Record data success: $success!")
+                recordStepsData { success ->
+                    Log.i(TAG, "Record steps data success: $success!")
+
+                    if (success)
+                        deferredResult?.success(true)
+                    else
+                        deferredResult?.error("no record", "Record data operation denied", null)
+
+                    deferredResult = null
+                }
+
+                recordWeightData { success ->
+                    Log.i(TAG, "Record weight data success: $success!")
 
                     if (success)
                         deferredResult?.success(true)
@@ -159,10 +183,22 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
     }
 
-    private fun recordData(callback: (Boolean) -> Unit) {
+    private fun recordStepsData(callback: (Boolean) -> Unit) {
         val fitnessOptions = getFitnessOptions()
         Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
-                .subscribe(dataType)
+                .subscribe(stepsDataType)
+                .addOnSuccessListener {
+                    callback(true)
+                }
+                .addOnFailureListener {
+                    callback(false)
+                }
+    }
+
+    private fun recordWeightData(callback: (Boolean) -> Unit) {
+        val fitnessOptions = getFitnessOptions()
+        Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
+                .subscribe(weightDataType)
                 .addOnSuccessListener {
                     callback(true)
                 }
@@ -226,8 +262,38 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
+    private fun getWeight(startTime: Long, endTime: Long, result: (Float?, Throwable?) -> Unit) {
+        val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
+
+        val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setLimit(1)
+                .build();
+
+        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
+
+        Thread {
+            try {
+                val readDataResult = Tasks.await(response)
+                var lastWeight = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getValue(weightDataType.fields[0])?.asFloat()
+                Log.d(TAG, "lastWeight: $lastWeight")
+                activity.runOnUiThread {
+                    result(lastWeight ?: 0f, null)
+                }
+            } catch (e: Throwable) {
+                Log.e(TAG, "failed: ${e.message}")
+                activity.runOnUiThread {
+                    result(null, e)
+                }
+            }
+
+        }.start()
+    }
+
     private fun getFitnessOptions() = FitnessOptions.builder()
-            .addDataType(dataType, FitnessOptions.ACCESS_READ)
+            .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
             .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
             .build()
 }

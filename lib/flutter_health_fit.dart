@@ -36,8 +36,13 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
+  Future<double> getWeight(int start, int end) async {
+    return await _channel.invokeMethod("getWeight", {"start": start, "end": end});
+  }
+
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map stepsByTimestamp = await _channel.invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+    Map stepsByTimestamp = await _channel
+        .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return stepsByTimestamp.cast<int, int>().map((int key, int value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
@@ -46,7 +51,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map flightsByTimestamp = await _channel.invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+    Map flightsByTimestamp = await _channel
+        .invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return flightsByTimestamp.cast<int, int>().map((int key, int value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
@@ -55,7 +61,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>> getCyclingBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map cyclingByTimestamp = await _channel.invokeMethod("getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+    Map cyclingByTimestamp = await _channel.invokeMethod(
+        "getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
