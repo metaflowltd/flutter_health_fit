@@ -69,7 +69,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 result.success(map)
             }
 
-            "getWeight" -> {
+            "getWeightInInterval" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 getWeight(start, end) { lastWeight: Float?, e: Throwable? ->
