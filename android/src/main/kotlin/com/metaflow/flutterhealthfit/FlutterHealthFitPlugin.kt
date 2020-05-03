@@ -132,7 +132,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     if (success)
                         deferredResult?.success(true)
                     else
-                        deferredResult?.error("no record", "Record data operation denied", null)
+                        deferredResult?.error("no record", "Steps record data operation denied", null)
 
                     deferredResult = null
                 }
@@ -143,7 +143,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     if (success)
                         deferredResult?.success(true)
                     else
-                        deferredResult?.error("no record", "Record data operation denied", null)
+                        deferredResult?.error("no record", "Weight record data operation denied", null)
 
                     deferredResult = null
                 }
