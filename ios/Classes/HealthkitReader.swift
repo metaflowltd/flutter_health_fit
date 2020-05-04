@@ -185,6 +185,31 @@ class HealthkitReader: NSObject {
         
         healthStore.execute(query)
     }
+    
+    func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping (Double?, Error?) -> Void) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+
+        // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
+        let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+        let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
+            query, results, error in
+            
+            guard let results = results, results.count > 0 else {
+                completion(nil, error);
+                return;
+            }
+            
+            let quantitySample = results.first as! HKQuantitySample
+            
+            let weightInKilograms = quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo))
+            completion(weightInKilograms, error)
+        }
+        
+        healthStore.execute(query)
+    }
 
     func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
