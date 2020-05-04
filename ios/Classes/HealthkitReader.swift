@@ -198,7 +198,7 @@ class HealthkitReader: NSObject {
             query, results, error in
             
             guard let results = results, results.count > 0 else {
-                completion(nil, error as NSError?);
+                completion(nil, error);
                 return;
             }
             
