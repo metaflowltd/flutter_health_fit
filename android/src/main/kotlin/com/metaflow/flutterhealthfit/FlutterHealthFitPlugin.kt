@@ -277,8 +277,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                val lastWeight = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getValue(weightDataType.fields[0])?.asFloat()
-                val dateInMillis = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getTimestamp(TimeUnit.MILLISECONDS);
+                val dp = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                val lastWeight = dp?.getValue(weightDataType.fields[0])?.asFloat()
+                val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS);
 
                 if (dateInMillis != null) {
                     map[dateInMillis] = lastWeight!!
