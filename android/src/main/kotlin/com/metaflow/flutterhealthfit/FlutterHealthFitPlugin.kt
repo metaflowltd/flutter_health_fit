@@ -72,9 +72,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getWeightInInterval" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getWeight(start, end) { lastWeight: Float?, e: Throwable? ->
-                    if (lastWeight != null) {
-                        result.success(lastWeight)
+                getWeight(start, end) { map: Map<Long, Float>?, e: Throwable? ->
+                    if (map != null) {
+                        result.success(map)
                     } else {
                         result.error("failed", e?.message, null)
                     }
@@ -262,7 +262,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
-    private fun getWeight(startTime: Long, endTime: Long, result: (Float?, Throwable?) -> Unit) {
+    private fun getWeight(startTime: Long, endTime: Long, result: (Map<Long, Float>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
@@ -273,13 +273,19 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
+        val map = HashMap<Long, Float>()
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                var lastWeight = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getValue(weightDataType.fields[0])?.asFloat()
-                Log.d(TAG, "lastWeight: $lastWeight")
+                val lastWeight = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getValue(weightDataType.fields[0])?.asFloat()
+                val dateInMillis = readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()?.getTimestamp(TimeUnit.MILLISECONDS);
+
+                if (dateInMillis != null) {
+                    map[dateInMillis] = lastWeight!!
+                    Log.d(TAG, "lastWeight: $lastWeight")
+                }
                 activity.runOnUiThread {
-                    result(lastWeight ?: 0f, null)
+                    result(map, null)
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")

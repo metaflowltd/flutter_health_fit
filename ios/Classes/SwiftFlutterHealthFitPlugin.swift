@@ -56,21 +56,21 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
             
         else if call.method == "getWeightInInterval" {
-            let myArgs = call.arguments as! [String: Int]
-            let startMillis = myArgs["start"]!
-            let endMillis = myArgs["end"]!
-            let start = startMillis.toTimeInterval
-            let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: Double?, error: Error?) in
-                if let weight = weight {
-                    result(weight)
-                } else {
-                    let error = error! as NSError
-                    print("[getWeight] got error: \(error)")
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    let myArgs = call.arguments as! [String: Int]
+                    let startMillis = myArgs["start"]!
+                    let endMillis = myArgs["end"]!
+                    let start = startMillis.toTimeInterval
+                    let end = endMillis.toTimeInterval
+                    HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: [Int:Double]?, error: Error?) in
+                        if let weight = weight {
+                            result(weight)
+                        } else {
+                            let error = error! as NSError
+                            print("[getWeight] got error: \(error)")
+                            result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                        }
+                    }
                 }
-            }
-        }
         
         else if call.method == "getTotalStepsInInterval" {
             let myArgs = call.arguments as! [String: Int]
