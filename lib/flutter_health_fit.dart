@@ -36,8 +36,12 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<double> getWeight(int start, int end) async {
-    return await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
+  Future<Map<DateTime, double>> getWeight(int start, int end) async {
+    Map lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
+    return lastWeight.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
   }
 
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
