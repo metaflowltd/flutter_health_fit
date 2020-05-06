@@ -73,10 +73,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 getWeight(start, end) { map: Map<Long, Float>?, e: Throwable? ->
-                    if (map != null) {
-                        result.success(map)
+                    if (e != null) {
+                        result.error("failed", e.message, null)
                     } else {
-                        result.error("failed", e?.message, null)
+                        result.success(map)
                     }
                 }
             }
@@ -273,7 +273,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
-        val map = HashMap<Long, Float>()
+        var map: HashMap<Long, Float>? = null
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
@@ -282,7 +282,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS);
 
                 if (dateInMillis != null) {
-                    map[dateInMillis] = lastWeight!!
+                    map = HashMap<Long, Float>()
+                    map!![dateInMillis] = lastWeight!!
                     Log.d(TAG, "lastWeight: $lastWeight")
                 }
                 activity.runOnUiThread {
