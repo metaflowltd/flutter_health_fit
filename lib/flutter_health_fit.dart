@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 
@@ -6,6 +7,31 @@ enum TimeUnit { minutes, days }
 
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
+
+class HeartRateSample {
+  final DateTime dateTime;
+  final int heartRate;
+  final Map<String, dynamic> metadata; // may be null
+  final String sourceApp;
+  final String sourceDevice; // may be null
+
+  String get sourceApi => Platform.isIOS ? "applehk" : "googlefit";
+
+  String get motionLevel => Platform.isIOS && metadata != null ? metadata["HKMetadataKeyHeartRateMotionContext"] : 0;
+
+  HeartRateSample({this.dateTime, this.heartRate, this.metadata, this.sourceApp, this.sourceDevice});
+
+  @override
+  String toString() =>
+      "$runtimeType(dateTime: $dateTime, heartRate: $heartRate, metadata: $metadata, sourceApp: $sourceApp, sourceDevice: $sourceDevice, sourceApi: $sourceApi)";
+
+  HeartRateSample.fromMap(Map<String, dynamic> map)
+      : dateTime = DateTime.fromMillisecondsSinceEpoch(map["timestamp"]),
+        heartRate = map["value"],
+        metadata = map["metadata"],
+        sourceApp = map["metricappsource"],
+        sourceDevice = map["metricdevicesource"];
+}
 
 class FlutterHealthFit {
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
@@ -42,6 +68,26 @@ class FlutterHealthFit {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
+  }
+
+  Future<HeartRateSample> getLatestHeartRateSample(int start, int end) =>
+      _getHeartRate("getHeartRateSample", start, end);
+
+  Future<List<HeartRateSample>> getAverageWalkingHeartRate(int start, int end) =>
+      _getAverageHeartRates("getAverageWalkingHeartRate", start, end);
+
+  Future<List<HeartRateSample>> getAverageRestingHeartRate(int start, int end) =>
+      _getAverageHeartRates("getAverageRestingHeartRate", start, end);
+
+  Future<HeartRateSample> _getHeartRate(String methodName, int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>(methodName, {"start": start, "end": end});
+    return HeartRateSample.fromMap(sample);
+  }
+
+  Future<List<HeartRateSample>> _getAverageHeartRates(String methodName, int start, int end) async {
+    final averageBySource =
+        await _channel.invokeListMethod<Map<String, dynamic>>(methodName, {"start": start, "end": end});
+    return averageBySource.map((Map<String, dynamic> average) => HeartRateSample.fromMap(average)).toList();
   }
 
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {

@@ -43,16 +43,39 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!
     }
     
+    var heartRateQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .heartRate)!
+    }
+    
+    @available(iOS 11.0, *)
+    var restingHeartRateQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
+    }
+
+    @available(iOS 11.0, *)
+    var walkingHeartRateAverageQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .walkingHeartRateAverage)!
+    }
+    
+    @available(iOS 11.0, *)
+    var heartRateVariabilityQuantityType: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+    }
+    
     func quantityTypesToRead() -> [HKQuantityType]{
-        return [
+        var types = [
             stepsQuantityType,
             HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
             cyclingDistanceQuantityType,
             HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
             HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
             flightsClimbedQuantityType,
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            heartRateQuantityType,
         ]
+        if #available(iOS 11.0, *) {
+            types += [restingHeartRateQuantityType, walkingHeartRateAverageQuantityType, heartRateVariabilityQuantityType]
+        }
+        return types
     }
     
     func getHealthDataValue ( type : HKQuantityTypeIdentifier , strUnitType : String , complition: @escaping (((([[String:Any]])?) -> Void)) )
@@ -138,10 +161,8 @@ class HealthkitReader: NSObject {
     }
     
     
-    func getQuantityBySegment(quantityType: HKQuantityType, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit, completion: @escaping ([Int: Double]?, Error?) -> ()) {
-        let startDate = Date(timeIntervalSince1970: start)
-        let endDate = Date(timeIntervalSince1970: end)
-        
+    func getQuantityBySegment(quantityType: HKQuantityType, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit,
+                              options: HKStatisticsOptions, initialResultsHandler: ((HKStatisticsCollectionQuery, HKStatisticsCollection?, Error?) -> Void)?) {
         var anchorComponents: DateComponents
         var interval = DateComponents()
         switch unit {
@@ -158,10 +179,20 @@ class HealthkitReader: NSObject {
         
         let query = HKStatisticsCollectionQuery(quantityType: quantityType,
                                                 quantitySamplePredicate: nil,
-                                                options: [.cumulativeSum],
+                                                options: options,
                                                 anchorDate: anchorDate,
                                                 intervalComponents: interval)
-        query.initialResultsHandler = { _, results, error in
+        query.initialResultsHandler = initialResultsHandler
+        
+        healthStore.execute(query)
+    }
+    
+    func getQuantityBySegment(quantityType: HKQuantityType, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit,
+                              completion: @escaping ([Int: Double]?, Error?) -> ()) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        
+        getQuantityBySegment(quantityType: quantityType, start: start, end: end, duration: duration, unit: unit, options: [.cumulativeSum]) { _, results, error in
             guard let results = results else {
                 completion(nil, error)
                 return
@@ -182,8 +213,6 @@ class HealthkitReader: NSObject {
             }
             completion(dic, nil)
         }
-        
-        healthStore.execute(query)
     }
     
     func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
@@ -212,6 +241,85 @@ class HealthkitReader: NSObject {
 
             healthStore.execute(query)
         }
+    
+    func getHeartRateSample(start: TimeInterval, end: TimeInterval, completion: @escaping ([String: Any]?, Error?) -> Void) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+
+        // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
+        let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+        let query = HKSampleQuery(sampleType: heartRateQuantityType, predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
+            query, results, error in
+
+            guard let results = results, results.count > 0 else {
+                completion(nil, error);
+                return;
+            }
+
+            let quantitySample = results.first as! HKQuantitySample
+            let heartRate = quantitySample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
+            var dic: [String: Any] = [
+                "value": Int(heartRate),
+                "timestamp": timestamp,
+                "metricappsource": quantitySample.sourceRevision.source.bundleIdentifier
+            ]
+            if let device = quantitySample.device {
+                dic["metricdevicesource"] = device.localIdentifier
+            }
+            if let metadata = quantitySample.metadata {
+                dic["metadata"] = metadata.mapValues({ (value: Any) -> Any in
+                    if let date = value as? Date {
+                        return Int(date.timeIntervalSince1970 * 1000)
+                    }
+                    return value
+                })
+            }
+            completion(dic, error)
+        }
+
+        healthStore.execute(query)
+    }
+    
+    func getAverageQuantity(sampleType: HKQuantityType, unit: HKUnit, start: TimeInterval, end: TimeInterval, completion: @escaping ([[String: Any]]?, Error?) -> Void) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+        
+        let query = HKStatisticsQuery(quantityType: sampleType,
+                                      quantitySamplePredicate: predicate,
+                                      options: [.discreteAverage, .separateBySource]) { query, queryResult, error in
+                                        
+                                        guard let queryResult = queryResult else {
+                                            let error = error! as NSError
+                                            print("[getAverageQuantity] got error: \(error)")
+                                            completion(nil, error)
+                                            return
+                                        }
+                                        
+                                        var value: Double = 0.0
+                                        
+                                        var list: [[String: Any]] = []
+                                        for source in queryResult.sources! {
+                                            if let quantity = queryResult.averageQuantity(for: source) {
+                                                value = quantity.doubleValue(for: unit)
+                                            }
+                                            let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
+                                            let dic: [String: Any] = [
+                                                "value": value,
+                                                "timestamp": timestamp,
+                                                "metricappsource": source.bundleIdentifier,
+                                            ]
+                                            list.append(dic)
+                                        }
+
+                                        completion(list, nil)
+        }
+        
+        healthStore.execute(query)
+    }
 
     func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
