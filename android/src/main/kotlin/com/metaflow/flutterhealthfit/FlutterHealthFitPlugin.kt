@@ -127,10 +127,15 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
                 getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
-                        val lastPoint = samples.last()
-                        result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
-                                lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
-                                lastPoint.dataSource.appPackageName))
+                        if (samples.isEmpty()) {
+                            result.success(null)
+                        }
+                        else {
+                            val lastPoint = samples.last()
+                            result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
+                                    lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                    lastPoint.dataSource.appPackageName))
+                        }
                     } else {
                         result.error("failed", e?.message, null)
                     }
@@ -142,12 +147,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val end = call.argument<Long>("end")!!
                 getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
-                        val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
+                        if (samples.isEmpty()) {
+                            result.success(emptyList<Map<String, Any?>>())
+                        }
+                        else {
+                            val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
 
-                        val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
-                                valueSum / samples.size,
-                                samples.last().dataSource.appPackageName)
-                        result.success(listOf(sampleMap))
+                            val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
+                                    valueSum / samples.size,
+                                    samples.last().dataSource.appPackageName)
+                            result.success(listOf(sampleMap))
+                        }
                     } else {
                         result.error("failed", e?.message, null)
                     }
