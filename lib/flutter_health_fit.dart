@@ -26,7 +26,7 @@ class HeartRateSample {
   HeartRateSample.fromMap(Map<String, dynamic> map)
       : dateTime = DateTime.fromMillisecondsSinceEpoch(map["timestamp"]),
         heartRate = map["value"],
-        metadata = map["metadata"],
+        metadata = map["metadata"] == null ? null : Map<String, dynamic>.from(map["metadata"]),
         sourceApp = map["metricappsource"],
         sourceDevice = map["metricdevicesource"];
 }

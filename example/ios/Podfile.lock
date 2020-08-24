@@ -14,9 +14,9 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_health_fit/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 9d0fac939486c9aba2809b7982dfdbb47a7b0296
-  flutter_health_fit: 28c89263270a88d37b272f202e4bf36990440f03
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  flutter_health_fit: a96be00d6d54c5853fc0d5e08204d0d6821517ed
 
 PODFILE CHECKSUM: 7765ea4305eaab0b3dfd384c7de11902aa3195fd
 
-COCOAPODS: 1.5.2
+COCOAPODS: 1.9.3
