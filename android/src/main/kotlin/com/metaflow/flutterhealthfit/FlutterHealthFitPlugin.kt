@@ -124,9 +124,13 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getHeartRateSample" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getLastHeartRateInRange(start, end) { sample: Map<String, Any?>?, e: Throwable? ->
-                    if (sample != null) {
-                        result.success(sample)
+
+                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                    if (samples != null) {
+                        val lastPoint = samples.last()
+                        result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
+                                lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                lastPoint.dataSource.appPackageName))
                     } else {
                         result.error("failed", e?.message, null)
                     }
@@ -136,9 +140,14 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getAverageWalkingHeartRate", "getAverageRestingHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getHeartRateAverageInRange(start, end) { averages: List<Map<String, Any?>>?, e: Throwable? ->
-                    if (averages != null) {
-                        result.success(averages)
+                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                    if (samples != null) {
+                        val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
+
+                        val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
+                                valueSum / samples.size,
+                                samples.last().dataSource.appPackageName)
+                        result.success(listOf(sampleMap))
                     } else {
                         result.error("failed", e?.message, null)
                     }
@@ -270,7 +279,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
-    private fun getLastHeartRateInRange(start: Long, end: Long, result: (Map<String, Any?>?, Throwable?) -> Unit) {
+    private fun getHeartRateInRange(start: Long, end: Long, result: (List<DataPoint>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
         val request = DataReadRequest.Builder()
@@ -287,67 +296,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
                 if (readDataResult.dataSets.isEmpty()) {
                     activity.runOnUiThread {
-                        result(null, Throwable("No data sets found"))
+                        result(emptyList(), null)
                     }
                 } else {
-                    // We take the first data set and get the last data point of it
-                    val lastPoint = readDataResult.dataSets.first().dataPoints.last()
-
-                    activity.runOnUiThread {
-                        result(createHeartRateSampleMap(
-                                lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
-                                lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
-                                lastPoint.dataSource.appPackageName), null)
-                    }
-                }
-            } catch (e: Throwable) {
-                Log.e(TAG, "failed: ${e.message}")
-
-                activity.runOnUiThread {
-                    result(null, e)
-                }
-            }
-
-        }.start()
-    }
-
-    private fun getHeartRateAverageInRange(start: Long, end: Long, result: (List<Map<String, Any?>>?, Throwable?) -> Unit) {
-        val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
-
-        val request = DataReadRequest.Builder()
-                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-                .read(DataType.TYPE_HEART_RATE_BPM)
-                .build()
-
-        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
-
-        Thread {
-            try {
-                val readDataResult = Tasks.await<DataReadResponse>(response)
-                Log.d(TAG, "datasets count: ${readDataResult.dataSets.size}")
-
-                if (readDataResult.dataSets.isEmpty()) {
-                    activity.runOnUiThread {
-                        result(null, Throwable("No data sets found"))
-                    }
-                } else {
-                    var sum = 0.0
-                    var count = 0
-                    var lastPoint: DataPoint? = null
+                    val dataPoints = mutableListOf<DataPoint>()
 
                     for (dataSet in readDataResult.dataSets) {
                         Log.d(TAG, "data set has ${dataSet.dataPoints.size} points")
-                        for (dataPoint in dataSet.dataPoints) {
-                            count++
-                            sum += dataPoint.getValue(heartRateDataType.fields[0]).asFloat()
-                            lastPoint = dataPoint
-                        }
+                        dataPoints.addAll(dataSet.dataPoints)
                     }
                     activity.runOnUiThread {
-                        result(listOf(createHeartRateSampleMap(
-                                lastPoint?.getTimestamp(TimeUnit.MILLISECONDS)!!,
-                                (sum / count).toFloat(),
-                                lastPoint.dataSource.appPackageName)), null)
+                        result(dataPoints, null)
                     }
                 }
 
