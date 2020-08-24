@@ -8,6 +8,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
+import com.google.android.gms.fitness.data.DataPoint
 import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.request.DataReadRequest
@@ -35,6 +36,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
         val weightDataType: DataType = DataType.TYPE_WEIGHT
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
+        val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
 
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
@@ -119,6 +121,49 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
 
+            "getHeartRateSample" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+
+                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                    if (samples != null) {
+                        if (samples.isEmpty()) {
+                            result.success(null)
+                        }
+                        else {
+                            val lastPoint = samples.last()
+                            result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
+                                    lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                    lastPoint.dataSource.appPackageName))
+                        }
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
+            "getAverageWalkingHeartRate", "getAverageRestingHeartRate" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                    if (samples != null) {
+                        if (samples.isEmpty()) {
+                            result.success(emptyList<Map<String, Any?>>())
+                        }
+                        else {
+                            val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
+
+                            val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
+                                    valueSum / samples.size,
+                                    samples.last().dataSource.appPackageName)
+                            result.success(listOf(sampleMap))
+                        }
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -126,26 +171,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
-                recordStepsData { success ->
-                    Log.i(TAG, "Record steps data success: $success!")
+                listOf(stepsDataType, weightDataType, heartRateDataType).forEach {
+                    recordFitnessData(it) { success ->
+                        Log.i(TAG, "Record $it success: $success!")
 
-                    if (success)
-                        deferredResult?.success(true)
-                    else
-                        deferredResult?.error("no record", "Steps record data operation denied", null)
+                        if (success)
+                            deferredResult?.success(true)
+                        else
+                            deferredResult?.error("no record", "Record $it operation denied", null)
 
-                    deferredResult = null
-                }
-
-                recordWeightData { success ->
-                    Log.i(TAG, "Record weight data success: $success!")
-
-                    if (success)
-                        deferredResult?.success(true)
-                    else
-                        deferredResult?.error("no record", "Weight record data operation denied", null)
-
-                    deferredResult = null
+                        deferredResult = null
+                    }
                 }
             } else {
                 deferredResult?.error("canceled", "User cancelled or app not authorized", null)
@@ -156,6 +192,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
 
         return false
+    }
+
+    private fun createHeartRateSampleMap(millisSinceEpoc: Long, value: Float, sourceApp: String?): Map<String, Any?> {
+        return mapOf("timestamp" to millisSinceEpoc, "value" to value.toInt(), "sourceApp" to sourceApp)
     }
 
     private fun isAuthorized(): Boolean {
@@ -183,22 +223,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
     }
 
-    private fun recordStepsData(callback: (Boolean) -> Unit) {
-        val fitnessOptions = getFitnessOptions()
-        Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
-                .subscribe(stepsDataType)
-                .addOnSuccessListener {
-                    callback(true)
-                }
-                .addOnFailureListener {
-                    callback(false)
-                }
-    }
-
-    private fun recordWeightData(callback: (Boolean) -> Unit) {
-        val fitnessOptions = getFitnessOptions()
-        Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
-                .subscribe(weightDataType)
+    private fun recordFitnessData(type: DataType, callback: (Boolean) -> Unit) {
+        Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, getFitnessOptions()))
+                .subscribe(type)
                 .addOnSuccessListener {
                     callback(true)
                 }
@@ -262,6 +289,49 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
+    private fun getHeartRateInRange(start: Long, end: Long, result: (List<DataPoint>?, Throwable?) -> Unit) {
+        val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
+
+        val request = DataReadRequest.Builder()
+                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                .read(DataType.TYPE_HEART_RATE_BPM)
+                .build()
+
+        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
+
+        Thread {
+            try {
+                val readDataResult = Tasks.await<DataReadResponse>(response)
+                Log.d(TAG, "datasets count: ${readDataResult.dataSets.size}")
+
+                if (readDataResult.dataSets.isEmpty()) {
+                    activity.runOnUiThread {
+                        result(emptyList(), null)
+                    }
+                } else {
+                    val dataPoints = mutableListOf<DataPoint>()
+
+                    for (dataSet in readDataResult.dataSets) {
+                        Log.d(TAG, "data set has ${dataSet.dataPoints.size} points")
+                        dataPoints.addAll(dataSet.dataPoints)
+                    }
+                    activity.runOnUiThread {
+                        result(dataPoints, null)
+                    }
+                }
+
+
+            } catch (e: Throwable) {
+                Log.e(TAG, "failed: ${e.message}")
+
+                activity.runOnUiThread {
+                    result(null, e)
+                }
+            }
+
+        }.start()
+    }
+
     private fun getWeight(startTime: Long, endTime: Long, result: (Map<Long, Float>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
@@ -303,5 +373,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
             .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
             .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
             .build()
 }

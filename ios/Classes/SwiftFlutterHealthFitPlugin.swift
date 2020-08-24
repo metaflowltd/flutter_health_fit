@@ -71,6 +71,47 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         }
         
+        else if call.method == "getHeartRateSample" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { (rate: [String: Any]?, error: Error?) in
+                if let error = error as NSError? {
+                   print("[getHeartRateSample] got error: \(error)")
+                   result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                   result(rate)
+                }
+            }
+        }
+            
+        else if call.method == "getAverageWalkingHeartRate" || call.method == "getAverageRestingHeartRate" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            
+            if #available(iOS 11.0, *) {
+                let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
+                HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
+                                                                  unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
+                                                                  start: start, end: end) { (rates: [[String : Any]]?, error: Error?) in
+                    if let error = error as NSError? {
+                        print("[\(call.method)] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    } else {
+                        result(rates)
+                    }
+                }
+            } else {
+                // Fallback on earlier versions
+                result(nil)
+            }
+        }
+            
         else if call.method == "getTotalStepsInInterval" {
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
