@@ -310,7 +310,7 @@ class HealthkitReader: NSObject {
                                             let dic: [String: Any] = [
                                                 "value": value,
                                                 "timestamp": timestamp,
-                                                "metricappsource": source.bundleIdentifier,
+                                                "appSource": source.bundleIdentifier,
                                             ]
                                             list.append(dic)
                                         }
