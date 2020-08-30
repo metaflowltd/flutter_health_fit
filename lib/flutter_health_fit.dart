@@ -27,8 +27,8 @@ class HeartRateSample {
       : dateTime = DateTime.fromMillisecondsSinceEpoch(map["timestamp"]),
         heartRate = map["value"].toInt(),
         metadata = map["metadata"] == null ? null : Map<String, dynamic>.from(map["metadata"]),
-        sourceApp = map["metricappsource"],
-        sourceDevice = map["metricdevicesource"];
+        sourceApp = map["sourceApp"],
+        sourceDevice = map["sourceDevice"];
 }
 
 class FlutterHealthFit {
