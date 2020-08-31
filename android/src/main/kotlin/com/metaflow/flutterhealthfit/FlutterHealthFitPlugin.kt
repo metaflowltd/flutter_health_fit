@@ -142,7 +142,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
 
-            "getAverageWalkingHeartRate", "getAverageRestingHeartRate" -> {
+            "getAverageRestingHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
@@ -163,6 +163,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     }
                 }
             }
+
+            "getAverageWalkingHeartRate" -> result.success(null)
 
             else -> result.notImplemented()
         }
