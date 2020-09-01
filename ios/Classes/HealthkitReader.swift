@@ -264,10 +264,10 @@ class HealthkitReader: NSObject {
             var dic: [String: Any] = [
                 "value": Int(heartRate),
                 "timestamp": timestamp,
-                "sourceApp": quantitySample.sourceRevision.source.bundleIdentifier
+                "appSource": quantitySample.sourceRevision.source.bundleIdentifier
             ]
             if let device = quantitySample.device {
-                dic["sourceDevice"] = device.localIdentifier
+                dic["deviceSource"] = device.localIdentifier
             }
             if let metadata = quantitySample.metadata {
                 dic["metadata"] = metadata.mapValues({ (value: Any) -> Any in
@@ -302,15 +302,27 @@ class HealthkitReader: NSObject {
                                         var value: Double = 0.0
                                         
                                         var list: [[String: Any]] = []
-                                        for source in queryResult.sources! {
-                                            if let quantity = queryResult.averageQuantity(for: source) {
+                                        if let sources = queryResult.sources {
+                                            for source in sources {
+                                                if let quantity = queryResult.averageQuantity(for: source) {
+                                                    value = quantity.doubleValue(for: unit)
+                                                }
+                                                let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
+                                                let dic: [String: Any] = [
+                                                    "value": value,
+                                                    "timestamp": timestamp,
+                                                    "appSource": source.bundleIdentifier,
+                                                ]
+                                                list.append(dic)
+                                            }
+                                        } else {
+                                            if let quantity = queryResult.averageQuantity() {
                                                 value = quantity.doubleValue(for: unit)
                                             }
                                             let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
                                             let dic: [String: Any] = [
                                                 "value": value,
                                                 "timestamp": timestamp,
-                                                "appSource": source.bundleIdentifier,
                                             ]
                                             list.append(dic)
                                         }
