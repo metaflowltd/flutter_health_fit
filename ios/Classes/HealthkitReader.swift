@@ -299,14 +299,13 @@ class HealthkitReader: NSObject {
                                             return
                                         }
                                         
-                                        var value: Double = 0.0
-                                        
                                         var list: [[String: Any]] = []
                                         if let sources = queryResult.sources {
                                             for source in sources {
-                                                if let quantity = queryResult.averageQuantity(for: source) {
-                                                    value = quantity.doubleValue(for: unit)
+                                                guard let quantity = queryResult.averageQuantity(for: source) else {
+                                                    continue
                                                 }
+                                                let value = quantity.doubleValue(for: unit)
                                                 let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
                                                 let dic: [String: Any] = [
                                                     "value": value,
@@ -315,10 +314,8 @@ class HealthkitReader: NSObject {
                                                 ]
                                                 list.append(dic)
                                             }
-                                        } else {
-                                            if let quantity = queryResult.averageQuantity() {
-                                                value = quantity.doubleValue(for: unit)
-                                            }
+                                        } else if let quantity = queryResult.averageQuantity() {
+                                            let value = quantity.doubleValue(for: unit)
                                             let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
                                             let dic: [String: Any] = [
                                                 "value": value,
