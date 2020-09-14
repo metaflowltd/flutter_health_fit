@@ -264,10 +264,10 @@ class HealthkitReader: NSObject {
             var dic: [String: Any] = [
                 "value": Int(heartRate),
                 "timestamp": timestamp,
-                "appSource": quantitySample.sourceRevision.source.bundleIdentifier
+                "sourceApp": quantitySample.sourceRevision.source.bundleIdentifier
             ]
             if let device = quantitySample.device {
-                dic["deviceSource"] = device.localIdentifier
+                dic["sourceDevice"] = device.localIdentifier
             }
             if let metadata = quantitySample.metadata {
                 dic["metadata"] = metadata.mapValues({ (value: Any) -> Any in
@@ -310,7 +310,7 @@ class HealthkitReader: NSObject {
                                                 let dic: [String: Any] = [
                                                     "value": value,
                                                     "timestamp": timestamp,
-                                                    "appSource": source.bundleIdentifier,
+                                                    "sourceApp": source.bundleIdentifier,
                                                 ]
                                                 list.append(dic)
                                             }
