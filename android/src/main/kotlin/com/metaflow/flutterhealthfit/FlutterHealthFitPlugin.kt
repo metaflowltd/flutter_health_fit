@@ -1,9 +1,14 @@
 package com.metaflow.flutterhealthfit
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.fitness.Fitness
@@ -28,10 +33,11 @@ enum class LumenTimeUnit(val value: Int) {
     DAYS(1),
 }
 
-class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener {
+class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
 
     companion object {
-        const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
+        private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
+        private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
         val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
         val weightDataType: DataType = DataType.TYPE_WEIGHT
@@ -46,6 +52,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             val plugin = FlutterHealthFitPlugin(registrar.activity())
             registrar.addActivityResultListener(plugin)
+            registrar.addRequestPermissionsResultListener(plugin)
 
             val channel = MethodChannel(registrar.messenger(), "flutter_health_fit")
             channel.setMethodCallHandler(plugin)
@@ -59,7 +66,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
 
-            "requestAuthorization" -> connect(result)
+            "requestAuthorization" -> {
+                if (hasSensorPermissionCompat()) {
+                    connect(result)
+                } else {
+                    this.deferredResult = result
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) { // Pacify lint (checked in hasSensorPermissionCompat)
+                        ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.BODY_SENSORS), SENSOR_PERMISSION_REQUEST_CODE)
+                    }
+                }
+
+            }
 
             "isAuthorized" -> result.success(isAuthorized())
 
@@ -129,8 +146,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     if (samples != null) {
                         if (samples.isEmpty()) {
                             result.success(null)
-                        }
-                        else {
+                        } else {
                             val lastPoint = samples.last()
                             result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
                                     lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
@@ -149,8 +165,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                     if (samples != null) {
                         if (samples.isEmpty()) {
                             result.success(emptyList<Map<String, Any?>>())
-                        }
-                        else {
+                        } else {
                             val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
 
                             val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
@@ -169,6 +184,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             else -> result.notImplemented()
         }
     }
+
+    private fun hasSensorPermissionCompat() = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH
+            || ContextCompat.checkSelfPermission(activity, Manifest.permission.BODY_SENSORS) == PackageManager.PERMISSION_GRANTED)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
@@ -201,6 +219,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     }
 
     private fun isAuthorized(): Boolean {
+        if (!hasSensorPermissionCompat()) {
+            return false
+        }
         val fitnessOptions = getFitnessOptions()
         val account = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
         return GoogleSignIn.hasPermissions(account, fitnessOptions)
@@ -377,4 +398,22 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
             .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
             .build()
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?): Boolean {
+        return when (requestCode) {
+            SENSOR_PERMISSION_REQUEST_CODE -> {
+                val result = this.deferredResult!!
+                this.deferredResult = null
+                if (grantResults?.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    connect(result)
+                } else {
+                    result.error("PERMISSION_DENIED", "User refused", null)
+                }
+                true
+            }
+            else -> { // Ignore all other requests.
+                false
+            }
+        }
+    }
 }
