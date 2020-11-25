@@ -142,14 +142,14 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
 
-                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                getHeartRateInRange(getHeartRatesInRangeDataRequest(start, end)) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
                         if (samples.isEmpty()) {
                             result.success(null)
                         } else {
                             val lastPoint = samples.last()
                             result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
-                                    lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                    lastPoint.heartRateValue(),
                                     lastPoint.dataSource.appPackageName))
                         }
                     } else {
@@ -161,17 +161,18 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getAverageRestingHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                getHeartRateInRange(getAverageHeartRatesInRangeDataRequest(start, end)) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
                         if (samples.isEmpty()) {
                             result.success(emptyList<Map<String, Any?>>())
                         } else {
-                            val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
-
-                            val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
-                                    valueSum / samples.size,
-                                    samples.last().dataSource.appPackageName)
-                            result.success(listOf(sampleMap))
+                            samples.minBy { dataPoint -> dataPoint.heartRateValue() }?.let { lowestRestingHeartRate ->
+                                val sampleMap = createHeartRateSampleMap(
+                                        lowestRestingHeartRate.getTimestamp(TimeUnit.MILLISECONDS),
+                                        lowestRestingHeartRate.heartRateValue(),
+                                        lowestRestingHeartRate.dataSource.appPackageName)
+                                result.success(listOf(sampleMap))
+                            } ?: result.success(listOf<Map<String, Any?>>())
                         }
                     } else {
                         result.error("failed", e?.message, null)
@@ -312,15 +313,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
-    private fun getHeartRateInRange(start: Long, end: Long, result: (List<DataPoint>?, Throwable?) -> Unit) {
+    private fun getHeartRateInRange(heartRateReadMethod: DataReadRequest, result: (List<DataPoint>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
-        val request = DataReadRequest.Builder()
-                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-                .read(DataType.TYPE_HEART_RATE_BPM)
-                .build()
-
-        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
+        val response = Fitness.getHistoryClient(activity, gsa).readData(heartRateReadMethod)
 
         Thread {
             try {
@@ -334,9 +330,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 } else {
                     val dataPoints = mutableListOf<DataPoint>()
 
-                    for (dataSet in readDataResult.dataSets) {
-                        Log.d(TAG, "data set has ${dataSet.dataPoints.size} points")
-                        dataPoints.addAll(dataSet.dataPoints)
+                    readDataResult.dataSets.forEach { dataSet ->
+                        if (dataSet != null) {
+                            Log.d(TAG, "data set has ${dataSet.dataPoints.size} points")
+                            dataPoints.addAll(dataSet.dataPoints)
+                        }
                     }
                     activity.runOnUiThread {
                         result(dataPoints, null)
@@ -354,6 +352,19 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
         }.start()
     }
+
+    private fun getAverageHeartRatesInRangeDataRequest(start: Long, end: Long): DataReadRequest =
+            DataReadRequest.Builder()
+                    .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                    .bucketByTime(1, TimeUnit.HOURS)
+                    .read(DataType.AGGREGATE_HEART_RATE_SUMMARY)
+                    .build()
+
+    private fun getHeartRatesInRangeDataRequest(start: Long, end: Long): DataReadRequest =
+            DataReadRequest.Builder()
+                    .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                    .read(DataType.TYPE_HEART_RATE_BPM)
+                    .build()
 
     private fun getWeight(startTime: Long, endTime: Long, result: (Map<Long, Float>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
@@ -416,4 +427,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             }
         }
     }
+
+    private fun DataPoint.heartRateValue(): Float { return getValue(heartRateDataType.fields[0]).asFloat() }
 }
