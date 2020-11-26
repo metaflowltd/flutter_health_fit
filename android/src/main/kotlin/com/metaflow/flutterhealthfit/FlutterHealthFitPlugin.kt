@@ -27,6 +27,7 @@ import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 enum class LumenTimeUnit(val value: Int) {
     MINUTES(0),
@@ -161,17 +162,18 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getAverageRestingHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                getAverageHeartRateHourlyBucketsInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
                         if (samples.isEmpty()) {
                             result.success(emptyList<Map<String, Any?>>())
                         } else {
-                            val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
-
-                            val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
-                                    valueSum / samples.size,
-                                    samples.last().dataSource.appPackageName)
-                            result.success(listOf(sampleMap))
+                            samples.minBy { dataPoint -> dataPoint.heartRateValue() }?.let { lowestRestingHeartRate ->
+                                val sampleMap = createHeartRateSampleMap(
+                                        lowestRestingHeartRate.getTimestamp(TimeUnit.MILLISECONDS),
+                                        lowestRestingHeartRate.heartRateValue(),
+                                        lowestRestingHeartRate.dataSource.appPackageName)
+                                result.success(listOf(sampleMap))
+                            } ?: result.success(listOf<Map<String, Any?>>())
                         }
                     } else {
                         result.error("failed", e?.message, null)
@@ -355,6 +357,66 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
+    private fun getAverageHeartRateHourlyBucketsInRange(start: Long, end: Long, result: (List<DataPoint>?, Throwable?) -> Unit) {
+        val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
+
+        val request = DataReadRequest.Builder()
+                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                .read(DataType.TYPE_HEART_RATE_BPM)
+                .bucketByTime(1, TimeUnit.HOURS)
+                .build()
+
+        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
+
+        Thread {
+            try {
+                val readDataResult = Tasks.await<DataReadResponse>(response)
+                Log.d(TAG, "datasets count: ${readDataResult.dataSets.size}")
+
+                val averageHeartRateDataPointsList = mutableListOf<DataPoint>()
+
+                readDataResult
+                        .buckets
+                        .flatMap { bucket -> bucket.dataSets }
+                        .forEach { dataSet ->
+                            dataSet.dataPoints.takeIf { it.isNotEmpty() }?.filterNotNull()?.sortedBy { dataPoint -> dataPoint.heartRateValue() }?.let { sortedDataPoints ->
+                                val middleIndex: Int = sortedDataPoints.size / 2
+                                if (sortedDataPoints.size % 2 == 1) {
+                                    sortedDataPoints[middleIndex]
+                                } else {
+                                    val averageHeartRate: Float = sortedDataPoints.map { it.heartRateValue() }.sum() / sortedDataPoints.size
+
+                                    val leftMedianIndex = if (sortedDataPoints.size == 2) 0 else middleIndex
+                                    val rightMedianIndex = if (sortedDataPoints.size == 2) 1 else middleIndex + 1
+
+                                    val leftMedianDistanceFromAverage: Float = abs(sortedDataPoints[leftMedianIndex].heartRateValue() - averageHeartRate)
+                                    val rightMedianDistanceFromAverage: Float = abs(sortedDataPoints[rightMedianIndex].heartRateValue() - averageHeartRate)
+                                    if (rightMedianDistanceFromAverage < leftMedianDistanceFromAverage) {
+                                        sortedDataPoints[middleIndex + 1]
+                                    } else {
+                                        sortedDataPoints[middleIndex]
+                                    }
+                                }
+                            }?.let { averageDataPoint ->
+                                averageHeartRateDataPointsList.add(averageDataPoint)
+                            }
+                        }
+
+                activity.runOnUiThread {
+                    result(averageHeartRateDataPointsList, null)
+                }
+
+            } catch (e: Throwable) {
+                Log.e(TAG, "failed: ${e.message}")
+
+                activity.runOnUiThread {
+                    result(null, e)
+                }
+            }
+
+        }.start()
+    }
+
     private fun getWeight(startTime: Long, endTime: Long, result: (Map<Long, Float>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
@@ -416,4 +478,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             }
         }
     }
+
+    private fun DataPoint.heartRateValue(): Float { return getValue(heartRateDataType.fields[0]).asFloat() }
 }
