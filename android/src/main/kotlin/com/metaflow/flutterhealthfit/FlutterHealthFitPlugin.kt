@@ -149,7 +149,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                         } else {
                             val lastPoint = samples.last()
                             result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
-                                    lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                    lastPoint.heartRateValue(),
                                     lastPoint.dataSource.appPackageName))
                         }
                     } else {
