@@ -27,7 +27,6 @@ import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 enum class LumenTimeUnit(val value: Int) {
     MINUTES(0),
@@ -162,20 +161,14 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getAverageRestingHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getAverageHeartRateHourlyBucketsInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
-                    if (samples != null) {
-                        if (samples.isEmpty()) {
-                            result.success(emptyList<Map<String, Any?>>())
-                        } else {
-                            samples.minBy { dataPoint -> dataPoint.heartRateValue() }?.let { lowestRestingHeartRate ->
-                                val sampleMap = createHeartRateSampleMap(
-                                        lowestRestingHeartRate.getTimestamp(TimeUnit.MILLISECONDS),
-                                        lowestRestingHeartRate.heartRateValue(),
-                                        lowestRestingHeartRate.dataSource.appPackageName)
-                                result.success(listOf(sampleMap))
-                            } ?: result.success(listOf<Map<String, Any?>>())
+                getAverageHeartRateHourlyBucketsInRange(start, end) { samples: Map<String, Map<String, Any?>>?, e: Throwable? ->
+                    samples?.let {
+                        val resultList = mutableListOf<Map<String, Any?>>()
+                        it.forEach { entry ->
+                            resultList.add(entry.value)
                         }
-                    } else {
+                        result.success(resultList)
+                    } ?: run {
                         result.error("failed", e?.message, null)
                     }
                 }
@@ -357,7 +350,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }.start()
     }
 
-    private fun getAverageHeartRateHourlyBucketsInRange(start: Long, end: Long, result: (List<DataPoint>?, Throwable?) -> Unit) {
+    private fun getAverageHeartRateHourlyBucketsInRange(start: Long, end: Long, result: (Map<String, Map<String, Any?>>?, Throwable?) -> Unit) {
         val gsa = GoogleSignIn.getAccountForExtension(activity, getFitnessOptions())
 
         val request = DataReadRequest.Builder()
@@ -373,37 +366,71 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val readDataResult = Tasks.await<DataReadResponse>(response)
                 Log.d(TAG, "datasets count: ${readDataResult.dataSets.size}")
 
-                val averageHeartRateDataPointsList = mutableListOf<DataPoint>()
+                val dataPointsSourceList = mutableListOf<Map<String, List<DataPoint>>>()
 
+                //
+                // Collect a map of maps of sources to heart rates in a given time frame bucket
                 readDataResult
                         .buckets
                         .flatMap { bucket -> bucket.dataSets }
                         .forEach { dataSet ->
-                            dataSet.dataPoints.takeIf { it.isNotEmpty() }?.filterNotNull()?.sortedBy { dataPoint -> dataPoint.heartRateValue() }?.let { sortedDataPoints ->
-                                val middleIndex: Int = sortedDataPoints.size / 2
-                                if (sortedDataPoints.size % 2 == 1) {
-                                    sortedDataPoints[middleIndex]
-                                } else {
-                                    val averageHeartRate: Float = sortedDataPoints.map { it.heartRateValue() }.sum() / sortedDataPoints.size
-
-                                    val leftMedianIndex = if (sortedDataPoints.size == 2) 0 else middleIndex
-                                    val rightMedianIndex = if (sortedDataPoints.size == 2) 1 else middleIndex + 1
-
-                                    val leftMedianDistanceFromAverage: Float = abs(sortedDataPoints[leftMedianIndex].heartRateValue() - averageHeartRate)
-                                    val rightMedianDistanceFromAverage: Float = abs(sortedDataPoints[rightMedianIndex].heartRateValue() - averageHeartRate)
-                                    if (rightMedianDistanceFromAverage < leftMedianDistanceFromAverage) {
-                                        sortedDataPoints[middleIndex + 1]
-                                    } else {
-                                        sortedDataPoints[middleIndex]
+                            val dataPointsList = mutableMapOf<String, MutableList<DataPoint>>()
+                            dataSet.dataPoints.takeIf { it.isNotEmpty() }?.filterNotNull()?.forEach { dataPoint ->
+                                dataPoint.dataSource.appPackageName?.let { sourceName ->
+                                    if (!dataPointsList.containsKey(sourceName)) {
+                                        dataPointsList[sourceName] = mutableListOf()
                                     }
+                                    dataPointsList[sourceName]?.add(dataPoint)
                                 }
-                            }?.let { averageDataPoint ->
-                                averageHeartRateDataPointsList.add(averageDataPoint)
+                            }
+
+                            if ( dataPointsList.isNotEmpty()) {
+                                dataPointsSourceList.add(dataPointsList)
                             }
                         }
 
+                val heartRateBySourceList = mutableMapOf<String, MutableList<Map<String, Any?>>>()
+
+                //
+                // For each map of source maps create a map of source to heart rate averages
+                dataPointsSourceList.forEach { dataPointMap ->
+                    dataPointMap.forEach { entry ->
+                        val source = entry.key
+                        if (!heartRateBySourceList.containsKey(source)) {
+                            heartRateBySourceList[source] = mutableListOf()
+                        }
+                        val dataPoints = entry.value
+                        val heartRateAverage = dataPoints.map { dataPoint -> dataPoint.heartRateValue() }.sum() / dataPoints.size
+                        val heartRateTime = Calendar.getInstance()
+                        heartRateTime.timeInMillis = dataPoints[0].getTimestamp(TimeUnit.MILLISECONDS)
+                        heartRateTime.set(Calendar.MINUTE, 0)
+                        heartRateTime.set(Calendar.SECOND, 0)
+                        heartRateTime.set(Calendar.MILLISECOND, 0)
+                        heartRateBySourceList[source]?.add(createHeartRateSampleMap(heartRateTime.timeInMillis, heartRateAverage, entry.key))
+                    }
+                }
+
+                val lowestHeartRatesBySource = mutableMapOf<String, Map<String, Any?>>()
+
+                //
+                // For each map of sources to heart rate averages find the lowest value
+                heartRateBySourceList.forEach { sourceEntry ->
+                    var minDataPoint: Map<String, Any?> = mapOf()
+                    sourceEntry.value.forEach { dataPointMap ->
+                        if (minDataPoint.isEmpty()) {
+                            minDataPoint = dataPointMap
+                        } else if ((dataPointMap["value"] as Int) < (minDataPoint["value"] as Int)) {
+                            minDataPoint = dataPointMap
+                        }
+                    }
+                    lowestHeartRatesBySource[sourceEntry.key] = createHeartRateSampleMap(
+                            minDataPoint["timestamp"] as Long,
+                            (minDataPoint["value"] as Int).toFloat(),
+                            minDataPoint["sourceApp"] as String)
+                }
+
                 activity.runOnUiThread {
-                    result(averageHeartRateDataPointsList, null)
+                    result(lowestHeartRatesBySource, null)
                 }
 
             } catch (e: Throwable) {
