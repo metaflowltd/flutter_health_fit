@@ -362,17 +362,22 @@ class HealthkitReader: NSObject {
     }
     
     func getStepsSources(completion: @escaping ((Array<String>) -> Void)) {
+        guard let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            completion([])
+            return
+        }
         let query = HKSourceQuery.init(sampleType: stepsQuantityType, samplePredicate: nil) { (query, sourcesOrNil, error) in
             guard let sources = sourcesOrNil else {
                 completion([])
                 return
             }
             
-            let sourcesStringList = sources.map { (source) -> String in
-                 source.name
+            var sourcesStringSet = Set<String>()
+            for source in sources {
+                sourcesStringSet.insert(source.name)
             }
             
-            completion(sourcesStringList)
+            completion(Array(sourcesStringSet))
         }
         healthStore.execute(query)
     }
