@@ -361,6 +361,22 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
+    func getStepsSources(completion: @escaping ((Array<String>) -> Void)) {
+        let query = HKSourceQuery.init(sampleType: stepsQuantityType, samplePredicate: nil) { (query, sourcesOrNil, error) in
+            guard let sources = sourcesOrNil else {
+                completion([])
+                return
+            }
+            
+            let sourcesStringList = sources.map { (source) -> String in
+                 source.name
+            }
+            
+            completion(sourcesStringList)
+        }
+        healthStore.execute(query)
+    }
+    
     func readHealthKitWokoutOfType(_ workoutType:HKWorkoutActivityType, completion:@escaping (([HKWorkout])->())){
         
         let predicate =  HKQuery.predicateForWorkouts(with: workoutType)
