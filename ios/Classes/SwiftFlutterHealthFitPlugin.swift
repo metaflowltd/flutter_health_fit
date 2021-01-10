@@ -128,6 +128,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
         }
+        
+        else if call.method == "getStepsSources" {
+            HealthkitReader.sharedInstance.getStepsSources { (steps: Array<String>) in
+                result(steps)
+            }
+        }
     }
 
     func getBasicHealthData(result: @escaping FlutterResult){

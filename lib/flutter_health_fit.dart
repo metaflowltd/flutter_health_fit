@@ -147,4 +147,18 @@ class FlutterHealthFit {
 
     return result["value"];
   }
+
+  Future<List<String>> getStepSourceList() async {
+    ///
+    /// Not supported for Android yet
+    if (Platform.isIOS) {
+      try {
+        return List<String>.from(await _channel.invokeMethod('getStepsSources'));
+      } catch (e) {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
 }
