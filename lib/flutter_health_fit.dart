@@ -15,7 +15,15 @@ class HeartRateSample {
   final String sourceApp;
   final String sourceDevice; // may be null
 
-  int get motionLevel => Platform.isIOS && metadata != null ? metadata["HKMetadataKeyHeartRateMotionContext"] : 0;
+  int get motionLevel {
+    if (metadata != null) {
+      final heartRateMotionContext = metadata["HKMetadataKeyHeartRateMotionContext"];
+      if (heartRateMotionContext is num) {
+        return heartRateMotionContext.round();
+      }
+    }
+    return 0;
+  }
 
   HeartRateSample({this.dateTime, this.heartRate, this.metadata, this.sourceApp, this.sourceDevice});
 
