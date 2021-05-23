@@ -200,6 +200,31 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         }
         
+        else if call.method == "getCarbsConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryCarbohydrates,
+                                                                       unit: HKUnit.gram(),
+                                                                       start: start,
+                                                                       end: end) { (value: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getCarbsConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getCarbsConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(value)
+                }
+            }
+        }
+        
         else if call.method == "getFatConsumed" {
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!

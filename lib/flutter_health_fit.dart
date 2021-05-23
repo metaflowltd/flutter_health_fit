@@ -157,6 +157,13 @@ class FlutterHealthFit {
     return await _channel.invokeMethod("getFiberConsumed", {"start": start, "end": end});
   }
 
+  /// Fiber returned in grams for a given dated range.
+  Future<int> getCarbsConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getCarbsConsumed", {"start": start, "end": end});
+  }
+
   /// Sugar returned in grams for a given dated range.
   Future<int> getSugarConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;

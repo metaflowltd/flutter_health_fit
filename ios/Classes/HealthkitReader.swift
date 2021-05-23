@@ -59,6 +59,10 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .dietarySugar)!
     }
     
+    var dietaryCarbohydrates: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!
+    }
+    
     var dietaryFatTotal: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!
     }
@@ -95,7 +99,8 @@ class HealthkitReader: NSObject {
             dietaryFiber,
             dietarySugar,
             dietaryFatTotal,
-            dietaryProtein
+            dietaryProtein,
+            dietaryCarbohydrates
         ]
         if #available(iOS 11.0, *) {
             types += [restingHeartRateQuantityType, walkingHeartRateAverageQuantityType, heartRateVariabilityQuantityType]
