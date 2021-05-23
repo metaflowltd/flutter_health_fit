@@ -94,21 +94,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
             
-            if #available(iOS 11.0, *) {
-                let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
-                HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
-                                                                  unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
-                                                                  start: start, end: end) { (rates: [[String : Any]]?, error: Error?) in
-                    if let error = error as NSError? {
-                        print("[\(call.method)] got error: \(error)")
-                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                    } else {
-                        result(rates)
-                    }
+            let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
+            HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
+                                                              unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
+                                                              start: start, end: end) { (rates: [[String : Any]]?, error: Error?) in
+                if let error = error as NSError? {
+                    print("[\(call.method)] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(rates)
                 }
-            } else {
-                // Fallback on earlier versions
-                result(nil)
             }
         }
             
@@ -125,6 +120,132 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     let error = error! as NSError
                     print("[getStepsByDay] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+            }
+        }
+        
+        
+        else if call.method == "getEnergyConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryEnergyConsumed,
+                                                                       unit: HKUnit.kilocalorie(),
+                                                                       start: start,
+                                                                       end: end) { (energy: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getEnergyConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getEnergyConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(energy)
+                }
+            }
+        }
+        
+        else if call.method == "getFiberConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryFiber,
+                                                                       unit: HKUnit.gram(),
+                                                                       start: start,
+                                                                       end: end) { (value: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getFiberConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getFiberConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(value)
+                }
+            }
+        }
+        
+        else if call.method == "getSugarConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietarySugar,
+                                                                       unit: HKUnit.gram(),
+                                                                       start: start,
+                                                                       end: end) { (value: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getSugarConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getSugarConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(value)
+                }
+            }
+        }
+        
+        else if call.method == "getFatConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryFatTotal,
+                                                                       unit: HKUnit.gram(),
+                                                                       start: start,
+                                                                       end: end) { (value: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getFatConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getFatConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(value)
+                }
+            }
+        }
+        
+        else if call.method == "getProteinConsumed" {
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryProtein,
+                                                                       unit: HKUnit.gram(),
+                                                                       start: start,
+                                                                       end: end) { (value: Int?, error: Error?) in
+                if let error = error {
+                    let error = error as NSError
+                    if error.code == 11 {
+                        print("[getProteinConsumed] no data was found for a given dates range: \(error)")
+                        result(nil)
+                    } else {
+                        print("[getProteinConsumed] got error: \(error)")
+                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    }
+                } else {
+                    result(value)
                 }
             }
         }

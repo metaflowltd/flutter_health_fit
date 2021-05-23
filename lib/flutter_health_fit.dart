@@ -143,6 +143,41 @@ class FlutterHealthFit {
     return steps;
   }
 
+  /// Calories returned in kCal for a given dated range.
+  Future<int> getEnergyConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getEnergyConsumed", {"start": start, "end": end});
+  }
+
+  /// Fiber returned in grams for a given dated range.
+  Future<int> getFiberConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getFiberConsumed", {"start": start, "end": end});
+  }
+
+  /// Sugar returned in grams for a given dated range.
+  Future<int> getSugarConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getSugarConsumed", {"start": start, "end": end});
+  }
+
+  /// Fat returned in grams for a given dated range.
+  Future<int> getFatConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getFatConsumed", {"start": start, "end": end});
+  }
+
+  /// Protein returned in grams for a given dated range.
+  Future<int> getProteinConsumed(int start, int end) async {
+    if(!Platform.isIOS) return null;
+
+    return await _channel.invokeMethod("getProteinConsumed", {"start": start, "end": end});
+  }
+
   Future<double> get getWalkingAndRunningDistance async {
     return await _getActivityData(_ActivityType.walkRun, "m");
   }
