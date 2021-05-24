@@ -411,7 +411,7 @@ class HealthkitReader: NSObject {
                                         
                                         if let quantity = queryResult.sumQuantity() {
                                             value = quantity.doubleValue(for: unit)
-                                            print("Amount of \(value): \(sampleType), since: \(queryResult.startDate) until: \(queryResult.endDate)")
+                                            print("Amount of \(sampleType): \(value), since: \(queryResult.startDate) until: \(queryResult.endDate)")
                                         }
                                         
                                         completion(Int(value), nil)
