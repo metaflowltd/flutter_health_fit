@@ -5,6 +5,16 @@ import HealthKit
 
 @available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
+    
+    private let methodNamesToQuantityTypes: [String: HKQuantityType] = [
+        "getEnergyConsumed": HealthkitReader.sharedInstance.dietaryEnergyConsumed,
+        "getSugarConsumed": HealthkitReader.sharedInstance.dietarySugar,
+        "getCarbsConsumed": HealthkitReader.sharedInstance.dietaryCarbohydrates,
+        "getFatConsumed": HealthkitReader.sharedInstance.dietaryFatTotal,
+        "getFiberConsumed": HealthkitReader.sharedInstance.dietaryFiber,
+        "getProteinConsumed": HealthkitReader.sharedInstance.dietaryProtein,
+    ]
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_health_fit", binaryMessenger: registrar.messenger())
         let instance = SwiftFlutterHealthFitPlugin()
@@ -253,7 +263,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let start = startMillis.toTimeInterval
         let end = endMillis.toTimeInterval
         let methodName = call.method
-        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryEnergyConsumed,
+        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: methodNamesToQuantityTypes[methodName]!,
                                                                    unit: getUnitsBy(methodName: call.method),
                                                                    start: start,
                                                                    end: end) { (value: Int?, error: Error?) in
