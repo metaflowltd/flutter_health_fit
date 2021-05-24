@@ -144,6 +144,7 @@ class FlutterHealthFit {
   }
 
   /// Calories returned in kCal for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getEnergyConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
@@ -151,6 +152,7 @@ class FlutterHealthFit {
   }
 
   /// Fiber returned in grams for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getFiberConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
@@ -158,6 +160,7 @@ class FlutterHealthFit {
   }
 
   /// Fiber returned in grams for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getCarbsConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
@@ -165,6 +168,7 @@ class FlutterHealthFit {
   }
 
   /// Sugar returned in grams for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getSugarConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
@@ -172,6 +176,7 @@ class FlutterHealthFit {
   }
 
   /// Fat returned in grams for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getFatConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
@@ -179,6 +184,7 @@ class FlutterHealthFit {
   }
 
   /// Protein returned in grams for a given dated range.
+  /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<int> getProteinConsumed(int start, int end) async {
     if(!Platform.isIOS) return null;
 
