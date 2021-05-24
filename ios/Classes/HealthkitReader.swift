@@ -47,6 +47,30 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .heartRate)!
     }
     
+    var dietaryEnergyConsumed: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!
+    }
+    
+    var dietaryFiber: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryFiber)!
+    }
+    
+    var dietarySugar: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietarySugar)!
+    }
+    
+    var dietaryCarbohydrates: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!
+    }
+    
+    var dietaryFatTotal: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!
+    }
+    
+    var dietaryProtein: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!
+    }
+    
     @available(iOS 11.0, *)
     var restingHeartRateQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
@@ -71,6 +95,12 @@ class HealthkitReader: NSObject {
             HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
             flightsClimbedQuantityType,
             heartRateQuantityType,
+            dietaryEnergyConsumed,
+            dietaryFiber,
+            dietarySugar,
+            dietaryFatTotal,
+            dietaryProtein,
+            dietaryCarbohydrates
         ]
         if #available(iOS 11.0, *) {
             types += [restingHeartRateQuantityType, walkingHeartRateAverageQuantityType, heartRateVariabilityQuantityType]
@@ -214,7 +244,7 @@ class HealthkitReader: NSObject {
             completion(dic, nil)
         }
     }
-    
+
     func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
             let startDate = Date(timeIntervalSince1970: start)
             let endDate = Date(timeIntervalSince1970: end)
@@ -356,6 +386,35 @@ class HealthkitReader: NSObject {
                                         }
                                         
                                         completion(Int(steps), nil)
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func getSampleConsumedInInterval(sampleType: HKQuantityType, unit: HKUnit, start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+        
+        let query = HKStatisticsQuery(quantityType: sampleType,
+                                      quantitySamplePredicate: predicate,
+                                      options: .cumulativeSum) { query, queryResult, error in
+                                        
+                                        guard let queryResult = queryResult else {
+                                            let error = error! as NSError
+                                            print("[getSampleConsumedInInterval] for sampleType: \(sampleType) got error: \(error)")
+                                            completion(nil, error)
+                                            return
+                                        }
+                                        
+                                        var value = 0.0
+                                        
+                                        if let quantity = queryResult.sumQuantity() {
+                                            value = quantity.doubleValue(for: unit)
+                                            print("Amount of \(sampleType): \(value), since: \(queryResult.startDate) until: \(queryResult.endDate)")
+                                        }
+                                        
+                                        completion(Int(value), nil)
         }
         
         healthStore.execute(query)
