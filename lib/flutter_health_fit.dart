@@ -143,52 +143,58 @@ class FlutterHealthFit {
     return steps;
   }
 
-  /// Calories returned in kCal for a given dated range.
+  /// Calories returned in kCal for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getEnergyConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getEnergyConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getEnergyConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result = await _channel.invokeMethod("getEnergyConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
-  /// Fiber returned in grams for a given dated range.
+  /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getFiberConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getFiberConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getFiberConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getFiberConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
-  /// Fiber returned in grams for a given dated range.
+  /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getCarbsConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getCarbsConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getCarbsConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getCarbsConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
-  /// Sugar returned in grams for a given dated range.
+  /// Sugar returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getSugarConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getSugarConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getSugarConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getSugarConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
-  /// Fat returned in grams for a given dated range.
+  /// Fat returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getFatConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getFatConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getFatConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getFatConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
-  /// Protein returned in grams for a given dated range.
+  /// Protein returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<int> getProteinConsumed(int start, int end) async {
-    if(!Platform.isIOS) return null;
+  Future<Map<String, int>> getProteinConsumed(int start, int end) async {
+    if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMethod("getProteinConsumed", {"start": start, "end": end});
+    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getProteinConsumed", {"start": start, "end": end});
+    return new Map<String, int>.from(result);
   }
 
   Future<double> get getWalkingAndRunningDistance async {

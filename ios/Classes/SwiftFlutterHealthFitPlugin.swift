@@ -266,7 +266,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: methodNamesToQuantityTypes[methodName]!,
                                                                    unit: getUnitsBy(methodName: call.method),
                                                                    start: start,
-                                                                   end: end) { (value: Int?, error: Error?) in
+                                                                   end: end) { (value: [String : Int]?, error: Error?) in
             if let error = error {
                 let error = error as NSError
                 if error.code == 11 {

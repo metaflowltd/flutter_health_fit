@@ -391,14 +391,16 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
-    func getSampleConsumedInInterval(sampleType: HKQuantityType, unit: HKUnit, start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
+    func getSampleConsumedInInterval(sampleType: HKQuantityType, unit: HKUnit, start: TimeInterval, end: TimeInterval, completion: @escaping ([String: Int]?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
         
+        var results = [String: Int]()
+        
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
-                                      options: .cumulativeSum) { query, queryResult, error in
+                                      options: [.cumulativeSum, .separateBySource]) { query, queryResult, error in
                                         
                                         guard let queryResult = queryResult else {
                                             let error = error! as NSError
@@ -407,14 +409,24 @@ class HealthkitReader: NSObject {
                                             return
                                         }
                                         
-                                        var value = 0.0
-                                        
-                                        if let quantity = queryResult.sumQuantity() {
-                                            value = quantity.doubleValue(for: unit)
-                                            print("Amount of \(sampleType): \(value), since: \(queryResult.startDate) until: \(queryResult.endDate)")
+                                        if let sources = queryResult.sources {
+                                            for source in sources {
+                                                guard let quantityBySource = queryResult.sumQuantity(for: source) else {
+                                                    continue
+                                                }
+                                                let value = quantityBySource.doubleValue(for: unit)
+                                                print("[getSampleConsumedInInterval] value: \(value), sourceApp: \(source.bundleIdentifier)")
+                                                results["\(source.name):\(source.bundleIdentifier)"] = Int(value)
+                                            }
                                         }
                                         
-                                        completion(Int(value), nil)
+                                        if let aggregatedQuantity = queryResult.sumQuantity() {
+                                            let value = aggregatedQuantity.doubleValue(for: unit)
+                                            print("[getSampleConsumedInInterval] aggregated value: \(value)")
+                                            results["Aggregated"] = Int(value)
+                                        }
+                                        
+                                        completion(results, nil)
         }
         
         healthStore.execute(query)
