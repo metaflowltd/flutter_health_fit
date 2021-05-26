@@ -148,8 +148,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getEnergyConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result = await _channel.invokeMethod("getEnergyConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -157,8 +156,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getFiberConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getFiberConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -166,8 +164,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getCarbsConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getCarbsConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
   }
 
   /// Sugar returned in grams for a given dated range, separated by sources.
@@ -175,8 +172,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getSugarConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getSugarConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
   }
 
   /// Fat returned in grams for a given dated range, separated by sources.
@@ -184,8 +180,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getFatConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getFatConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
   }
 
   /// Protein returned in grams for a given dated range, separated by sources.
@@ -193,8 +188,7 @@ class FlutterHealthFit {
   Future<Map<String, int>> getProteinConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map<dynamic, dynamic> result =  await _channel.invokeMethod("getProteinConsumed", {"start": start, "end": end});
-    return new Map<String, int>.from(result);
+    return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
   }
 
   Future<double> get getWalkingAndRunningDistance async {
