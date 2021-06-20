@@ -185,6 +185,9 @@ class FlutterHealthFit {
     return steps;
   }
 
+  /// Returns the sleep data from HealthKit.
+  ///
+  /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<SleepSample>> getSleep(int start, int end) async {
     if (!Platform.isIOS) return null;
 
