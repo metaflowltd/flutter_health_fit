@@ -33,6 +33,10 @@ class HealthkitReader: NSObject {
     var stepsQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .stepCount)!
     }
+        
+    var sleepCategoryType: HKCategoryType {
+        return HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
+    }
 
     var cyclingDistanceQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .distanceCycling)!
@@ -173,7 +177,8 @@ class HealthkitReader: NSObject {
                 HKObjectType.workoutType(),
                 HealthkitReader.weightQuantityType(),
                 HealthkitReader.heightQuantityType(),
-                HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!
+                HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!,
+                sleepCategoryType,
             ] + quantityTypesToRead())
     }
     
@@ -190,6 +195,54 @@ class HealthkitReader: NSObject {
         healthStore.getRequestStatusForAuthorization(toShare: Set(), read: healthKitTypesToRead, completion: completion)
     }
     
+    func getSleepSamplesForRange(start: TimeInterval,
+                                  end: TimeInterval,
+                                  handler: @escaping (_ result: [Any]?, _ error: Error?) -> Void)  {
+        
+        // Use a sortDescriptor to get the recent data first
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictEndDate])
+        
+        let query = HKSampleQuery(
+            sampleType: sleepCategoryType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]) {
+        (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in
+            
+            if let error = error {
+                print("Failed to get sleep data, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            if let rawResult = tmpResult {
+                let map = rawResult.map { item -> [String: Any] in
+                    let sample = item as! HKCategorySample
+                    let value = sample.value
+                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                    let source = sample.sourceRevision.source.bundleIdentifier
+                    
+                    print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
+                    
+                    return [
+                        "type": value,
+                        "start": startDate,
+                        "end": endDate,
+                        "source": source
+                    ]
+                    
+                }
+                handler(map, nil)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
     
     func getQuantityBySegment(quantityType: HKQuantityType, start: TimeInterval, end: TimeInterval, duration: Int, unit: TimeUnit,
                               options: HKStatisticsOptions, initialResultsHandler: ((HKStatisticsCollectionQuery, HKStatisticsCollection?, Error?) -> Void)?) {

@@ -57,6 +57,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.stepsQuantityType, call: call, convertToInt: true, result: result)
         }
         
+        else if call.method == "getSleepBySegment" {
+            getSleepSamples(call: call, result: result)
+        }
+        
         else if call.method == "getFlightsBySegment" {
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.flightsClimbedQuantityType, call: call, convertToInt: true, result: result)
         }
@@ -237,6 +241,29 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
     }
     
+    private func getSleepSamples(call: FlutterMethodCall,
+                                 result: @escaping FlutterResult) {
+        let args = call.arguments as! [String: Int]
+        let startMillis = args["start"]!
+        let endMillis = args["end"]!
+        let start = startMillis.toTimeInterval
+        let end = endMillis.toTimeInterval
+    
+        HealthkitReader.sharedInstance.getSleepSamplesForRange(start: start,
+                                                               end: end,
+                                                               handler: { samples, error in
+                                                                
+                                                                    if let samples = samples {
+                                                                        result(samples)
+                                                                    } else {
+                                                                        let error = error! as NSError
+                                                                        print("[\(#function)] got error: \(error)")
+                                                                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                                    }
+                                                                
+                                                               })
+    }
+
     private func getQuantityBySegment(quantityType: HKQuantityType, call: FlutterMethodCall, convertToInt: Bool = false, result: @escaping FlutterResult) {
         let args = QuantityArgs(arguments: call.arguments!)
         HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType, start: args.start, end: args.end, duration: args.duration, unit: args.unit) { (quantityByStartTime: [Int: Double]?, error: Error?) -> () in
