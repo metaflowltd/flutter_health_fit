@@ -177,7 +177,6 @@ class HealthkitReader: NSObject {
                 HKObjectType.workoutType(),
                 HealthkitReader.weightQuantityType(),
                 HealthkitReader.heightQuantityType(),
-                HKCategoryType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!,
                 sleepCategoryType,
             ] + quantityTypesToRead())
     }
