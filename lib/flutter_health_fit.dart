@@ -1,12 +1,54 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
 
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
+
+enum SleepSampleType { inBed, asleep, awake }
+
+class SleepSample {
+  final SleepSampleType type;
+  final DateTime start;
+  final DateTime end;
+  final String source;
+
+  SleepSample({
+    @required this.type,
+    @required this.start,
+    @required this.end,
+    @required this.source,
+  });
+
+
+  @override
+  String toString() {
+    return 'SleepSample{type: $type, start: $start, end: $end, source: $source}';
+  }
+
+  SleepSample.fromMap(Map<String, dynamic> map)
+      : type = _typeFromInt(map["type"].toInt()),
+        start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
+        end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
+        source = map["source"];
+
+  static SleepSampleType _typeFromInt(int input) {
+    switch (input) {
+      case 0:
+        return SleepSampleType.inBed;
+      case 1:
+        return SleepSampleType.asleep;
+      case 2:
+        return SleepSampleType.awake;
+      default:
+        throw ArgumentError("Can not map $input to SleepSampleType");
+    }
+  }
+}
 
 class HeartRateSample {
   final DateTime dateTime;
@@ -141,6 +183,17 @@ class FlutterHealthFit {
   Future<int> getTotalStepsInInterval(int start, int end) async {
     final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
     return steps;
+  }
+
+  /// Returns the sleep data from HealthKit.
+  ///
+  /// params: [start], [end] in milliseconds, starting from epoch time.
+  Future<List<SleepSample>> getSleep(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
+    List<Map> rawSamples = await _channel.invokeListMethod<Map>(
+        "getSleepBySegment", {"start": start, "end": end});
+    return rawSamples.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }
 
   /// Calories returned in kCal for a given dated range, separated by sources.
