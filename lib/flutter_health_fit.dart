@@ -111,6 +111,12 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if any health permission has been authorized
+  Future<bool> isAnyPermissionAuthorized({bool? useSensitive}) async {
+    final status = await _channel.invokeMethod("isAnyPermissionAuthorized", {"useSensitive": useSensitive});
+    return status;
+  }
+
   /// Will ask to authorize, prompting the user if necessary.
   /// [useSensitive] on Android, if this is true, will also ask permissions of sensitive and restricted scopes, such as heart rate.
   /// https://support.google.com/cloud/answer/9110914#sensitive-scopes
