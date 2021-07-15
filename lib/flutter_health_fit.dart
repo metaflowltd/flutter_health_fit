@@ -159,6 +159,14 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if android.permission.BODY_SENSORS is granted.
+  /// on iOS returns always true.
+  Future<bool> isBodySensorsAuthorized() async {
+    if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
+    final status = await _channel.invokeMethod("isBodySensorsAuthorized");
+    return status;
+  }
+
   /// Will ask to authorize, prompting the user if necessary.
   /// [useSensitive] on Android, if this is true, will also ask permissions of sensitive and restricted scopes, such as heart rate.
   /// https://support.google.com/cloud/answer/9110914#sensitive-scopes

@@ -215,6 +215,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "isCarbsAuthorized" -> result.success(false)
 
+            "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
+
             else -> result.notImplemented()
         }
     }
