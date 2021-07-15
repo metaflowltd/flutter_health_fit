@@ -112,8 +112,8 @@ class FlutterHealthFit {
   }
 
   /// Checks if any health permission has been authorized
-  Future<bool> isAnyPermissionAuthorized({bool? useSensitive}) async {
-    final status = await _channel.invokeMethod("isAnyPermissionAuthorized", {"useSensitive": useSensitive});
+  Future<bool> isAnyPermissionAuthorized() async {
+    final status = await _channel.invokeMethod("isAnyPermissionAuthorized");
     return status;
   }
 

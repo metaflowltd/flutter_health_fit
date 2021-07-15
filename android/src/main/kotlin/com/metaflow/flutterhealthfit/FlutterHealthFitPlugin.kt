@@ -197,8 +197,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             "getAverageWalkingHeartRate" -> result.success(null)
 
             "isAnyPermissionAuthorized" -> {
-                val useSensitive = call.argument<Boolean>("useSensitive") ?: false
-                val answer = isAnyPermissionAuthorized(useSensitive)
+                val answer = isAnyPermissionAuthorized()
                 result.success(answer)
             }
 
@@ -220,9 +219,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
     }
 
-    private fun isAnyPermissionAuthorized(useSensitive: Boolean): Boolean {
-        return isWeightAuthorized() || isStepsAuthorized() ||
-                (useSensitive && (isHeartRateSampleAuthorized() || isSleepAuthorized()))
+    private fun isAnyPermissionAuthorized(): Boolean {
+        return isWeightAuthorized() || isStepsAuthorized() || isHeartRateSampleAuthorized() || isSleepAuthorized()
     }
 
     private fun isStepsAuthorized(): Boolean {
