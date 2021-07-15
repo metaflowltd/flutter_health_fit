@@ -117,6 +117,48 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if steps permission has been authorized
+  Future<bool> isStepsAuthorized() async {
+    final status = await _channel.invokeMethod("isStepsAuthorized");
+    return status;
+  }
+
+  /// Checks if cycling permission has been authorized
+  Future<bool> isCyclingAuthorized() async {
+    final status = await _channel.invokeMethod("isCyclingAuthorized");
+    return status;
+  }
+
+  /// Checks if flights climbed permission has been authorized
+  Future<bool> isFlightsAuthorized() async {
+    final status = await _channel.invokeMethod("isFlightsAuthorized");
+    return status;
+  }
+
+  /// Checks if sleep permission has been authorized
+  Future<bool> isSleepAuthorized() async {
+    final status = await _channel.invokeMethod("isSleepAuthorized");
+    return status;
+  }
+
+  /// Checks if weight permission has been authorized
+  Future<bool> isWeightAuthorized() async {
+    final status = await _channel.invokeMethod("isWeightAuthorized");
+    return status;
+  }
+
+  /// Checks if heart rate permission has been authorized
+  Future<bool> isHeartRateAuthorized() async {
+    final status = await _channel.invokeMethod("isHeartRateAuthorized");
+    return status;
+  }
+
+  /// Checks if all permissions needed for calculating carb servings have been authorized
+  Future<bool> isCarbsAuthorized() async {
+    final status = await _channel.invokeMethod("isCarbsAuthorized");
+    return status;
+  }
+
   /// Will ask to authorize, prompting the user if necessary.
   /// [useSensitive] on Android, if this is true, will also ask permissions of sensitive and restricted scopes, such as heart rate.
   /// https://support.google.com/cloud/answer/9110914#sensitive-scopes

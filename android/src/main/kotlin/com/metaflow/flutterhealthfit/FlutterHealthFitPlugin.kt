@@ -202,6 +202,20 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 result.success(answer)
             }
 
+            "isStepsAuthorized" -> result.success(isStepsAuthorized())
+
+            "isCyclingAuthorized" -> result.success(false)
+
+            "isFlightsAuthorized" -> result.success(false)
+
+            "isSleepAuthorized" -> result.success(isSleepAuthorized())
+
+            "isWeightAuthorized" -> result.success(isWeightAuthorized())
+
+            "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
+
+            "isCarbsAuthorized" -> result.success(false)
+
             else -> result.notImplemented()
         }
     }

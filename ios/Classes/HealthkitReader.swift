@@ -191,7 +191,12 @@ class HealthkitReader: NSObject {
     
     @available(iOS 12.0, *)
     func getRequestStatusForAuthorization(completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
-        healthStore.getRequestStatusForAuthorization(toShare: Set(), read: healthKitTypesToRead, completion: completion)
+        getRequestStatus(for: healthKitTypesToRead, completion: completion)
+    }
+    
+    @available(iOS 12.0, *)
+    func getRequestStatus(for types: Set<HKObjectType>, completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
+        healthStore.getRequestStatusForAuthorization(toShare: Set(), read: types, completion: completion)
     }
     
     func getSleepSamplesForRange(start: TimeInterval,
