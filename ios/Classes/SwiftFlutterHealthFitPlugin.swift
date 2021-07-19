@@ -110,7 +110,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            
+            guard #available(iOS 11.0, *) else {
+                result(nil)
+                return
+            }
             let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
             HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
                                                               unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
@@ -179,12 +182,15 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
         case "isHeartRateAuthorized":
             let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [
-                                reader.heartRateQuantityType,
+            var types = [reader.heartRateQuantityType]
+            if #available(iOS 11.0, *) {
+                types.append(contentsOf: [
                                 reader.heartRateVariabilityQuantityType,
                                 reader.restingHeartRateQuantityType,
-                                reader.walkingHeartRateAverageQuantityType],
-                             result: result)
+                                reader.walkingHeartRateAverageQuantityType,
+                ])
+            }
+            getRequestStatus(types: types, result: result)
             
         case "isCarbsAuthorized":
             let reader = HealthkitReader.sharedInstance
