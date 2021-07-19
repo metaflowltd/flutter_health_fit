@@ -208,13 +208,15 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     }
 
     private fun requestBodySensorsPermission(result: Result) {
-        this.deferredResult = result
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) { // Pacify lint (checked in hasSensorPermissionCompat)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            this.deferredResult = result
             ActivityCompat.requestPermissions(
                 activity,
                 arrayOf(Manifest.permission.BODY_SENSORS),
                 SENSOR_PERMISSION_REQUEST_CODE
             )
+        } else {
+            result.success(true)
         }
     }
 
