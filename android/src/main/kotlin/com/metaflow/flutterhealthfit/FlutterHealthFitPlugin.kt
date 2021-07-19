@@ -37,7 +37,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
     companion object {
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
-        private const val GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE = 4723747
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
         val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
@@ -69,20 +68,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "requestAuthorization" -> {
                 val useSensitive = call.argument<Boolean>("useSensitive") ?: false
-                if (!useSensitive || hasSensorPermissionCompat()) {
-                    connect(useSensitive, result)
-                } else {
-                    this.deferredResult = result
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) { // Pacify lint (checked in hasSensorPermissionCompat)
-                        ActivityCompat.requestPermissions(
-                            activity,
-                            arrayOf(Manifest.permission.BODY_SENSORS),
-                            SENSOR_PERMISSION_REQUEST_CODE
-                        )
-                    }
-                }
-
+                connect(useSensitive, result)
             }
+
+            "requestBodySensorsPermission" -> requestBodySensorsPermission(result)
 
             "isAuthorized" -> result.success(isAuthorized(call.argument<Boolean>("useSensitive") ?: false))
 
@@ -221,6 +210,17 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         }
     }
 
+    private fun requestBodySensorsPermission(result: Result) {
+        this.deferredResult = result
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) { // Pacify lint (checked in hasSensorPermissionCompat)
+            ActivityCompat.requestPermissions(
+                activity,
+                arrayOf(Manifest.permission.BODY_SENSORS),
+                SENSOR_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
     private fun isAnyPermissionAuthorized(): Boolean {
         return isWeightAuthorized() || isStepsAuthorized() || isHeartRateSampleAuthorized() || isSleepAuthorized()
     }
@@ -253,33 +253,46 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     ) == PackageManager.PERMISSION_GRANTED)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE || requestCode == GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                listOfNotNull(
+        when (requestCode) {
+            GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
+                recordDataPointsIfGranted(resultCode, listOfNotNull(
                     stepsDataType,
                     weightDataType,
-                    if (requestCode == GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE) heartRateDataType else null
-                ).forEach {
-                    recordFitnessData(it) { success ->
-                        Log.i(TAG, "Record $it success: $success!")
+                    if (hasSensorPermissionCompat()) heartRateDataType else null
+                ))
 
-                        if (success)
-                            deferredResult?.success(true)
-                        else
-                            deferredResult?.error("no record", "Record $it operation denied", null)
-
-                        deferredResult = null
-                    }
+                return true
+            }
+            SENSOR_PERMISSION_REQUEST_CODE -> {
+                if (isHeartRateSampleAuthorized()) {
+                    recordDataPointsIfGranted(resultCode, listOf(heartRateDataType))
                 }
-            } else {
-                deferredResult?.error("canceled", "User cancelled or app not authorized", null)
-                deferredResult = null
+                return true
             }
 
-            return true
+            else ->
+                return false
         }
+    }
 
-        return false
+    private fun recordDataPointsIfGranted(resultCode: Int, dataPoints: List<DataType>) {
+        if (resultCode == Activity.RESULT_OK) {
+            dataPoints.forEach {
+                recordFitnessData(it) { success ->
+                    Log.i(TAG, "Record $it success: $success!")
+
+                    if (success)
+                        deferredResult?.success(true)
+                    else
+                        deferredResult?.error("no record", "Record $it operation denied", null)
+
+                    deferredResult = null
+                }
+            }
+        } else {
+            deferredResult?.error("canceled", "User cancelled or app not authorized", null)
+            deferredResult = null
+        }
     }
 
     private fun createHeartRateSampleMap(millisSinceEpoc: Long, value: Float, sourceApp: String?): Map<String, Any?> {
@@ -305,7 +318,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             client.signOut().addOnCompleteListener {
                 GoogleSignIn.requestPermissions(
                     activity,
-                    if (useSensitive) GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE else GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                    GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
                     GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
                     fitnessOptions
                 )

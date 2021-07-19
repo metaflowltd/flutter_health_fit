@@ -10,6 +10,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isAuthorized = false;
+  bool _isBodyAuthorized = false;
   String _basicHealthString = "";
   String _lastWeightString = "";
   String _activityData = "";
@@ -19,6 +20,13 @@ class _MyAppState extends State<MyApp> {
     bool isAuthorized = await FlutterHealthFit().authorize(true);
     setState(() {
       _isAuthorized = isAuthorized;
+    });
+  }
+
+  Future _authorizeBodySensors() async {
+    bool isAuthorized = await FlutterHealthFit().authorizeBodySensors();
+    setState(() {
+      _isBodyAuthorized = isAuthorized;
     });
   }
 
@@ -81,8 +89,10 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                Text('Authorized: $_isAuthorized\n'),
+                Text('Health/Fit Authorized: $_isAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+                Text('Body sensors Authorized: $_isBodyAuthorized\n'),
+                ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
                 ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
                 Text('Basic health: $_basicHealthString\n'),
                 ElevatedButton(child: Text("Get Last 3 Days Weight"), onPressed: _getLast3DaysWeight),

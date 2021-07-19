@@ -176,6 +176,14 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('requestAuthorization', {"useSensitive": useSensitive});
   }
 
+  /// Will ask to authorize android.permission.BODY_SENSORS permission on Android.
+  /// Returns true if user authorized, false if not.
+  /// on iOS, returns true immediately and does nothing.
+  Future<bool> authorizeBodySensors() async {
+    if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
+    return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
+  }
+
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
   }
