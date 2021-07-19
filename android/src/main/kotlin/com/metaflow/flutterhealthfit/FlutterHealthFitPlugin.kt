@@ -185,10 +185,7 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "getAverageWalkingHeartRate" -> result.success(null)
 
-            "isAnyPermissionAuthorized" -> {
-                val answer = isAnyPermissionAuthorized()
-                result.success(answer)
-            }
+            "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 
             "isStepsAuthorized" -> result.success(isStepsAuthorized())
 
