@@ -114,11 +114,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
 
-            "getFlightsBySegment" -> {
+            "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
             }
 
-            "getCyclingDistanceBySegment" -> {
+            "getCyclingDistanceBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Double>())
             }
 
@@ -189,9 +189,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "isStepsAuthorized" -> result.success(isStepsAuthorized())
 
-            "isCyclingAuthorized" -> result.success(false)
+            "isCyclingAuthorized" -> // only implemented on iOS
+                result.success(false)
 
-            "isFlightsAuthorized" -> result.success(false)
+            "isFlightsAuthorized" -> // only implemented on iOS
+                result.success(false)
 
             "isSleepAuthorized" -> result.success(isSleepAuthorized())
 
@@ -199,7 +201,8 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
 
-            "isCarbsAuthorized" -> result.success(false)
+            "isCarbsAuthorized" -> // only implemented on iOS
+                result.success(false)
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
@@ -276,22 +279,21 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
     private fun recordDataPointsIfGranted(resultCode: Int, dataPoints: List<DataType>) {
         if (resultCode == Activity.RESULT_OK) {
+            val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
                 recordFitnessData(it) { success ->
                     Log.i(TAG, "Record $it success: $success!")
-
-                    if (success)
-                        deferredResult?.success(true)
-                    else
-                        deferredResult?.error("no record", "Record $it operation denied", null)
-
-                    deferredResult = null
+                    if (!success) failedTypes.add(it)
                 }
             }
+            if (failedTypes.isEmpty())
+                deferredResult?.success(true)
+            else
+                deferredResult?.error("no record", "Record $failedTypes operation denied", null)
         } else {
             deferredResult?.error("canceled", "User cancelled or app not authorized", null)
-            deferredResult = null
         }
+        deferredResult = null
     }
 
     private fun createHeartRateSampleMap(millisSinceEpoc: Long, value: Float, sourceApp: String?): Map<String, Any?> {
