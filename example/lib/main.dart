@@ -15,6 +15,30 @@ class _MyAppState extends State<MyApp> {
   String _lastWeightString = "";
   String _activityData = "";
   String _heartData = "";
+  bool _isAllAuth = false;
+  bool _isAnyAuth = false;
+  bool _isSleep = false;
+  bool _isHeart = false;
+  bool _isWeight = false;
+  bool _isSteps = false;
+
+  Future _getAuthorized() async {
+    final flutterHealthFit = FlutterHealthFit();
+    final isAllAuth = await flutterHealthFit.isAuthorized();
+    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    final isSleep = await flutterHealthFit.isSleepAuthorized();
+    final isHeart = await flutterHealthFit.isHeartRateAuthorized();
+    final isWeight = await flutterHealthFit.isWeightAuthorized();
+    final isSteps = await flutterHealthFit.isStepsAuthorized();
+    setState(() {
+      _isAllAuth = isAllAuth;
+      _isAnyAuth = isAnyAuth;
+      _isSleep = isSleep;
+      _isHeart = isHeart;
+      _isWeight = isWeight;
+      _isSteps = isSteps;
+    });
+  }
 
   Future _authorizeHealthOrFit() async {
     bool isAuthorized = await FlutterHealthFit().authorize(true);
@@ -77,6 +101,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _getAuthorized();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
@@ -91,6 +121,8 @@ class _MyAppState extends State<MyApp> {
               children: <Widget>[
                 Text('Health/Fit Authorized: $_isAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+                Text(
+                    "isAllAuth: $_isAllAuth, isAnyAuth: $_isAnyAuth, isSleep: $_isSleep, isHeart: $_isHeart, isWeight: $_isWeight, isSteps: $_isSteps"),
                 Text('Body sensors Authorized: $_isBodyAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
                 ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
