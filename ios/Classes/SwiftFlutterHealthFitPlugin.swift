@@ -22,12 +22,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if call.method == "requestAuthorization"{
+        switch call.method {
+        case "requestAuthorization":
             HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
                 result(success)
             }
-        }
-        else if call.method == "isAuthorized" { // only checks if requested! no telling if authorized!
+        
+        case "isAuthorized":  // only checks if requested! no telling if authorized!
             if #available(iOS 12.0, *) {
                 HealthkitReader.sharedInstance.getRequestStatusForAuthorization { (status: HKAuthorizationRequestStatus, error: Error?) in
                     switch status {
@@ -42,34 +43,34 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             } else {
                 // Fallback on earlier versions
-                result(HealthkitReader.sharedInstance.hasRequestedHealthKit)
+                result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
             }
-        }
-        else if call.method == "getActivity"{
+        
+        case "getActivity":
             self.getActivity(call, result: result)
-        }
         
-        else if call.method == "getBasicHealthData" {
+        
+        case "getBasicHealthData":
             self.getBasicHealthData(result: result)
-        }
         
-        else if call.method == "getStepsBySegment" {
+        
+        case "getStepsBySegment":
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.stepsQuantityType, call: call, convertToInt: true, result: result)
-        }
         
-        else if call.method == "getSleepBySegment" {
+        
+        case "getSleepBySegment":
             getSleepSamples(call: call, result: result)
-        }
         
-        else if call.method == "getFlightsBySegment" {
+        
+        case "getFlightsBySegment":
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.flightsClimbedQuantityType, call: call, convertToInt: true, result: result)
-        }
+        
             
-        else if call.method == "getCyclingDistanceBySegment" {
+        case "getCyclingDistanceBySegment":
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.cyclingDistanceQuantityType, call: call, result: result)
-        }
+        
             
-        else if call.method == "getWeightInInterval" {
+        case "getWeightInInterval":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
@@ -83,9 +84,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(weight)
                 }
             }
-        }
         
-        else if call.method == "getHeartRateSample" {
+        
+        case "getHeartRateSample":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
@@ -99,15 +100,20 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                    result(rate)
                 }
             }
-        }
+        
             
-        else if call.method == "getAverageWalkingHeartRate" || call.method == "getAverageRestingHeartRate" {
+        case "getAverageWalkingHeartRate":
+            fallthrough
+        case "getAverageRestingHeartRate":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            
+            guard #available(iOS 11.0, *) else {
+                result(nil)
+                return
+            }
             let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
             HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
                                                               unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
@@ -119,9 +125,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(rates)
                 }
             }
-        }
             
-        else if call.method == "getTotalStepsInInterval" {
+        case "getTotalStepsInInterval":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
@@ -136,29 +141,81 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
             }
-        }
         
-        
-        else if isCallNutritionBySample(call) {
+        case "getEnergyConsumed":
+            fallthrough
+        case "getFiberConsumed":
+            fallthrough
+        case "getSugarConsumed":
+            fallthrough
+        case "getCarbsConsumed":
+            fallthrough
+        case "getFatConsumed":
+            fallthrough
+        case "getProteinConsumed":
             getNutritionSampleInInterval(call: call, result: result)
-        }
         
-        else if call.method == "getStepsSources" {
+        
+        case "getStepsSources":
             HealthkitReader.sharedInstance.getStepsSources { (steps: Array<String>) in
                 result(steps)
             }
+
+        case "isAnyPermissionAuthorized":
+            // Not supposed to be invoked on iOS. Returns a fake result.
+            result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
+
+        case "isStepsAuthorized":
+            getRequestStatus(types: [HealthkitReader.sharedInstance.stepsQuantityType], result: result)
+            
+        case "isCyclingAuthorized":
+            getRequestStatus(types: [HealthkitReader.sharedInstance.cyclingDistanceQuantityType], result: result)
+            
+        case "isFlightsAuthorized":
+            getRequestStatus(types: [HealthkitReader.sharedInstance.flightsClimbedQuantityType], result: result)
+            
+        case "isSleepAuthorized":
+            getRequestStatus(types: [HealthkitReader.sharedInstance.sleepCategoryType], result: result)
+            
+        case "isWeightAuthorized":
+            getRequestStatus(types: [HealthkitReader.weightQuantityType()], result: result)
+            
+        case "isHeartRateAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            var types = [reader.heartRateQuantityType]
+            if #available(iOS 11.0, *) {
+                types.append(contentsOf: [
+                                reader.heartRateVariabilityQuantityType,
+                                reader.restingHeartRateQuantityType,
+                                reader.walkingHeartRateAverageQuantityType,
+                ])
+            }
+            getRequestStatus(types: types, result: result)
+            
+        case "isCarbsAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryCarbohydrates, reader.dietaryFiber], result: result)
+
+        default:
+            result(FlutterMethodNotImplemented)
         }
     }
     
-    private func isCallNutritionBySample(_ call: FlutterMethodCall) -> Bool{
-        return call.method == "getEnergyConsumed"
-            || call.method == "getFiberConsumed"
-            || call.method == "getSugarConsumed"
-            || call.method == "getCarbsConsumed"
-            || call.method == "getFatConsumed"
-            || call.method == "getProteinConsumed"
+    func getRequestStatus(types: [HKObjectType], result: @escaping FlutterResult) {
+        if #available(iOS 12.0, *){
+            HealthkitReader.sharedInstance.getRequestStatus(for: Set(types)) { status, error in
+                if let error = error {
+                    result(FlutterError(code: "\((error as NSError).code)", message: error.localizedDescription, details: nil))
+                } else {
+                    result(status == .unnecessary)
+                }
+            }
+        } else {
+            // Fallback on earlier versions
+            result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
+        }
     }
-    
+
     func getBasicHealthData(result: @escaping FlutterResult){
         let dob = HealthkitReader.sharedInstance.getDOB()
         let gender = HealthkitReader.sharedInstance.getBioLogicalSex()

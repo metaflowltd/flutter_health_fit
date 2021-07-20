@@ -19,7 +19,7 @@ class HealthkitReader: NSObject {
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
     
-    var hasRequestedHealthKit = false
+    var hasRequestedHealthKitInThisRun = false
     
     var yesterdayHKData  = [String: String]()
     
@@ -182,7 +182,7 @@ class HealthkitReader: NSObject {
     }
     
     func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
-        self.hasRequestedHealthKit = true
+        self.hasRequestedHealthKitInThisRun = true
         
         self.healthStore.requestAuthorization(toShare: nil, read: healthKitTypesToRead, completion: { success, error in
             completion(success)
@@ -191,7 +191,12 @@ class HealthkitReader: NSObject {
     
     @available(iOS 12.0, *)
     func getRequestStatusForAuthorization(completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
-        healthStore.getRequestStatusForAuthorization(toShare: Set(), read: healthKitTypesToRead, completion: completion)
+        getRequestStatus(for: healthKitTypesToRead, completion: completion)
+    }
+    
+    @available(iOS 12.0, *)
+    func getRequestStatus(for types: Set<HKObjectType>, completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
+        healthStore.getRequestStatusForAuthorization(toShare: Set(), read: types, completion: completion)
     }
     
     func getSleepSamplesForRange(start: TimeInterval,

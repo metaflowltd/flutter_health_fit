@@ -10,15 +10,47 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isAuthorized = false;
+  bool _isBodyAuthorized = false;
   String _basicHealthString = "";
   String _lastWeightString = "";
   String _activityData = "";
   String _heartData = "";
+  bool _isAllAuth = false;
+  bool _isAnyAuth = false;
+  bool _isSleep = false;
+  bool _isHeart = false;
+  bool _isWeight = false;
+  bool _isSteps = false;
+
+  Future _getAuthorized() async {
+    final flutterHealthFit = FlutterHealthFit();
+    final isAllAuth = await flutterHealthFit.isAuthorized();
+    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    final isSleep = await flutterHealthFit.isSleepAuthorized();
+    final isHeart = await flutterHealthFit.isHeartRateAuthorized();
+    final isWeight = await flutterHealthFit.isWeightAuthorized();
+    final isSteps = await flutterHealthFit.isStepsAuthorized();
+    setState(() {
+      _isAllAuth = isAllAuth;
+      _isAnyAuth = isAnyAuth;
+      _isSleep = isSleep;
+      _isHeart = isHeart;
+      _isWeight = isWeight;
+      _isSteps = isSteps;
+    });
+  }
 
   Future _authorizeHealthOrFit() async {
     bool isAuthorized = await FlutterHealthFit().authorize(true);
     setState(() {
       _isAuthorized = isAuthorized;
+    });
+  }
+
+  Future _authorizeBodySensors() async {
+    bool isAuthorized = await FlutterHealthFit().authorizeBodySensors();
+    setState(() {
+      _isBodyAuthorized = isAuthorized;
     });
   }
 
@@ -69,6 +101,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _getAuthorized();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
@@ -81,15 +119,19 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                Text('Authorized: $_isAuthorized\n'),
-                RaisedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-                RaisedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
+                Text('Health/Fit Authorized: $_isAuthorized\n'),
+                ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+                Text(
+                    "isAllAuth: $_isAllAuth, isAnyAuth: $_isAnyAuth, isSleep: $_isSleep, isHeart: $_isHeart, isWeight: $_isWeight, isSteps: $_isSteps"),
+                Text('Body sensors Authorized: $_isBodyAuthorized\n'),
+                ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
+                ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
                 Text('Basic health: $_basicHealthString\n'),
-                RaisedButton(child: Text("Get Last 3 Days Weight"), onPressed: _getLast3DaysWeight),
+                ElevatedButton(child: Text("Get Last 3 Days Weight"), onPressed: _getLast3DaysWeight),
                 Text('last weight: $_lastWeightString\n'),
-                RaisedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
+                ElevatedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
                 Text('\n$_activityData\n'),
-                RaisedButton(child: Text("Get heart Data"), onPressed: _getHeartData),
+                ElevatedButton(child: Text("Get heart Data"), onPressed: _getHeartData),
                 Text('\n$_heartData\n'),
               ],
             ),

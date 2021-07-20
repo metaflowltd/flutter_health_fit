@@ -32,11 +32,11 @@ enum class LumenTimeUnit(val value: Int) {
     DAYS(1),
 }
 
-class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
+class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener,
+    PluginRegistry.RequestPermissionsResultListener {
 
     companion object {
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
-        private const val GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE = 4723747
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
         val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
@@ -68,16 +68,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "requestAuthorization" -> {
                 val useSensitive = call.argument<Boolean>("useSensitive") ?: false
-                if (!useSensitive || hasSensorPermissionCompat()) {
-                    connect(useSensitive, result)
-                } else {
-                    this.deferredResult = result
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) { // Pacify lint (checked in hasSensorPermissionCompat)
-                        ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.BODY_SENSORS), SENSOR_PERMISSION_REQUEST_CODE)
-                    }
-                }
-
+                connect(useSensitive, result)
             }
+
+            "requestBodySensorsPermission" -> requestBodySensorsPermission(result)
 
             "isAuthorized" -> result.success(isAuthorized(call.argument<Boolean>("useSensitive") ?: false))
 
@@ -107,7 +101,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val duration = call.argument<Int>("duration")!!
                 val unitInt = call.argument<Int>("unit")!!
                 val lumenTimeUnit = LumenTimeUnit.values().first { it.value == unitInt }
-                val timeUnit = mapOf(LumenTimeUnit.DAYS to TimeUnit.DAYS, LumenTimeUnit.MINUTES to TimeUnit.MINUTES).getValue(lumenTimeUnit)
+                val timeUnit =
+                    mapOf(LumenTimeUnit.DAYS to TimeUnit.DAYS, LumenTimeUnit.MINUTES to TimeUnit.MINUTES).getValue(
+                        lumenTimeUnit
+                    )
                 getStepsInRange(start, end, duration, timeUnit) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         result.success(map)
@@ -117,11 +114,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
 
-            "getFlightsBySegment" -> {
+            "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
             }
 
-            "getCyclingDistanceBySegment" -> {
+            "getCyclingDistanceBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Double>())
             }
 
@@ -149,9 +146,13 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                             result.success(null)
                         } else {
                             val lastPoint = samples.last()
-                            result.success(createHeartRateSampleMap(lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
+                            result.success(
+                                createHeartRateSampleMap(
+                                    lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
                                     lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
-                                    lastPoint.dataSource.appPackageName))
+                                    lastPoint.dataSource.appPackageName
+                                )
+                            )
                         }
                     } else {
                         result.error("failed", e?.message, null)
@@ -169,9 +170,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                         } else {
                             val valueSum = samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }.sum()
 
-                            val sampleMap = createHeartRateSampleMap(samples.last().getTimestamp(TimeUnit.MILLISECONDS),
-                                    valueSum / samples.size,
-                                    samples.last().dataSource.appPackageName)
+                            val sampleMap = createHeartRateSampleMap(
+                                samples.last().getTimestamp(TimeUnit.MILLISECONDS),
+                                valueSum / samples.size,
+                                samples.last().dataSource.appPackageName
+                            )
                             result.success(listOf(sampleMap))
                         }
                     } else {
@@ -182,37 +185,115 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
             "getAverageWalkingHeartRate" -> result.success(null)
 
+            "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
+
+            "isStepsAuthorized" -> result.success(isStepsAuthorized())
+
+            "isCyclingAuthorized" -> // only implemented on iOS
+                result.success(false)
+
+            "isFlightsAuthorized" -> // only implemented on iOS
+                result.success(false)
+
+            "isSleepAuthorized" -> result.success(isSleepAuthorized())
+
+            "isWeightAuthorized" -> result.success(isWeightAuthorized())
+
+            "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
+
+            "isCarbsAuthorized" -> // only implemented on iOS
+                result.success(false)
+
+            "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
+
             else -> result.notImplemented()
         }
     }
 
+    private fun requestBodySensorsPermission(result: Result) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            this.deferredResult = result
+            ActivityCompat.requestPermissions(
+                activity,
+                arrayOf(Manifest.permission.BODY_SENSORS),
+                SENSOR_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            result.success(true)
+        }
+    }
+
+    private fun isAnyPermissionAuthorized(): Boolean {
+        return isWeightAuthorized() || isStepsAuthorized() || isHeartRateSampleAuthorized() || isSleepAuthorized()
+    }
+
+    private fun isStepsAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType).build())
+    }
+
+    private fun isSleepAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build())
+    }
+
+    private fun isWeightAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(weightDataType).build())
+    }
+
+    private fun isHeartRateSampleAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
+    }
+
+    private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {
+        val account = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+        return GoogleSignIn.hasPermissions(account, fitnessOptions)
+    }
+
     private fun hasSensorPermissionCompat() = (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH
-            || ContextCompat.checkSelfPermission(activity, Manifest.permission.BODY_SENSORS) == PackageManager.PERMISSION_GRANTED)
+            || ContextCompat.checkSelfPermission(
+        activity,
+        Manifest.permission.BODY_SENSORS
+    ) == PackageManager.PERMISSION_GRANTED)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE || requestCode == GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                listOfNotNull(stepsDataType, weightDataType, if (requestCode == GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE) heartRateDataType else null).forEach {
-                    recordFitnessData(it) { success ->
-                        Log.i(TAG, "Record $it success: $success!")
+        when (requestCode) {
+            GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
+                recordDataPointsIfGranted(resultCode, listOfNotNull(
+                    stepsDataType,
+                    weightDataType,
+                    if (hasSensorPermissionCompat()) heartRateDataType else null
+                ))
 
-                        if (success)
-                            deferredResult?.success(true)
-                        else
-                            deferredResult?.error("no record", "Record $it operation denied", null)
-
-                        deferredResult = null
-                    }
+                return true
+            }
+            SENSOR_PERMISSION_REQUEST_CODE -> {
+                if (isHeartRateSampleAuthorized()) {
+                    recordDataPointsIfGranted(resultCode, listOf(heartRateDataType))
                 }
-            } else {
-                deferredResult?.error("canceled", "User cancelled or app not authorized", null)
-                deferredResult = null
+                return true
             }
 
-            return true
+            else ->
+                return false
         }
+    }
 
-        return false
+    private fun recordDataPointsIfGranted(resultCode: Int, dataPoints: List<DataType>) {
+        if (resultCode == Activity.RESULT_OK) {
+            val failedTypes = arrayListOf<DataType>()
+            dataPoints.forEach {
+                recordFitnessData(it) { success ->
+                    Log.i(TAG, "Record $it success: $success!")
+                    if (!success) failedTypes.add(it)
+                }
+            }
+            if (failedTypes.isEmpty())
+                deferredResult?.success(true)
+            else
+                deferredResult?.error("no record", "Record $failedTypes operation denied", null)
+        } else {
+            deferredResult?.error("canceled", "User cancelled or app not authorized", null)
+        }
+        deferredResult = null
     }
 
     private fun createHeartRateSampleMap(millisSinceEpoc: Long, value: Float, sourceApp: String?): Map<String, Any?> {
@@ -220,9 +301,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     }
 
     private fun isAuthorized(useSensitive: Boolean): Boolean {
-        if (useSensitive && !hasSensorPermissionCompat()) {
-            return false
-        }
         val fitnessOptions = getFitnessOptions(useSensitive)
         val account = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
         return GoogleSignIn.hasPermissions(account, fitnessOptions)
@@ -237,10 +315,11 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
             val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
             client.signOut().addOnCompleteListener {
                 GoogleSignIn.requestPermissions(
-                        activity,
-                        if (useSensitive) GOOGLE_FIT_SENSITIVE_PERMISSIONS_REQUEST_CODE else GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
-                        GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
-                        fitnessOptions)
+                    activity,
+                    GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                    GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
+                    fitnessOptions
+                )
             }
         } else {
             result.success(true)
@@ -250,32 +329,38 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     private fun recordFitnessData(type: DataType, callback: (Boolean) -> Unit) {
         val fitnessOptions = FitnessOptions.builder().addDataType(type).build()
         Fitness.getRecordingClient(activity, GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
-                .subscribe(type)
-                .addOnSuccessListener {
-                    callback(true)
-                }
-                .addOnFailureListener {
-                    callback(false)
-                }
+            .subscribe(type)
+            .addOnSuccessListener {
+                callback(true)
+            }
+            .addOnFailureListener {
+                callback(false)
+            }
     }
 
     @SuppressLint("UseSparseArrays") // Dart doesn't know sparse arrays
-    private fun getStepsInRange(start: Long, end: Long, duration: Int, unit: TimeUnit, result: (Map<Long, Int>?, Throwable?) -> Unit) {
+    private fun getStepsInRange(
+        start: Long,
+        end: Long,
+        duration: Int,
+        unit: TimeUnit,
+        result: (Map<Long, Int>?, Throwable?) -> Unit
+    ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType).build()
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val ds = DataSource.Builder()
-                .setAppPackageName("com.google.android.gms")
-                .setDataType(stepsDataType)
-                .setType(DataSource.TYPE_DERIVED)
-                .setStreamName("estimated_steps")
-                .build()
+            .setAppPackageName("com.google.android.gms")
+            .setDataType(stepsDataType)
+            .setType(DataSource.TYPE_DERIVED)
+            .setStreamName("estimated_steps")
+            .build()
 
         val request = DataReadRequest.Builder()
-                .aggregate(ds)
-                .bucketByTime(duration, unit)
-                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-                .build()
+            .aggregate(ds)
+            .bucketByTime(duration, unit)
+            .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+            .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -320,9 +405,9 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder()
-                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-                .read(heartRateDataType)
-                .build()
+            .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+            .read(heartRateDataType)
+            .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -364,10 +449,10 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
-                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-                .bucketByTime(1, TimeUnit.DAYS)
-                .setLimit(1)
-                .build()
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .bucketByTime(1, TimeUnit.DAYS)
+            .setLimit(1)
+            .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -399,16 +484,20 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
 
     private fun getFitnessOptions(useSensitive: Boolean): FitnessOptions {
         val builder = FitnessOptions.builder()
-                .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
-                .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-                .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         if (useSensitive) {
             builder.addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
         }
         return builder.build()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?): Boolean {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>?,
+        grantResults: IntArray?
+    ): Boolean {
         return when (requestCode) {
             SENSOR_PERMISSION_REQUEST_CODE -> {
                 val result = this.deferredResult!!

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
@@ -18,12 +17,11 @@ class SleepSample {
   final String source;
 
   SleepSample({
-    @required this.type,
-    @required this.start,
-    @required this.end,
-    @required this.source,
+    required this.type,
+    required this.start,
+    required this.end,
+    required this.source,
   });
-
 
   @override
   String toString() {
@@ -53,13 +51,13 @@ class SleepSample {
 class HeartRateSample {
   final DateTime dateTime;
   final int heartRate;
-  final Map<String, dynamic> metadata; // may be null
+  final Map<String, dynamic>? metadata; // may be null
   final String sourceApp;
-  final String sourceDevice; // may be null
+  final String? sourceDevice; // may be null
 
   int get motionLevel {
     if (metadata != null) {
-      final heartRateMotionContext = metadata["HKMetadataKeyHeartRateMotionContext"];
+      final heartRateMotionContext = metadata!["HKMetadataKeyHeartRateMotionContext"];
       if (heartRateMotionContext is num) {
         return heartRateMotionContext.round();
       }
@@ -67,7 +65,13 @@ class HeartRateSample {
     return 0;
   }
 
-  HeartRateSample({this.dateTime, this.heartRate, this.metadata, this.sourceApp, this.sourceDevice});
+  HeartRateSample({
+    required this.dateTime,
+    required this.heartRate,
+    this.metadata,
+    required this.sourceApp,
+    this.sourceDevice,
+  });
 
   @override
   String toString() =>
@@ -102,8 +106,64 @@ class FlutterHealthFit {
   /// https://support.google.com/cloud/answer/9110914#sensitive-scopes
   /// https://support.google.com/cloud/answer/9110914#restricted-scopes
   /// On iOS has no meaning.
-  Future<bool> isAuthorized({bool useSensitive}) async {
+  Future<bool> isAuthorized({bool? useSensitive}) async {
     final status = await _channel.invokeMethod("isAuthorized", {"useSensitive": useSensitive});
+    return status;
+  }
+
+  /// Checks if any health permission has been authorized
+  Future<bool> isAnyPermissionAuthorized() async {
+    final status = await _channel.invokeMethod("isAnyPermissionAuthorized");
+    return status;
+  }
+
+  /// Checks if steps permission has been authorized
+  Future<bool> isStepsAuthorized() async {
+    final status = await _channel.invokeMethod("isStepsAuthorized");
+    return status;
+  }
+
+  /// Checks if cycling permission has been authorized
+  Future<bool> isCyclingAuthorized() async {
+    final status = await _channel.invokeMethod("isCyclingAuthorized");
+    return status;
+  }
+
+  /// Checks if flights climbed permission has been authorized
+  Future<bool> isFlightsAuthorized() async {
+    final status = await _channel.invokeMethod("isFlightsAuthorized");
+    return status;
+  }
+
+  /// Checks if sleep permission has been authorized
+  Future<bool> isSleepAuthorized() async {
+    final status = await _channel.invokeMethod("isSleepAuthorized");
+    return status;
+  }
+
+  /// Checks if weight permission has been authorized
+  Future<bool> isWeightAuthorized() async {
+    final status = await _channel.invokeMethod("isWeightAuthorized");
+    return status;
+  }
+
+  /// Checks if heart rate permission has been authorized
+  Future<bool> isHeartRateAuthorized() async {
+    final status = await _channel.invokeMethod("isHeartRateAuthorized");
+    return status;
+  }
+
+  /// Checks if all permissions needed for calculating carb servings have been authorized
+  Future<bool> isCarbsAuthorized() async {
+    final status = await _channel.invokeMethod("isCarbsAuthorized");
+    return status;
+  }
+
+  /// Checks if android.permission.BODY_SENSORS is granted.
+  /// on iOS returns always true.
+  Future<bool> isBodySensorsAuthorized() async {
+    if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
+    final status = await _channel.invokeMethod("isBodySensorsAuthorized");
     return status;
   }
 
@@ -112,23 +172,31 @@ class FlutterHealthFit {
   /// https://support.google.com/cloud/answer/9110914#sensitive-scopes
   /// https://support.google.com/cloud/answer/9110914#restricted-scopes
   /// On iOS has no meaning.
-  Future<bool> authorize(bool useSensitive) async {
+  Future<bool> authorize(bool? useSensitive) async {
     return await _channel.invokeMethod('requestAuthorization', {"useSensitive": useSensitive});
+  }
+
+  /// Will ask to authorize android.permission.BODY_SENSORS permission on Android.
+  /// Returns true if user authorized, false if not.
+  /// on iOS, returns true immediately and does nothing.
+  Future<bool> authorizeBodySensors() async {
+    if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
+    return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
   }
 
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<Map<DateTime, double>> getWeight(int start, int end) async {
-    Map lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
-    return lastWeight?.cast<int, double>()?.map((int key, double value) {
+  Future<Map<DateTime, double>?> getWeight(int start, int end) async {
+    Map? lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
+    return lastWeight?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
   }
 
-  Future<HeartRateSample> getLatestHeartRateSample(int start, int end) =>
+  Future<HeartRateSample?> getLatestHeartRateSample(int start, int end) =>
       _getHeartRate("getHeartRateSample", start, end);
 
   Future<List<HeartRateSample>> getAverageWalkingHeartRate(int start, int end) =>
@@ -137,7 +205,7 @@ class FlutterHealthFit {
   Future<List<HeartRateSample>> getAverageRestingHeartRate(int start, int end) =>
       _getAverageHeartRates("getAverageRestingHeartRate", start, end);
 
-  Future<HeartRateSample> _getHeartRate(String methodName, int start, int end) async {
+  Future<HeartRateSample?> _getHeartRate(String methodName, int start, int end) async {
     final sample = await _channel.invokeMapMethod<String, dynamic>(methodName, {"start": start, "end": end});
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
@@ -188,17 +256,16 @@ class FlutterHealthFit {
   /// Returns the sleep data from HealthKit.
   ///
   /// params: [start], [end] in milliseconds, starting from epoch time.
-  Future<List<SleepSample>> getSleep(int start, int end) async {
+  Future<List<SleepSample>?> getSleep(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    List<Map> rawSamples = await _channel.invokeListMethod<Map>(
-        "getSleepBySegment", {"start": start, "end": end});
-    return rawSamples.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
+    return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }
 
   /// Calories returned in kCal for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getEnergyConsumed(int start, int end) async {
+  Future<Map<String, int>?> getEnergyConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
@@ -206,7 +273,7 @@ class FlutterHealthFit {
 
   /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getFiberConsumed(int start, int end) async {
+  Future<Map<String, int>?> getFiberConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
@@ -214,7 +281,7 @@ class FlutterHealthFit {
 
   /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getCarbsConsumed(int start, int end) async {
+  Future<Map<String, int>?> getCarbsConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
@@ -222,7 +289,7 @@ class FlutterHealthFit {
 
   /// Sugar returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getSugarConsumed(int start, int end) async {
+  Future<Map<String, int>?> getSugarConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
@@ -230,7 +297,7 @@ class FlutterHealthFit {
 
   /// Fat returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getFatConsumed(int start, int end) async {
+  Future<Map<String, int>?> getFatConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
@@ -238,17 +305,17 @@ class FlutterHealthFit {
 
   /// Protein returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
-  Future<Map<String, int>> getProteinConsumed(int start, int end) async {
+  Future<Map<String, int>?> getProteinConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
   }
 
-  Future<double> get getWalkingAndRunningDistance async {
+  Future<double?> get getWalkingAndRunningDistance async {
     return await _getActivityData(_ActivityType.walkRun, "m");
   }
 
-  Future<double> _getActivityData(_ActivityType activityType, String units) async {
+  Future<double?> _getActivityData(_ActivityType activityType, String units) async {
     var result;
 
     try {
@@ -266,7 +333,7 @@ class FlutterHealthFit {
     return result["value"];
   }
 
-  Future<List<String>> getStepSourceList() async {
+  Future<List<String>?> getStepSourceList() async {
     ///
     /// Not supported for Android yet
     if (Platform.isIOS) {
