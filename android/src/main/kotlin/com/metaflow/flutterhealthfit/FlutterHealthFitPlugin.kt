@@ -301,9 +301,6 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     }
 
     private fun isAuthorized(useSensitive: Boolean): Boolean {
-        if (useSensitive && !hasSensorPermissionCompat()) {
-            return false
-        }
         val fitnessOptions = getFitnessOptions(useSensitive)
         val account = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
         return GoogleSignIn.hasPermissions(account, fitnessOptions)
