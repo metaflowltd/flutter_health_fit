@@ -43,7 +43,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             } else {
                 // Fallback on earlier versions
-                result(HealthkitReader.sharedInstance.hasRequestedHealthKit)
+                result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
             }
         
         case "getActivity":
@@ -163,7 +163,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
 
         case "isAnyPermissionAuthorized":
             // Not supposed to be invoked on iOS. Returns a fake result.
-            result(HealthkitReader.sharedInstance.hasRequestedHealthKit)
+            result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
 
         case "isStepsAuthorized":
             getRequestStatus(types: [HealthkitReader.sharedInstance.stepsQuantityType], result: result)
@@ -212,7 +212,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         } else {
             // Fallback on earlier versions
-            result(HealthkitReader.sharedInstance.hasRequestedHealthKit)
+            result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
         }
     }
 

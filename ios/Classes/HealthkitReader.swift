@@ -19,7 +19,7 @@ class HealthkitReader: NSObject {
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
     
-    var hasRequestedHealthKit = false
+    var hasRequestedHealthKitInThisRun = false
     
     var yesterdayHKData  = [String: String]()
     
@@ -182,7 +182,7 @@ class HealthkitReader: NSObject {
     }
     
     func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
-        self.hasRequestedHealthKit = true
+        self.hasRequestedHealthKitInThisRun = true
         
         self.healthStore.requestAuthorization(toShare: nil, read: healthKitTypesToRead, completion: { success, error in
             completion(success)
