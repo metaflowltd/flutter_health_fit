@@ -255,30 +255,25 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
     ) == PackageManager.PERMISSION_GRANTED)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        when (requestCode) {
+        return when (requestCode) {
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
-                recordDataPointsIfGranted(resultCode, listOfNotNull(
-                    stepsDataType,
-                    weightDataType,
-                    if (hasSensorPermissionCompat()) heartRateDataType else null
-                ))
-
-                return true
+                recordDataPointsIfGranted(
+                    resultCode == Activity.RESULT_OK, listOfNotNull(
+                        stepsDataType,
+                        weightDataType,
+                        if (hasSensorPermissionCompat()) heartRateDataType else null
+                    ),
+                    deferredResult
+                )
+                deferredResult = null
+                true
             }
-            SENSOR_PERMISSION_REQUEST_CODE -> {
-                if (isHeartRateSampleAuthorized()) {
-                    recordDataPointsIfGranted(resultCode, listOf(heartRateDataType))
-                }
-                return true
-            }
-
-            else ->
-                return false
+            else -> false
         }
     }
 
-    private fun recordDataPointsIfGranted(resultCode: Int, dataPoints: List<DataType>) {
-        if (resultCode == Activity.RESULT_OK) {
+    private fun recordDataPointsIfGranted(isGranted: Boolean, dataPoints: List<DataType>, result: Result?) {
+        if (isGranted) {
             val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
                 recordFitnessData(it) { success ->
@@ -287,13 +282,12 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 }
             }
             if (failedTypes.isEmpty())
-                deferredResult?.success(true)
+                result?.success(true)
             else
-                deferredResult?.error("no record", "Record $failedTypes operation denied", null)
+                result?.error("no record", "Record $failedTypes operation denied", null)
         } else {
-            deferredResult?.error("canceled", "User cancelled or app not authorized", null)
+            result?.error("canceled", "User cancelled or app not authorized", null)
         }
-        deferredResult = null
     }
 
     private fun createHeartRateSampleMap(millisSinceEpoc: Long, value: Float, sourceApp: String?): Map<String, Any?> {
@@ -503,15 +497,18 @@ class FlutterHealthFitPlugin(private val activity: Activity) : MethodCallHandler
                 val result = this.deferredResult!!
                 this.deferredResult = null
                 if (grantResults?.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    connect(true, result)
+                    if (isHeartRateSampleAuthorized()) {
+                        recordDataPointsIfGranted(true, listOf(heartRateDataType), result)
+                    } else {
+                        result.success(true)
+                    }
                 } else {
-                    result.error("PERMISSION_DENIED", "User refused", null)
+                    result.success(false)
                 }
                 true
             }
-            else -> { // Ignore all other requests.
+            else ->  // Ignore all other requests.
                 false
-            }
         }
     }
 }
