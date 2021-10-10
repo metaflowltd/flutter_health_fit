@@ -115,7 +115,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        println("XXX onMethodCall ${call.method}, activity is null: ${activity == null}")
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
 
@@ -386,7 +385,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun connect(useSensitive: Boolean, result: Result) {
         val fitnessOptions = getFitnessOptions(useSensitive)
-        if (activity == null) println("XXX Activity is null aaaaaa") else print("XXX Activity is not null")
         if (!isAuthorized(useSensitive)) {
             deferredResult = result
             activity?.let { activity ->
