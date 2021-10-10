@@ -96,7 +96,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         activity = null
         binding?.let {
             it.removeActivityResultListener(this)
-            it.addRequestPermissionsResultListener(this)
+            it.removeRequestPermissionsResultListener(this)
         }
     }
 
@@ -110,7 +110,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         activity = null
         binding?.let {
             it.removeActivityResultListener(this)
-            it.addRequestPermissionsResultListener(this)
+            it.removeRequestPermissionsResultListener(this)
         }
     }
 
