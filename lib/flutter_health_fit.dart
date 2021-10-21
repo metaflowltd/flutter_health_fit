@@ -248,7 +248,7 @@ class FlutterHealthFit {
     });
   }
 
-  Future<int> getTotalStepsInInterval(int start, int end) async {
+  Future<int?> getTotalStepsInInterval(int start, int end) async {
     final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
     return steps;
   }
