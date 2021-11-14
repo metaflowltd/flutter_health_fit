@@ -196,6 +196,19 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.dietaryCarbohydrates, reader.dietaryFiber], result: result)
 
+        case "isMenstrualCycleAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.menstrualFlowType], result: result)
+        case "getMenstrualCycle":
+            HealthkitReader.sharedInstance.getLatestMensturalCycle(handler: { samples, error in
+                if let samples = samples {
+                    result(samples)
+                } else {
+                    let error = error! as NSError
+                    print("[\(#function)] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+           })
         default:
             result(FlutterMethodNotImplemented)
         }

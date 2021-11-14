@@ -123,6 +123,12 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if menstural cycle permission has been authorized
+  Future<bool> isMensturalCycleAuthorized() async {
+    final status = await _channel.invokeMethod("isMenstrualCycleAuthorized");
+    return status;
+  }
+
   /// Checks if cycling permission has been authorized
   Future<bool> isCyclingAuthorized() async {
     final status = await _channel.invokeMethod("isCyclingAuthorized");
@@ -331,6 +337,14 @@ class FlutterHealthFit {
     }
 
     return result["value"];
+  }
+
+  Future<String> getLatestMenstrualCycle() async {
+    if (!Platform.isIOS) return "";
+
+    final rawSamples = await _channel.invokeMethod("getMenstrualCycle");
+    return "ariel";
+    // return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }
 
   Future<List<String>?> getStepSourceList() async {

@@ -37,6 +37,11 @@ class HealthkitReader: NSObject {
     var sleepCategoryType: HKCategoryType {
         return HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
     }
+    
+    var menstrualFlowType: HKCategoryType {
+        return HKObjectType.categoryType(forIdentifier: .menstrualFlow)!
+    }
+
 
     var cyclingDistanceQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .distanceCycling)!
@@ -178,6 +183,7 @@ class HealthkitReader: NSObject {
                 HealthkitReader.weightQuantityType(),
                 HealthkitReader.heightQuantityType(),
                 sleepCategoryType,
+                menstrualFlowType,
             ] + quantityTypesToRead())
     }
     
@@ -213,6 +219,49 @@ class HealthkitReader: NSObject {
         let query = HKSampleQuery(
             sampleType: sleepCategoryType,
             predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]) {
+        (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in
+            
+            if let error = error {
+                print("Failed to get sleep data, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            if let rawResult = tmpResult {
+                let map = rawResult.map { item -> [String: Any] in
+                    let sample = item as! HKCategorySample
+                    let value = sample.value
+                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                    let source = sample.sourceRevision.source.bundleIdentifier
+                    
+                    print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
+                    
+                    return [
+                        "type": value,
+                        "start": startDate,
+                        "end": endDate,
+                        "source": source
+                    ]
+                    
+                }
+                handler(map, nil)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func getLatestMensturalCycle(handler: @escaping (_ result: [Any]?, _ error: Error?) -> Void)  {
+        
+        // Use a sortDescriptor to get the recent data first
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let query = HKSampleQuery(
+            sampleType: HKSampleType.categoryType(forIdentifier: .menstrualFlow)!,
+            predicate: nil,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]) {
         (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in

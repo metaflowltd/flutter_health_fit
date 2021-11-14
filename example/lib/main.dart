@@ -15,12 +15,14 @@ class _MyAppState extends State<MyApp> {
   String _lastWeightString = "";
   String _activityData = "";
   String _heartData = "";
+  String _cycleData = "";
   bool _isAllAuth = false;
   bool _isAnyAuth = false;
   bool _isSleep = false;
   bool _isHeart = false;
   bool _isWeight = false;
   bool _isSteps = false;
+  bool _isCycle = false;
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -30,6 +32,7 @@ class _MyAppState extends State<MyApp> {
     final isHeart = await flutterHealthFit.isHeartRateAuthorized();
     final isWeight = await flutterHealthFit.isWeightAuthorized();
     final isSteps = await flutterHealthFit.isStepsAuthorized();
+    final isCycle = await flutterHealthFit.isMensturalCycleAuthorized();
     setState(() {
       _isAllAuth = isAllAuth;
       _isAnyAuth = isAnyAuth;
@@ -37,6 +40,7 @@ class _MyAppState extends State<MyApp> {
       _isHeart = isHeart;
       _isWeight = isWeight;
       _isSteps = isSteps;
+      _isCycle = isCycle;
     });
   }
 
@@ -100,6 +104,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _getCycleData() async {
+    final current = await FlutterHealthFit().getLatestMenstrualCycle();
+    setState(() {
+      _cycleData = current.toString();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -115,25 +126,29 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Text('Health/Fit Authorized: $_isAuthorized\n'),
-                ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-                Text(
-                    "isAllAuth: $_isAllAuth, isAnyAuth: $_isAnyAuth, isSleep: $_isSleep, isHeart: $_isHeart, isWeight: $_isWeight, isSteps: $_isSteps"),
-                Text('Body sensors Authorized: $_isBodyAuthorized\n'),
-                ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
-                ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
-                Text('Basic health: $_basicHealthString\n'),
-                ElevatedButton(child: Text("Get Last 3 Days Weight"), onPressed: _getLast3DaysWeight),
-                Text('last weight: $_lastWeightString\n'),
-                ElevatedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
-                Text('\n$_activityData\n'),
-                ElevatedButton(child: Text("Get heart Data"), onPressed: _getHeartData),
-                Text('\n$_heartData\n'),
-              ],
+          child: SingleChildScrollView(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  Text('Health/Fit Authorized: $_isAuthorized\n'),
+                  ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
+                  Text(
+                      "isAllAuth: $_isAllAuth, isAnyAuth: $_isAnyAuth, isSleep: $_isSleep, isHeart: $_isHeart, isWeight: $_isWeight, isSteps: $_isSteps, isCycle: $_isCycle"),
+                  Text('Body sensors Authorized: $_isBodyAuthorized\n'),
+                  ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
+                  ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
+                  Text('Basic health: $_basicHealthString\n'),
+                  ElevatedButton(child: Text("Get Last 3 Days Weight"), onPressed: _getLast3DaysWeight),
+                  Text('last weight: $_lastWeightString\n'),
+                  ElevatedButton(child: Text("Get Activity Data"), onPressed: _getActivityHealthData),
+                  Text('\n$_activityData\n'),
+                  ElevatedButton(child: Text("Get heart Data"), onPressed: _getHeartData),
+                  Text('\n$_heartData\n'),
+                  ElevatedButton(child: Text("Get Cycle"), onPressed: _getCycleData),
+                  Text('\n$_cycleData\n'),
+                ],
+              ),
             ),
           ),
         ),
