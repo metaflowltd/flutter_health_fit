@@ -196,13 +196,13 @@ class FlutterHealthFit {
     });
   }
 
-  Future<HeartRateSample?>? getLatestHeartRateSample(int start, int end) =>
+  Future<HeartRateSample?> getLatestHeartRateSample(int start, int end) =>
       _getHeartRate("getHeartRateSample", start, end);
 
-  Future<List<HeartRateSample?>>? getAverageWalkingHeartRate(int start, int end) =>
+  Future<List<HeartRateSample>> getAverageWalkingHeartRate(int start, int end) =>
       _getAverageHeartRates("getAverageWalkingHeartRate", start, end);
 
-  Future<List<HeartRateSample?>>? getAverageRestingHeartRate(int start, int end) =>
+  Future<List<HeartRateSample>> getAverageRestingHeartRate(int start, int end) =>
       _getAverageHeartRates("getAverageRestingHeartRate", start, end);
 
   Future<HeartRateSample?> _getHeartRate(String methodName, int start, int end) async {
