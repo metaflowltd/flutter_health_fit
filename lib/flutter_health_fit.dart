@@ -10,6 +10,23 @@ enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
 enum SleepSampleType { inBed, asleep, awake }
 
+enum GFSleepSampleType {
+  // Unspecified or unknown if user is sleeping.
+  unspecified,
+  // Awake; user is awake.
+  awake,
+  // Sleeping; generic or non-granular sleep description.
+  sleep,
+  // Out of bed; user gets out of bed in the middle of a sleep session.
+  outOfBed,
+  // Light sleep; user is in a light sleep cycle.
+  sleepLight,
+  // Deep sleep; user is in a deep sleep cycle.
+  sleepDeep,
+  // REM sleep; user is in a REM sleep cyle.
+  sleepRem
+}
+
 class SleepSample {
   final SleepSampleType type;
   final DateTime start;
@@ -44,6 +61,48 @@ class SleepSample {
         return SleepSampleType.awake;
       default:
         throw ArgumentError("Can not map $input to SleepSampleType");
+    }
+  }
+}
+
+class GFSleepSample {
+  final GFSleepSampleType gfSleepSampleType;
+  final DateTime start;
+  final DateTime end;
+  final String source;
+
+  GFSleepSample({
+    required this.gfSleepSampleType,
+    required this.start,
+    required this.end,
+    required this.source,
+  });
+
+  GFSleepSample.fromMap(Map<String, dynamic> map)
+      : gfSleepSampleType = _googleFitTypeFromInt(map["type"].toInt()),
+        start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
+        end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
+        source = map["source"];
+
+
+  static GFSleepSampleType _googleFitTypeFromInt(int input) {
+    switch (input) {
+      case 0:
+        return GFSleepSampleType.unspecified;
+      case 1:
+        return GFSleepSampleType.awake;
+      case 2:
+        return GFSleepSampleType.sleep;
+      case 3:
+        return GFSleepSampleType.outOfBed;
+      case 4:
+        return GFSleepSampleType.sleepLight;
+      case 5:
+        return GFSleepSampleType.sleepDeep;
+      case 6:
+        return GFSleepSampleType.sleepRem;
+      default:
+        throw ArgumentError("Can not map $input to SleepSampleTypeGoogleFit");
     }
   }
 }
@@ -256,11 +315,25 @@ class FlutterHealthFit {
   /// Returns the sleep data from HealthKit.
   ///
   /// params: [start], [end] in milliseconds, starting from epoch time.
-  Future<List<SleepSample>?> getSleep(int start, int end) async {
-    if (!Platform.isIOS) return null;
+  Future<List<SleepSample>?> getSleepIOS(int start, int end) async {
+    if(!Platform.isIOS) return null;
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
+        "getSleepBySegment", {"start": start, "end": end});
+    return rawSamples
+        ?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
 
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+  /// Returns the sleep data from GoogleFit.
+  ///
+  /// params: [start], [end] in milliseconds, starting from epoch time.
+  Future<List<GFSleepSample>?> getSleepAndroid(int start, int end) async {
+    if(!Platform.isAndroid) return null;
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
+        "getSleepBySegment", {"start": start, "end": end});
+    return rawSamples
+        ?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   /// Calories returned in kCal for a given dated range, separated by sources.
