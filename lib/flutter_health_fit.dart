@@ -79,7 +79,7 @@ class GFSleepSample {
   });
 
   GFSleepSample.fromMap(Map<String, dynamic> map)
-      : gfSleepSampleType = _googleFitTypeFromInt(map["type"].toInt()),
+      : gfSleepSampleType = _googleFitTypeFromInt(map["type"]),
         start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
         end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
         source = map["source"];
