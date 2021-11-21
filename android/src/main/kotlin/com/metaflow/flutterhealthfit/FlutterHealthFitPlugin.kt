@@ -16,7 +16,9 @@ import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataPoint
 import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
+import com.google.android.gms.fitness.data.Field
 import com.google.android.gms.fitness.request.DataReadRequest
+import com.google.android.gms.fitness.request.SessionReadRequest
 import com.google.android.gms.tasks.Tasks
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -50,6 +52,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val weightDataType: DataType = DataType.TYPE_WEIGHT
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
         val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
+        val sleepDataType: DataType = DataType.TYPE_SLEEP_SEGMENT
 
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
@@ -170,6 +173,28 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         result.success(map)
                     } else {
                         result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
+            "getSleepBySegment" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+
+                getSleepDataInRange(
+                    start,
+                    end) { samples: List<Map<String, Any?>>?, e: Throwable? ->
+                    samples?.let {
+                        if (samples.isEmpty()) {
+                            result.success(null)
+                        } else {
+                            result.success(it)
+                        }
+                    } ?: kotlin.run {
+                        result.error(
+                            "failed",
+                            "Failed to retrieve sleep samples, reason: ${e?.localizedMessage}",
+                            e)
                     }
                 }
             }
@@ -484,6 +509,93 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }.start()
     }
 
+    private fun getSleepDataInRange(
+        start: Long,
+        end: Long,
+        result: (List<Map<String, Any?>>?, Throwable?) -> Unit) {
+
+        val fitnessOptions = FitnessOptions.builder().addDataType(sleepDataType).build()
+
+        val activity = activity ?: return
+        val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+
+        val SLEEP_STAGE_NAMES = arrayOf(
+            "Unused",
+            "Awake (during sleep)",
+            "Sleep",
+            "Out-of-bed",
+            "Light sleep",
+            "Deep sleep",
+            "REM sleep"
+        )
+
+        val request = SessionReadRequest.Builder()
+            .read(DataType.TYPE_SLEEP_SEGMENT)
+            // By default, only activity sessions are included, not sleep sessions. Specifying
+            // includeSleepSessions also sets the behaviour to *exclude* activity sessions.
+            .includeSleepSessions()
+            .enableServerQueries()
+            .readSessionsFromAllApps()
+            .setTimeInterval(start, end, TimeUnit.MILLISECONDS)
+            .build()
+
+        Fitness.getSessionsClient(activity, gsa).readSession(request)
+            .addOnSuccessListener { response ->
+
+                val resultList = mutableListOf<Map<String, Any?>>()
+
+                for (session in response.sessions) {
+                    val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
+                    val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
+                    Log.i(TAG, "Sleep between $sessionStart and $sessionEnd")
+
+                    val dataSets = response.getDataSet(session)
+
+                    // If the sleep session has finer granularity sub-components, extract them:
+                    if (dataSets.isNotEmpty()) {
+                        for (dataSet in dataSets) {
+                            for (point in dataSet.dataPoints) {
+                                try {
+                                    val sleepStageVal =
+                                        point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
+                                    val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
+                                    val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
+                                    val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
+                                    Log.i(
+                                        TAG,
+                                        "\t* Type $sleepStage between $segmentStart and $segmentEnd")
+                                    resultList.add(
+                                        mapOf(
+                                            "type" to sleepStageVal,
+                                            "start" to segmentStart,
+                                            "end" to segmentEnd,
+                                            "source" to session.appPackageName,
+                                        ))
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "\tFailed to parse data point", e)
+                                }
+                            }
+                        }
+                    } else {
+                        resultList.add(
+                            mapOf(
+                                "type" to 0,
+                                "start" to sessionStart,
+                                "end" to sessionEnd,
+                                "source" to session.appPackageName,
+                            ))
+                    }
+
+                }
+
+                result(resultList, null)
+            }
+            .addOnFailureListener { error ->
+                Log.e(TAG, "\tFailed to get sleep data", error)
+                result(null, error)
+            }
+    }
+
     private fun getHeartRateInRange(
         start: Long,
         end: Long,
@@ -584,6 +696,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         if (useSensitive) {
             builder.addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
+            builder.addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
         }
         return builder.build()
     }
