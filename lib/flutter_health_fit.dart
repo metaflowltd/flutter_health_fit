@@ -312,6 +312,12 @@ class FlutterHealthFit {
     return steps;
   }
 
+  /// On Android we want to sign out from Google Fit on the logout
+  Future<void> signOut() async {
+    if(!Platform.isAndroid) return;
+    return _channel.invokeMethod("signOut");
+  }
+
   /// Returns the sleep data from HealthKit.
   ///
   /// params: [start], [end] in milliseconds, starting from epoch time.
