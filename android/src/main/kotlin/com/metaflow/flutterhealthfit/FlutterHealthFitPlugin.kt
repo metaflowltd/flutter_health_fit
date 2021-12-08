@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataPoint
@@ -131,6 +132,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isAuthorized" -> result.success(
                 isAuthorized(
                     call.argument<Boolean>("useSensitive") ?: false))
+
+            "signOut" -> result.success(activity?.let { signOut(it) })
 
             "getBasicHealthData" -> result.success(HashMap<String, String>())
 
@@ -500,7 +503,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
-
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
@@ -573,6 +576,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                         ))
                                 } catch (e: Exception) {
                                     Log.e(TAG, "\tFailed to parse data point", e)
+                                    handleGoogleDisconnection(e, activity)
                                 }
                             }
                         }
@@ -632,17 +636,21 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         result(dataPoints, null)
                     }
                 }
-
-
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
-
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
             }
 
         }.start()
+    }
+
+    private fun signOut(activity: Activity) {
+        val client =
+            GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
+        Tasks.await(client.signOut())
     }
 
     private fun getWeight(
@@ -681,12 +689,24 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
             }
 
         }.start()
+    }
+
+    /**
+     * This is a workaround for a rare case, when google client can be disconnected, in that case
+     * we logging out the user from google services, and revoking the permission.
+     * It will allow the user to login properly and ask for a permissions again.
+     */
+    private fun handleGoogleDisconnection(e: Throwable, activity: Activity) {
+        if ((e.cause as? ApiException)?.statusCode == 4) {
+            signOut(activity)
+        }
     }
 
     private fun getFitnessOptions(useSensitive: Boolean): FitnessOptions {
