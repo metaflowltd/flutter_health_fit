@@ -503,9 +503,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
-                if ((e.cause as? ApiException)?.statusCode == 4) {
-                    signOut(activity)
-                }
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
@@ -578,9 +576,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                         ))
                                 } catch (e: Exception) {
                                     Log.e(TAG, "\tFailed to parse data point", e)
-                                    if ((e.cause as? ApiException)?.statusCode == 4) {
-                                        signOut(activity)
-                                    }
+                                    handleGoogleDisconnection(e, activity)
                                 }
                             }
                         }
@@ -642,9 +638,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
-                if ((e.cause as? ApiException)?.statusCode == 4) {
-                    signOut(activity)
-                }
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
@@ -695,15 +689,24 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "failed: ${e.message}")
-                if ((e.cause as? ApiException)?.statusCode == 4) {
-                    signOut(activity)
-                }
+                handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
             }
 
         }.start()
+    }
+
+    /**
+     * This is a workaround for a rare case, when google client can be disconnected, in that case
+     * we logging out the user from google services, and revoking the permission.
+     * It will allow the user to login properly and ask for a permissions again.
+     */
+    private fun handleGoogleDisconnection(e: Throwable, activity: Activity) {
+        if ((e.cause as? ApiException)?.statusCode == 4) {
+            signOut(activity)
+        }
     }
 
     private fun getFitnessOptions(useSensitive: Boolean): FitnessOptions {
