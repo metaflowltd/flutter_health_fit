@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
+enum QuantityUnit { percent, cm }
+final QuantityUnitToString = Map<QuantityUnit, String>()..addAll({QuantityUnit.percent: "%", QuantityUnit.cm: "cm"});
 
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
@@ -200,6 +202,18 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if Waist Size permission has been authorized
+  Future<bool> isWaistSizeAuthorized() async {
+    final status = await _channel.invokeMethod("isWaistSizeAuthorized");
+    return status;
+  }
+
+  /// Checks if Body Fat permission has been authorized
+  Future<bool> isBodyFatPercentageAuthorized() async {
+    final status = await _channel.invokeMethod("isBodyFatPercentageAuthorized");
+    return status;
+  }
+
   /// Checks if weight permission has been authorized
   Future<bool> isWeightAuthorized() async {
     final status = await _channel.invokeMethod("isWeightAuthorized");
@@ -245,6 +259,22 @@ class FlutterHealthFit {
 
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
+  }
+
+  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end, {QuantityUnit unit = QuantityUnit.percent}) async {
+    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
+    return last?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
+  }
+
+  Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
+    Map? last = await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
+    return last?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
   }
 
   Future<Map<DateTime, double>?> getWeight(int start, int end) async {
