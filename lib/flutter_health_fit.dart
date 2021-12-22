@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
+enum QuantityUnit { percent, cm }
+final QuantityUnitToString = Map<QuantityUnit, String>()..addAll({QuantityUnit.percent: "%", QuantityUnit.cm: "cm"});
 
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
@@ -259,16 +261,16 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
-    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": "%"});
+  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end, {QuantityUnit unit = QuantityUnit.percent}) async {
+    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
   }
 
-  Future<Map<DateTime, double>?> getWaistSize(int start, int end) async {
-    Map? last = await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": "cm"});
+  Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
+    Map? last = await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
