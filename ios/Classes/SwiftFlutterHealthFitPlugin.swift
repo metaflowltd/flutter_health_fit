@@ -69,12 +69,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.cyclingDistanceQuantityType, call: call, result: result)
 
         case "getWaistSizeBySegment":
-        if #available(iOS 11.0, *) {
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType, call: call, result: result)
-        }
-        else {
-            result(nil)
-        }
 
         case "getBodyFatPercentageBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType, call: call, result: result)
@@ -207,13 +202,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getRequestStatus(types: [reader.dietaryCarbohydrates, reader.dietaryFiber], result: result)
 
         case "isWaistSizeAuthorized":
-            if #available(iOS 11.0, *) {
-                let reader = HealthkitReader.sharedInstance
-                getRequestStatus(types: [reader.waistSizeQuantityType, reader.dietaryFiber], result: result)
-            }
-            else {
-                result(false)
-            }
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.waistSizeQuantityType, reader.dietaryFiber], result: result)
 
         case "isBodyFatPercentageAuthorized":
             let reader = HealthkitReader.sharedInstance

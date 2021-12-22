@@ -90,7 +90,6 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
     }
     
-    @available(iOS 11.0, *)
     var waistSizeQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!
     }
