@@ -200,6 +200,18 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if Waist Size permission has been authorized
+  Future<bool> isWaistSizeAuthorized() async {
+    final status = await _channel.invokeMethod("isWaistSizeAuthorized");
+    return status;
+  }
+
+  /// Checks if Body Fat permission has been authorized
+  Future<bool> isBodyFatPercentageAuthorized() async {
+    final status = await _channel.invokeMethod("isBodyFatPercentageAuthorized");
+    return status;
+  }
+
   /// Checks if weight permission has been authorized
   Future<bool> isWeightAuthorized() async {
     final status = await _channel.invokeMethod("isWeightAuthorized");
@@ -245,6 +257,22 @@ class FlutterHealthFit {
 
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
+  }
+
+  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
+    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": "%"});
+    return last?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
+  }
+
+  Future<Map<DateTime, double>?> getWaistSize(int start, int end) async {
+    Map? last = await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": "cm"});
+    return last?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
   }
 
   Future<Map<DateTime, double>?> getWeight(int start, int end) async {

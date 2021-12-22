@@ -90,6 +90,15 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
     }
     
+    @available(iOS 11.0, *)
+    var waistSizeQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!
+    }
+
+    var bodyFatPercentageQuantityType: HKQuantityType{
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
+    }
+    
     func quantityTypesToRead() -> [HKQuantityType]{
         var types = [
             stepsQuantityType,
@@ -104,10 +113,15 @@ class HealthkitReader: NSObject {
             dietarySugar,
             dietaryFatTotal,
             dietaryProtein,
-            dietaryCarbohydrates
+            dietaryCarbohydrates,
+            bodyFatPercentageQuantityType,
         ]
         if #available(iOS 11.0, *) {
-            types += [restingHeartRateQuantityType, walkingHeartRateAverageQuantityType, heartRateVariabilityQuantityType]
+            types += [restingHeartRateQuantityType,
+                      walkingHeartRateAverageQuantityType,
+                      heartRateVariabilityQuantityType,
+                      waistSizeQuantityType,
+            ]
         }
         return types
     }
@@ -302,6 +316,44 @@ class HealthkitReader: NSObject {
         }
     }
 
+    func getQuantity(quantityType: HKQuantityType,
+                             start: TimeInterval,
+                             end: TimeInterval,
+                             unit: String,
+                             completion: @escaping ([Int: Double]?, Error?) -> Void) {
+        
+        let unitType = HKUnit(from: unit)
+        
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let sortByTime = NSSortDescriptor(key:HKSampleSortIdentifierEndDate, ascending:false)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate,
+                                                    end: endDate,
+                                                    options: [])
+
+        let query = HKSampleQuery(sampleType:quantityType,
+                                  predicate:predicate,
+                                  limit:1,
+                                  sortDescriptors:[sortByTime],
+                                  resultsHandler:{(query, results, error) in
+            
+            guard let results = results else {
+                completion(nil, error)
+                return
+            }
+            
+            guard let quantitySample = results.first as? HKQuantitySample else {
+                completion(nil, nil)
+                return
+            }
+            let quantity = quantitySample.quantity.doubleValue(for: unitType)
+            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
+            completion([timestamp : quantity], nil)
+        })
+        healthStore.execute(query)
+    }
+    
     func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
             let startDate = Date(timeIntervalSince1970: start)
             let endDate = Date(timeIntervalSince1970: end)
@@ -534,7 +586,7 @@ class HealthkitReader: NSObject {
     class func heightQuantityType() -> HKQuantityType{
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.height)!
     }
-    
+
     //MARK: - For Profile
     
     func getLastWeightReading(_ completion:@escaping ( (_ weight:Double?) -> ())){
