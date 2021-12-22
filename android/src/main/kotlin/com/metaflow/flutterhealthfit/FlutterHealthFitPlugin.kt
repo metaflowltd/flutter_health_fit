@@ -515,7 +515,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun getSleepDataInRange(
         start: Long,
         end: Long,
-        result: (List<Map<String, Any?>>?, Throwable?) -> Unit) {
+        result: (List<Map<String, Any?>>?, Throwable?) -> Unit
+    ) {
 
         val fitnessOptions = FitnessOptions.builder().addDataType(sleepDataType).build()
 
@@ -548,48 +549,52 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val resultList = mutableListOf<Map<String, Any?>>()
 
                 for (session in response.sessions) {
+                    val sessionResults = mutableListOf<Map<String, Any?>>()
                     val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
                     val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
                     Log.i(TAG, "Sleep between $sessionStart and $sessionEnd")
 
                     val dataSets = response.getDataSet(session)
 
-                    // If the sleep session has finer granularity sub-components, extract them:
-                    if (dataSets.isNotEmpty()) {
-                        for (dataSet in dataSets) {
-                            for (point in dataSet.dataPoints) {
-                                try {
-                                    val sleepStageVal =
-                                        point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
-                                    val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
-                                    val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
-                                    val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
-                                    Log.i(
-                                        TAG,
-                                        "\t* Type $sleepStage between $segmentStart and $segmentEnd")
-                                    resultList.add(
-                                        mapOf(
-                                            "type" to sleepStageVal,
-                                            "start" to segmentStart,
-                                            "end" to segmentEnd,
-                                            "source" to session.appPackageName,
-                                        ))
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "\tFailed to parse data point", e)
-                                    handleGoogleDisconnection(e, activity)
-                                }
+                    for (dataSet in dataSets) {
+                        for (point in dataSet.dataPoints) {
+                            try {
+                                val sleepStageVal =
+                                    point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
+                                val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
+                                val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
+                                val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
+                                Log.i(
+                                    TAG,
+                                    "\t* Type $sleepStage between $segmentStart and $segmentEnd"
+                                )
+                                sessionResults.add(
+                                    mapOf(
+                                        "type" to sleepStageVal,
+                                        "start" to segmentStart,
+                                        "end" to segmentEnd,
+                                        "source" to session.appPackageName,
+                                    )
+                                )
+                            } catch (e: Exception) {
+                                Log.e(TAG, "\tFailed to parse data point", e)
+                                handleGoogleDisconnection(e, activity)
                             }
                         }
-                    } else {
+                    }
+                    // If we were unable to get granular data from the session, we will use not rough data:
+                    if (sessionResults.isEmpty()) {
                         resultList.add(
                             mapOf(
                                 "type" to 0,
                                 "start" to sessionStart,
                                 "end" to sessionEnd,
                                 "source" to session.appPackageName,
-                            ))
+                            )
+                        )
+                    } else {
+                        resultList.addAll(sessionResults)
                     }
-
                 }
 
                 result(resultList, null)
