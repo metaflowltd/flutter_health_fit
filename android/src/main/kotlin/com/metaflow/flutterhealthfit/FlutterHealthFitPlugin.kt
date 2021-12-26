@@ -6,7 +6,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -24,12 +23,9 @@ import com.google.android.gms.tasks.Tasks
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -43,7 +39,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     PluginRegistry.ActivityResultListener,
     PluginRegistry.RequestPermissionsResultListener,
     FlutterPlugin,
-    ActivityAware {
+    ActivityAware, EventChannel.StreamHandler {
 
     companion object {
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
@@ -70,8 +66,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
+    private var logger: EventChannel.EventSink? = null
     private var binding: ActivityPluginBinding? = null
     private var channel: MethodChannel? = null
+    private var logsChannel: EventChannel? = null
     private var deferredResult: Result? = null
     private var activity: Activity? = null
 
@@ -82,11 +80,17 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun onAttachedToEngine(messenger: BinaryMessenger) {
         channel = MethodChannel(messenger, "flutter_health_fit")
         channel?.setMethodCallHandler(this)
+
+        logsChannel = EventChannel(messenger, "flutter_health_fit_logs_channel");
+        logsChannel?.setStreamHandler(this)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel?.setMethodCallHandler(null)
         channel = null
+
+        logsChannel?.setStreamHandler(null)
+        logsChannel = null
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -131,7 +135,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isAuthorized" -> result.success(
                 isAuthorized(
-                    call.argument<Boolean>("useSensitive") ?: false))
+                    call.argument<Boolean>("useSensitive") ?: false
+                )
+            )
 
             "signOut" -> result.success(activity?.let { signOut(it) })
 
@@ -164,14 +170,16 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val timeUnit =
                     mapOf(
                         LumenTimeUnit.DAYS to TimeUnit.DAYS,
-                        LumenTimeUnit.MINUTES to TimeUnit.MINUTES).getValue(
+                        LumenTimeUnit.MINUTES to TimeUnit.MINUTES
+                    ).getValue(
                         lumenTimeUnit
                     )
                 getStepsInRange(
                     start,
                     end,
                     duration,
-                    timeUnit) { map: Map<Long, Int>?, e: Throwable? ->
+                    timeUnit
+                ) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         result.success(map)
                     } else {
@@ -186,7 +194,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
                 getSleepDataInRange(
                     start,
-                    end) { samples: List<Map<String, Any?>>?, e: Throwable? ->
+                    end
+                ) { samples: List<Map<String, Any?>>?, e: Throwable? ->
                     samples?.let {
                         if (samples.isEmpty()) {
                             result.success(null)
@@ -197,7 +206,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         result.error(
                             "failed",
                             "Failed to retrieve sleep samples, reason: ${e?.localizedMessage}",
-                            e)
+                            e
+                        )
                     }
                 }
             }
@@ -218,7 +228,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     start,
                     end,
                     duration,
-                    TimeUnit.MILLISECONDS) { map: Map<Long, Int>?, e: Throwable? ->
+                    TimeUnit.MILLISECONDS
+                ) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         assert(map.size <= 1) { "getTotalStepsInInterval should return only one interval. Found: ${map.size}" }
                         result.success(map.values.firstOrNull())
@@ -326,12 +337,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun isStepsAuthorized(): Boolean {
         return isAuthorized(
             FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
-                .build())
+                .build()
+        )
     }
 
     private fun isSleepAuthorized(): Boolean {
         return isAuthorized(
-            FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build())
+            FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build()
+        )
     }
 
     private fun isWeightAuthorized(): Boolean {
@@ -377,12 +390,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun recordDataPointsIfGranted(
         isGranted: Boolean,
         dataPoints: List<DataType>,
-        result: Result?) {
+        result: Result?
+    ) {
         if (isGranted) {
             val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
                 recordFitnessData(it) { success ->
-                    Log.i(TAG, "Record $it success: $success!")
+                    logger?.success(" $TAG | Record $it success: $success!")
                     if (!success) failedTypes.add(it)
                 }
             }
@@ -398,26 +412,35 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun createHeartRateSampleMap(
         millisSinceEpoc: Long,
         value: Float,
-        sourceApp: String?): Map<String, Any?> {
+        sourceApp: String?
+    ): Map<String, Any?> {
         return mapOf(
             "timestamp" to millisSinceEpoc,
             "value" to value.toInt(),
-            "sourceApp" to sourceApp)
+            "sourceApp" to sourceApp
+        )
     }
 
     private fun isAuthorized(useSensitive: Boolean): Boolean {
         val fitnessOptions = getFitnessOptions(useSensitive)
         val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
-        return GoogleSignIn.hasPermissions(account, fitnessOptions)
+        logger?.success("isAuthorized: Google account = $account")
+        val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
+        logger?.success("isAuthorized result: hasPermissions = $hasPermissions")
+        return hasPermissions
     }
 
     private fun connect(useSensitive: Boolean, result: Result) {
+        logger?.success("Connecting with useSensitive = $useSensitive")
         val fitnessOptions = getFitnessOptions(useSensitive)
         if (!isAuthorized(useSensitive)) {
+            logger?.success("User has no permissions")
             deferredResult = result
             activity?.let { activity ->
                 val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
+                logger?.success("Calling for google client sign out")
                 client.signOut().addOnCompleteListener {
+                    logger?.success("Signed out, requesting permissions again")
                     GoogleSignIn.requestPermissions(
                         activity,
                         GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
@@ -427,6 +450,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
         } else {
+            logger?.success("User authorized all required permissions")
             result.success(true)
         }
     }
@@ -436,7 +460,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         activity?.let { activity ->
             Fitness.getRecordingClient(
                 activity,
-                GoogleSignIn.getAccountForExtension(activity, fitnessOptions))
+                GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+            )
                 .subscribe(type)
                 .addOnSuccessListener {
                     callback(true)
@@ -479,7 +504,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                Log.d(TAG, "buckets count: ${readDataResult.buckets.size}")
+                logger?.success("$TAG | buckets count: ${readDataResult.buckets.size}")
 
                 val map = HashMap<Long, Int>() // need to return to Dart so can't use sparse array
                 for (bucket in readDataResult.buckets) {
@@ -490,19 +515,19 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         val startTime = dp.getStartTime(TimeUnit.MILLISECONDS)
                         val startDate = Date(startTime)
                         val endDate = Date(dp.getEndTime(TimeUnit.MILLISECONDS))
-                        Log.d(TAG, "returning $count steps for $startDate - $endDate")
+                        logger?.success("$TAG | returning $count steps for $startDate - $endDate")
                         map[startTime] = count.asInt()
                     } else {
                         val startDay = Date(start)
                         val endDay = Date(end)
-                        Log.d(TAG, "no steps for $startDay - $endDay")
+                        logger?.success("$TAG | no steps for $startDay - $endDay")
                     }
                 }
                 activity.runOnUiThread {
                     result(map, null)
                 }
             } catch (e: Throwable) {
-                Log.e(TAG, "failed: ${e.message}")
+                logger?.success("$TAG | failed to get steps in range ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -552,7 +577,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     val sessionResults = mutableListOf<Map<String, Any?>>()
                     val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
                     val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
-                    Log.i(TAG, "Sleep between $sessionStart and $sessionEnd")
+                    logger?.success("$TAG | Sleep between $sessionStart and $sessionEnd")
 
                     val dataSets = response.getDataSet(session)
 
@@ -564,10 +589,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                 val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
                                 val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
                                 val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
-                                Log.i(
-                                    TAG,
-                                    "\t* Type $sleepStage between $segmentStart and $segmentEnd"
-                                )
+                                logger?.success("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
                                 sessionResults.add(
                                     mapOf(
                                         "type" to sleepStageVal,
@@ -577,7 +599,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                     )
                                 )
                             } catch (e: Exception) {
-                                Log.e(TAG, "\tFailed to parse data point", e)
+                                logger?.success("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
                                 handleGoogleDisconnection(e, activity)
                             }
                         }
@@ -600,7 +622,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 result(resultList, null)
             }
             .addOnFailureListener { error ->
-                Log.e(TAG, "\tFailed to get sleep data", error)
+                logger?.success("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
                 result(null, error)
             }
     }
@@ -608,7 +630,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun getHeartRateInRange(
         start: Long,
         end: Long,
-        result: (List<DataPoint>?, Throwable?) -> Unit) {
+        result: (List<DataPoint>?, Throwable?) -> Unit
+    ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(heartRateDataType).build()
 
         val activity = activity ?: return
@@ -624,7 +647,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                Log.d(TAG, "datasets count: ${readDataResult.dataSets.size}")
+                logger?.success("$TAG | datasets count: ${readDataResult.dataSets.size}")
 
                 if (readDataResult.dataSets.isEmpty()) {
                     activity.runOnUiThread {
@@ -634,7 +657,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     val dataPoints = mutableListOf<DataPoint>()
 
                     for (dataSet in readDataResult.dataSets) {
-                        Log.d(TAG, "data set has ${dataSet.dataPoints.size} points")
+                        logger?.success("$TAG | data set has ${dataSet.dataPoints.size} points")
                         dataPoints.addAll(dataSet.dataPoints)
                     }
                     activity.runOnUiThread {
@@ -642,7 +665,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     }
                 }
             } catch (e: Throwable) {
-                Log.e(TAG, "failed: ${e.message}")
+                logger?.success("$TAG | failed: ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -653,6 +676,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun signOut(activity: Activity) {
+        logger?.success("$TAG | signing out from google client")
         val client =
             GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
         Tasks.await(client.signOut())
@@ -661,7 +685,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun getWeight(
         startTime: Long,
         endTime: Long,
-        result: (Map<Long, Float>?, Throwable?) -> Unit) {
+        result: (Map<Long, Float>?, Throwable?) -> Unit
+    ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(weightDataType).build()
 
         val activity = activity ?: return
@@ -687,13 +712,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 if (dateInMillis != null) {
                     map = HashMap<Long, Float>()
                     map!![dateInMillis] = lastWeight!!
-                    Log.d(TAG, "lastWeight: $lastWeight")
+                    logger?.success("$TAG | lastWeight: $lastWeight")
                 }
                 activity.runOnUiThread {
                     result(map, null)
                 }
             } catch (e: Throwable) {
-                Log.e(TAG, "failed: ${e.message}")
+                logger?.success("$TAG | failed: ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -709,7 +734,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
      * It will allow the user to login properly and ask for a permissions again.
      */
     private fun handleGoogleDisconnection(e: Throwable, activity: Activity) {
+        logger?.success("$TAG | checking if disconnected from the client")
         if ((e.cause as? ApiException)?.statusCode == 4) {
+            logger?.success("$TAG | disconnected from Google client")
             signOut(activity)
         }
     }
@@ -749,5 +776,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             else ->  // Ignore all other requests.
                 false
         }
+    }
+
+    override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+        this.logger = events
+    }
+
+    override fun onCancel(arguments: Any?) {
+        this.logger?.endOfStream()
     }
 }

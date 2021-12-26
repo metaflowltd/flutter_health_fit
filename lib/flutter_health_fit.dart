@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
 enum QuantityUnit { percent, cm }
-final QuantityUnitToString = Map<QuantityUnit, String>()..addAll({QuantityUnit.percent: "%", QuantityUnit.cm: "cm"});
+
+final _quantityUnitToString = Map<QuantityUnit, String>()
+  ..addAll({QuantityUnit.percent: "%", QuantityUnit.cm: "cm"});
 
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
@@ -147,7 +149,10 @@ class HeartRateSample {
 }
 
 class FlutterHealthFit {
-  static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
+  static const MethodChannel _channel =
+      const MethodChannel('flutter_health_fit');
+  static const EventChannel _logsChannel =
+      const EventChannel('flutter_health_fit_logs_channel');
 
   factory FlutterHealthFit() => _singleton;
 
@@ -171,6 +176,12 @@ class FlutterHealthFit {
     final status = await _channel.invokeMethod("isAuthorized", {"useSensitive": useSensitive});
     return status;
   }
+
+  /// This stream exposes native logs coming from the plugin, in order to be able
+  /// debug
+  Stream<String>? get androidNativeLogsMessages => Platform.isAndroid
+      ? _logsChannel.receiveBroadcastStream().map((event) => event as String)
+      : null;
 
   /// Checks if any health permission has been authorized
   Future<bool> isAnyPermissionAuthorized() async {
@@ -262,7 +273,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end, {QuantityUnit unit = QuantityUnit.percent}) async {
-    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
+    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment',
+        {"start": start, "end": end, "unit": _quantityUnitToString[unit]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
@@ -270,7 +282,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
-    Map? last = await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": QuantityUnitToString[unit]});
+    Map? last = await _channel.invokeMethod('getWaistSizeBySegment',
+        {"start": start, "end": end, "unit": _quantityUnitToString[unit]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
