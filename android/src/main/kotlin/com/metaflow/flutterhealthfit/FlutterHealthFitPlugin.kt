@@ -66,7 +66,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private var logger: EventChannel.EventSink? = null
+    private var logger : EventChannel.EventSink? = null
     private var binding: ActivityPluginBinding? = null
     private var channel: MethodChannel? = null
     private var logsChannel: EventChannel? = null
@@ -396,7 +396,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
                 recordFitnessData(it) { success ->
-                    logger?.success(" $TAG | Record $it success: $success!")
+                    sendNativeLog(" $TAG | Record $it success: $success!")
                     if (!success) failedTypes.add(it)
                 }
             }
@@ -424,23 +424,29 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun isAuthorized(useSensitive: Boolean): Boolean {
         val fitnessOptions = getFitnessOptions(useSensitive)
         val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
-        logger?.success("isAuthorized: Google account = $account")
+        sendNativeLog("isAuthorized: Google account = $account")
         val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
-        logger?.success("isAuthorized result: hasPermissions = $hasPermissions")
+        sendNativeLog("isAuthorized result: hasPermissions = $hasPermissions")
         return hasPermissions
     }
 
+    private fun sendNativeLog(message: String) {
+        activity?.runOnUiThread {
+            logger?.success(message)
+        }
+    }
+
     private fun connect(useSensitive: Boolean, result: Result) {
-        logger?.success("Connecting with useSensitive = $useSensitive")
+        sendNativeLog("Connecting with useSensitive = $useSensitive")
         val fitnessOptions = getFitnessOptions(useSensitive)
         if (!isAuthorized(useSensitive)) {
-            logger?.success("User has no permissions")
+            sendNativeLog("User has no permissions")
             deferredResult = result
             activity?.let { activity ->
                 val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
-                logger?.success("Calling for google client sign out")
+                sendNativeLog("Calling for google client sign out")
                 client.signOut().addOnCompleteListener {
-                    logger?.success("Signed out, requesting permissions again")
+                    sendNativeLog("Signed out, requesting permissions again")
                     GoogleSignIn.requestPermissions(
                         activity,
                         GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
@@ -450,7 +456,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
         } else {
-            logger?.success("User authorized all required permissions")
+            sendNativeLog("User authorized all required permissions")
             result.success(true)
         }
     }
@@ -504,7 +510,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                logger?.success("$TAG | buckets count: ${readDataResult.buckets.size}")
+                sendNativeLog("$TAG | buckets count: ${readDataResult.buckets.size}")
 
                 val map = HashMap<Long, Int>() // need to return to Dart so can't use sparse array
                 for (bucket in readDataResult.buckets) {
@@ -515,19 +521,19 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         val startTime = dp.getStartTime(TimeUnit.MILLISECONDS)
                         val startDate = Date(startTime)
                         val endDate = Date(dp.getEndTime(TimeUnit.MILLISECONDS))
-                        logger?.success("$TAG | returning $count steps for $startDate - $endDate")
+                        sendNativeLog("$TAG | returning $count steps for $startDate - $endDate")
                         map[startTime] = count.asInt()
                     } else {
                         val startDay = Date(start)
                         val endDay = Date(end)
-                        logger?.success("$TAG | no steps for $startDay - $endDay")
+                        sendNativeLog("$TAG | no steps for $startDay - $endDay")
                     }
                 }
                 activity.runOnUiThread {
                     result(map, null)
                 }
             } catch (e: Throwable) {
-                logger?.success("$TAG | failed to get steps in range ${e.message}")
+                sendNativeLog("$TAG | failed to get steps in range ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -577,7 +583,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     val sessionResults = mutableListOf<Map<String, Any?>>()
                     val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
                     val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
-                    logger?.success("$TAG | Sleep between $sessionStart and $sessionEnd")
+                    sendNativeLog("$TAG | Sleep between $sessionStart and $sessionEnd")
 
                     val dataSets = response.getDataSet(session)
 
@@ -589,7 +595,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                 val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
                                 val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
                                 val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
-                                logger?.success("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
+                                sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
                                 sessionResults.add(
                                     mapOf(
                                         "type" to sleepStageVal,
@@ -599,7 +605,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                     )
                                 )
                             } catch (e: Exception) {
-                                logger?.success("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
+                                sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
                                 handleGoogleDisconnection(e, activity)
                             }
                         }
@@ -622,7 +628,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 result(resultList, null)
             }
             .addOnFailureListener { error ->
-                logger?.success("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
+                sendNativeLog("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
                 result(null, error)
             }
     }
@@ -647,7 +653,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                logger?.success("$TAG | datasets count: ${readDataResult.dataSets.size}")
+                sendNativeLog("$TAG | datasets count: ${readDataResult.dataSets.size}")
 
                 if (readDataResult.dataSets.isEmpty()) {
                     activity.runOnUiThread {
@@ -657,7 +663,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     val dataPoints = mutableListOf<DataPoint>()
 
                     for (dataSet in readDataResult.dataSets) {
-                        logger?.success("$TAG | data set has ${dataSet.dataPoints.size} points")
+                        sendNativeLog("$TAG | data set has ${dataSet.dataPoints.size} points")
                         dataPoints.addAll(dataSet.dataPoints)
                     }
                     activity.runOnUiThread {
@@ -665,7 +671,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     }
                 }
             } catch (e: Throwable) {
-                logger?.success("$TAG | failed: ${e.message}")
+                sendNativeLog("$TAG | failed: ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -676,7 +682,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun signOut(activity: Activity) {
-        logger?.success("$TAG | signing out from google client")
+        sendNativeLog("$TAG | signing out from google client")
         val client =
             GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
         Tasks.await(client.signOut())
@@ -712,13 +718,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 if (dateInMillis != null) {
                     map = HashMap<Long, Float>()
                     map!![dateInMillis] = lastWeight!!
-                    logger?.success("$TAG | lastWeight: $lastWeight")
+                    sendNativeLog("$TAG | lastWeight: $lastWeight")
                 }
                 activity.runOnUiThread {
                     result(map, null)
                 }
             } catch (e: Throwable) {
-                logger?.success("$TAG | failed: ${e.message}")
+                sendNativeLog("$TAG | failed: ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
@@ -734,9 +740,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
      * It will allow the user to login properly and ask for a permissions again.
      */
     private fun handleGoogleDisconnection(e: Throwable, activity: Activity) {
-        logger?.success("$TAG | checking if disconnected from the client")
+        sendNativeLog("$TAG | checking if disconnected from the client")
         if ((e.cause as? ApiException)?.statusCode == 4) {
-            logger?.success("$TAG | disconnected from Google client")
+            sendNativeLog("$TAG | disconnected from Google client")
             signOut(activity)
         }
     }
