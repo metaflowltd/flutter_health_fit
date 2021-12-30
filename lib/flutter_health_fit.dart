@@ -272,9 +272,9 @@ class FlutterHealthFit {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end, {QuantityUnit unit = QuantityUnit.percent}) async {
+  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
     Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment',
-        {"start": start, "end": end, "unit": _quantityUnitToString[unit]});
+        {"start": start, "end": end, "unit": _quantityUnitToString[QuantityUnit.percent]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
