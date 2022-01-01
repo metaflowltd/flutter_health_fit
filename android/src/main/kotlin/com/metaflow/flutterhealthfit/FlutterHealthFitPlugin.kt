@@ -50,6 +50,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
         val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
         val sleepDataType: DataType = DataType.TYPE_SLEEP_SEGMENT
+        val bodyFatDataType: DataType = DataType.TYPE_BODY_FAT_PERCENTAGE
 
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
@@ -81,7 +82,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         channel = MethodChannel(messenger, "flutter_health_fit")
         channel?.setMethodCallHandler(this)
 
-        logsChannel = EventChannel(messenger, "flutter_health_fit_logs_channel");
+        logsChannel = EventChannel(messenger, "flutter_health_fit_logs_channel")
         logsChannel?.setStreamHandler(this)
     }
 
@@ -153,6 +154,18 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 getWeight(start, end) { map: Map<Long, Float>?, e: Throwable? ->
+                    if (e != null) {
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(map)
+                    }
+                }
+            }
+
+            "getBodyFatPercentageBySegment" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                getBodyFat(start, end) { map: Map<Long, Float>?, e: Throwable? ->
                     if (e != null) {
                         result.error("failed", e.message, null)
                     } else {
@@ -309,6 +322,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
 
+            "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
+
             "isCarbsAuthorized" -> // only implemented on iOS
                 result.success(false)
 
@@ -354,6 +369,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return isAuthorized(FitnessOptions.builder().addDataType(weightDataType).build())
     }
 
+    private fun isBodyFatAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
+    }
+
     private fun isHeartRateSampleAuthorized(): Boolean {
         return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
     }
@@ -379,6 +398,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         resultCode == Activity.RESULT_OK, listOfNotNull(
                         stepsDataType,
                         weightDataType,
+                        bodyFatDataType,
                         if (hasSensorPermissionCompat()) heartRateDataType else null
                 ),
                         deferredResult
@@ -689,6 +709,52 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val client =
                 GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
         Tasks.await(client.signOut())
+    }
+
+    private fun getBodyFat(
+        startTime: Long,
+        endTime: Long,
+        result: (Map<Long, Float>?, Throwable?) -> Unit
+    ) {
+        val fitnessOptions = FitnessOptions.builder().addDataType(bodyFatDataType).build()
+
+        val activity = activity ?: return
+        val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+
+        val request = DataReadRequest.Builder().read(DataType.TYPE_BODY_FAT_PERCENTAGE)
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .bucketByTime(1, TimeUnit.DAYS)
+            .setLimit(1)
+            .build()
+
+        val response = Fitness.getHistoryClient(activity, gsa).readData(request)
+
+        var map: HashMap<Long, Float>? = null
+        Thread {
+            try {
+                val readDataResult = Tasks.await(response)
+                val dp =
+                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                val lastBodyFat = dp?.getValue(bodyFatDataType.fields[0])?.asFloat()
+                val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
+
+                if (dateInMillis != null) {
+                    map = HashMap<Long, Float>()
+                    map!![dateInMillis] = lastBodyFat!!
+                    sendNativeLog("$TAG | lastBodyFat: $lastBodyFat")
+                }
+                activity.runOnUiThread {
+                    result(map, null)
+                }
+            } catch (e: Throwable) {
+                sendNativeLog("$TAG | failed: ${e.message}")
+                handleGoogleDisconnection(e, activity)
+                activity.runOnUiThread {
+                    result(null, e)
+                }
+            }
+
+        }.start()
     }
 
     private fun getWeight(
