@@ -229,7 +229,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 result.success(emptyMap<Long, Int>())
             }
             "getWorkoutsBySegment" -> { // only implemented on iOS
-                result.success(emptyMap<Long, Double>())
+                result.success(emptyMap<String, Any?>())
             }
 
             "getCyclingDistanceBySegment" -> { // only implemented on iOS
