@@ -15,8 +15,8 @@ enum TimeUnit: Int {
 }
 
 class HealthkitReader: NSObject {
-
-    let workoutPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+    
+    var workoutPredicate =  [
         HKQuery.predicateForWorkouts(with: .americanFootball),
         HKQuery.predicateForWorkouts(with: .archery),
         HKQuery.predicateForWorkouts(with: .australianFootball),
@@ -30,8 +30,7 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .crossTraining),
         HKQuery.predicateForWorkouts(with: .curling),
         HKQuery.predicateForWorkouts(with: .cycling),
-        HKQuery.predicateForWorkouts(with: .dance), // depricated
-        HKQuery.predicateForWorkouts(with: .danceInspiredTraining),// depricated
+        HKQuery.predicateForWorkouts(with: .dance),
         HKQuery.predicateForWorkouts(with: .elliptical),
         HKQuery.predicateForWorkouts(with: .equestrianSports),
         HKQuery.predicateForWorkouts(with: .fencing),
@@ -46,7 +45,6 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .lacrosse),
         HKQuery.predicateForWorkouts(with: .martialArts),
         HKQuery.predicateForWorkouts(with: .mindAndBody),
-        HKQuery.predicateForWorkouts(with: .mixedMetabolicCardioTraining),
         HKQuery.predicateForWorkouts(with: .paddleSports),
         HKQuery.predicateForWorkouts(with: .play),
         HKQuery.predicateForWorkouts(with: .preparationAndRecovery),
@@ -91,11 +89,10 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .taiChi),
         HKQuery.predicateForWorkouts(with: .mixedCardio),
         HKQuery.predicateForWorkouts(with: .handCycling),
-        //            HKQuery.predicateForWorkouts(with: .discSports),
-        //            HKQuery.predicateForWorkouts(with: .fitnessGaming),
-        //            HKQuery.predicateForWorkouts(with: .cooldown),
         HKQuery.predicateForWorkouts(with: .other),
-    ])
+    ]
+    
+    
     
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
@@ -645,11 +642,19 @@ class HealthkitReader: NSObject {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         
-        
-        
-        
+        if #available(iOS 13.0, *) {
+            workoutPredicate += [
+                HKQuery.predicateForWorkouts(with: .discSports),
+                HKQuery.predicateForWorkouts(with: .fitnessGaming)
+            ]
+            if #available(iOS 14.0, *) {
+                workoutPredicate += [
+                    HKQuery.predicateForWorkouts(with: .cooldown),
+                ]
+            }
+        }
         let timePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
-        let combinedPredicate = NSCompoundPredicate.init(andPredicateWithSubpredicates: [workoutPredicate, timePredicate])
+        let combinedPredicate = NSCompoundPredicate.init(andPredicateWithSubpredicates: [NSCompoundPredicate(orPredicateWithSubpredicates:workoutPredicate), timePredicate])
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(
@@ -821,4 +826,5 @@ enum Gender : Int{
         return Gender(rawValue: (serverParam - 1) )!
     }
 }
+
 
