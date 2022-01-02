@@ -15,6 +15,87 @@ enum TimeUnit: Int {
 }
 
 class HealthkitReader: NSObject {
+
+    let workoutPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+        HKQuery.predicateForWorkouts(with: .americanFootball),
+        HKQuery.predicateForWorkouts(with: .archery),
+        HKQuery.predicateForWorkouts(with: .australianFootball),
+        HKQuery.predicateForWorkouts(with: .badminton),
+        HKQuery.predicateForWorkouts(with: .baseball),
+        HKQuery.predicateForWorkouts(with: .basketball),
+        HKQuery.predicateForWorkouts(with: .bowling),
+        HKQuery.predicateForWorkouts(with: .boxing),
+        HKQuery.predicateForWorkouts(with: .climbing),
+        HKQuery.predicateForWorkouts(with: .cricket),
+        HKQuery.predicateForWorkouts(with: .crossTraining),
+        HKQuery.predicateForWorkouts(with: .curling),
+        HKQuery.predicateForWorkouts(with: .cycling),
+        HKQuery.predicateForWorkouts(with: .dance), // depricated
+        HKQuery.predicateForWorkouts(with: .danceInspiredTraining),// depricated
+        HKQuery.predicateForWorkouts(with: .elliptical),
+        HKQuery.predicateForWorkouts(with: .equestrianSports),
+        HKQuery.predicateForWorkouts(with: .fencing),
+        HKQuery.predicateForWorkouts(with: .fishing),
+        HKQuery.predicateForWorkouts(with: .functionalStrengthTraining),
+        HKQuery.predicateForWorkouts(with: .golf),
+        HKQuery.predicateForWorkouts(with: .gymnastics),
+        HKQuery.predicateForWorkouts(with: .handball),
+        HKQuery.predicateForWorkouts(with: .hiking),
+        HKQuery.predicateForWorkouts(with: .hockey),
+        HKQuery.predicateForWorkouts(with: .hunting),
+        HKQuery.predicateForWorkouts(with: .lacrosse),
+        HKQuery.predicateForWorkouts(with: .martialArts),
+        HKQuery.predicateForWorkouts(with: .mindAndBody),
+        HKQuery.predicateForWorkouts(with: .mixedMetabolicCardioTraining),
+        HKQuery.predicateForWorkouts(with: .paddleSports),
+        HKQuery.predicateForWorkouts(with: .play),
+        HKQuery.predicateForWorkouts(with: .preparationAndRecovery),
+        HKQuery.predicateForWorkouts(with: .racquetball),
+        HKQuery.predicateForWorkouts(with: .rowing),
+        HKQuery.predicateForWorkouts(with: .rugby),
+        HKQuery.predicateForWorkouts(with: .running),
+        HKQuery.predicateForWorkouts(with: .sailing),
+        HKQuery.predicateForWorkouts(with: .skatingSports),
+        HKQuery.predicateForWorkouts(with: .snowSports),
+        HKQuery.predicateForWorkouts(with: .soccer),
+        HKQuery.predicateForWorkouts(with: .softball),
+        HKQuery.predicateForWorkouts(with: .squash),
+        HKQuery.predicateForWorkouts(with: .stairClimbing),
+        HKQuery.predicateForWorkouts(with: .surfingSports),
+        HKQuery.predicateForWorkouts(with: .swimming),
+        HKQuery.predicateForWorkouts(with: .tableTennis),
+        HKQuery.predicateForWorkouts(with: .tennis),
+        HKQuery.predicateForWorkouts(with: .trackAndField),
+        HKQuery.predicateForWorkouts(with: .traditionalStrengthTraining),
+        HKQuery.predicateForWorkouts(with: .volleyball),
+        HKQuery.predicateForWorkouts(with: .walking),
+        HKQuery.predicateForWorkouts(with: .waterFitness),
+        HKQuery.predicateForWorkouts(with: .waterPolo),
+        HKQuery.predicateForWorkouts(with: .waterSports),
+        HKQuery.predicateForWorkouts(with: .wrestling),
+        HKQuery.predicateForWorkouts(with: .yoga),
+        HKQuery.predicateForWorkouts(with: .barre),
+        HKQuery.predicateForWorkouts(with: .coreTraining),
+        HKQuery.predicateForWorkouts(with: .crossCountrySkiing),
+        HKQuery.predicateForWorkouts(with: .downhillSkiing),
+        HKQuery.predicateForWorkouts(with: .flexibility),
+        HKQuery.predicateForWorkouts(with: .highIntensityIntervalTraining),
+        HKQuery.predicateForWorkouts(with: .jumpRope),
+        HKQuery.predicateForWorkouts(with: .kickboxing),
+        HKQuery.predicateForWorkouts(with: .pilates),
+        HKQuery.predicateForWorkouts(with: .snowboarding),
+        HKQuery.predicateForWorkouts(with: .stairs),
+        HKQuery.predicateForWorkouts(with: .stepTraining),
+        HKQuery.predicateForWorkouts(with: .wheelchairWalkPace),
+        HKQuery.predicateForWorkouts(with: .wheelchairRunPace),
+        HKQuery.predicateForWorkouts(with: .taiChi),
+        HKQuery.predicateForWorkouts(with: .mixedCardio),
+        HKQuery.predicateForWorkouts(with: .handCycling),
+        //            HKQuery.predicateForWorkouts(with: .discSports),
+        //            HKQuery.predicateForWorkouts(with: .fitnessGaming),
+        //            HKQuery.predicateForWorkouts(with: .cooldown),
+        HKQuery.predicateForWorkouts(with: .other),
+    ])
     
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
@@ -560,103 +641,11 @@ class HealthkitReader: NSObject {
     }
     
     
-    func getWokoutsBySegment(start: TimeInterval, end: TimeInterval,duration: Int, unit: TimeUnit, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
+    func getWokoutsBySegment(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
-        var anchorComponents: DateComponents
-        var interval = DateComponents()
-        switch unit {
-        case .days:
-            anchorComponents = Calendar.current.dateComponents([.day, .month, .year], from: Date())
-            anchorComponents.hour = 0
-            interval.day = duration
-        case .minutes:
-            anchorComponents = Calendar.current.dateComponents([.day, .month, .year, .hour, .second], from: Date())
-            interval.minute = duration
-        }
         
-        let anchorDate = Calendar.current.date(from: anchorComponents)!
         
-        let workoutPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-            HKQuery.predicateForWorkouts(with: .americanFootball),
-            HKQuery.predicateForWorkouts(with: .archery),
-            HKQuery.predicateForWorkouts(with: .australianFootball),
-            HKQuery.predicateForWorkouts(with: .badminton),
-            HKQuery.predicateForWorkouts(with: .baseball),
-            HKQuery.predicateForWorkouts(with: .basketball),
-            HKQuery.predicateForWorkouts(with: .bowling),
-            HKQuery.predicateForWorkouts(with: .boxing),
-            HKQuery.predicateForWorkouts(with: .climbing),
-            HKQuery.predicateForWorkouts(with: .cricket),
-            HKQuery.predicateForWorkouts(with: .crossTraining),
-            HKQuery.predicateForWorkouts(with: .curling),
-            HKQuery.predicateForWorkouts(with: .cycling),
-            HKQuery.predicateForWorkouts(with: .dance), // depricated
-            HKQuery.predicateForWorkouts(with: .danceInspiredTraining),// depricated
-            HKQuery.predicateForWorkouts(with: .elliptical),
-            HKQuery.predicateForWorkouts(with: .equestrianSports),
-            HKQuery.predicateForWorkouts(with: .fencing),
-            HKQuery.predicateForWorkouts(with: .fishing),
-            HKQuery.predicateForWorkouts(with: .functionalStrengthTraining),
-            HKQuery.predicateForWorkouts(with: .golf),
-            HKQuery.predicateForWorkouts(with: .gymnastics),
-            HKQuery.predicateForWorkouts(with: .handball),
-            HKQuery.predicateForWorkouts(with: .hiking),
-            HKQuery.predicateForWorkouts(with: .hockey),
-            HKQuery.predicateForWorkouts(with: .hunting),
-            HKQuery.predicateForWorkouts(with: .lacrosse),
-            HKQuery.predicateForWorkouts(with: .martialArts),
-            HKQuery.predicateForWorkouts(with: .mindAndBody),
-            HKQuery.predicateForWorkouts(with: .mixedMetabolicCardioTraining),
-            HKQuery.predicateForWorkouts(with: .paddleSports),
-            HKQuery.predicateForWorkouts(with: .play),
-            HKQuery.predicateForWorkouts(with: .preparationAndRecovery),
-            HKQuery.predicateForWorkouts(with: .racquetball),
-            HKQuery.predicateForWorkouts(with: .rowing),
-            HKQuery.predicateForWorkouts(with: .rugby),
-            HKQuery.predicateForWorkouts(with: .running),
-            HKQuery.predicateForWorkouts(with: .sailing),
-            HKQuery.predicateForWorkouts(with: .skatingSports),
-            HKQuery.predicateForWorkouts(with: .snowSports),
-            HKQuery.predicateForWorkouts(with: .soccer),
-            HKQuery.predicateForWorkouts(with: .softball),
-            HKQuery.predicateForWorkouts(with: .squash),
-            HKQuery.predicateForWorkouts(with: .stairClimbing),
-            HKQuery.predicateForWorkouts(with: .surfingSports),
-            HKQuery.predicateForWorkouts(with: .swimming),
-            HKQuery.predicateForWorkouts(with: .tableTennis),
-            HKQuery.predicateForWorkouts(with: .tennis),
-            HKQuery.predicateForWorkouts(with: .trackAndField),
-            HKQuery.predicateForWorkouts(with: .traditionalStrengthTraining),
-            HKQuery.predicateForWorkouts(with: .volleyball),
-            HKQuery.predicateForWorkouts(with: .walking),
-            HKQuery.predicateForWorkouts(with: .waterFitness),
-            HKQuery.predicateForWorkouts(with: .waterPolo),
-            HKQuery.predicateForWorkouts(with: .waterSports),
-            HKQuery.predicateForWorkouts(with: .wrestling),
-            HKQuery.predicateForWorkouts(with: .yoga),
-            HKQuery.predicateForWorkouts(with: .barre),
-            HKQuery.predicateForWorkouts(with: .coreTraining),
-            HKQuery.predicateForWorkouts(with: .crossCountrySkiing),
-            HKQuery.predicateForWorkouts(with: .downhillSkiing),
-            HKQuery.predicateForWorkouts(with: .flexibility),
-            HKQuery.predicateForWorkouts(with: .highIntensityIntervalTraining),
-            HKQuery.predicateForWorkouts(with: .jumpRope),
-            HKQuery.predicateForWorkouts(with: .kickboxing),
-            HKQuery.predicateForWorkouts(with: .pilates),
-            HKQuery.predicateForWorkouts(with: .snowboarding),
-            HKQuery.predicateForWorkouts(with: .stairs),
-            HKQuery.predicateForWorkouts(with: .stepTraining),
-            HKQuery.predicateForWorkouts(with: .wheelchairWalkPace),
-            HKQuery.predicateForWorkouts(with: .wheelchairRunPace),
-            HKQuery.predicateForWorkouts(with: .taiChi),
-            HKQuery.predicateForWorkouts(with: .mixedCardio),
-            HKQuery.predicateForWorkouts(with: .handCycling),
-            //            HKQuery.predicateForWorkouts(with: .discSports),
-            //            HKQuery.predicateForWorkouts(with: .fitnessGaming),
-            //            HKQuery.predicateForWorkouts(with: .cooldown),
-            HKQuery.predicateForWorkouts(with: .other),
-        ])
         
         
         let timePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
@@ -666,7 +655,6 @@ class HealthkitReader: NSObject {
         let query = HKSampleQuery(
             sampleType: HKObjectType.workoutType(),
             predicate: combinedPredicate,
-            anchorDate: anchorDate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]
         ) {

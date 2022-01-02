@@ -229,7 +229,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 result.success(emptyMap<Long, Int>())
             }
             "getWorkoutsBySegment" -> { // only implemented on iOS
-                result.success(emptyMap<String, any?>())
+                result.success(emptyMap<Long, Double>())
             }
 
             "getCyclingDistanceBySegment" -> { // only implemented on iOS
@@ -325,6 +325,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
 
             "isCarbsAuthorized" -> // only implemented on iOS
+                result.success(false)
+
+            "isWorkoutsAuthorized" -> // only implemented on iOS
                 result.success(false)
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
@@ -712,9 +715,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun getBodyFat(
-        startTime: Long,
-        endTime: Long,
-        result: (Map<Long, Float>?, Throwable?) -> Unit
+            startTime: Long,
+            endTime: Long,
+            result: (Map<Long, Float>?, Throwable?) -> Unit
     ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(bodyFatDataType).build()
 
@@ -722,10 +725,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_BODY_FAT_PERCENTAGE)
-            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByTime(1, TimeUnit.DAYS)
-            .setLimit(1)
-            .build()
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setLimit(1)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -734,7 +737,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                        readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastBodyFat = dp?.getValue(bodyFatDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 

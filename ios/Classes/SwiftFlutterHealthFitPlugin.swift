@@ -90,14 +90,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
             
         case "getWorkoutsBySegment":
+            
             let args = call.arguments as! [String: Int]
-            let startMillis = args.start
-            let endMillis = args.end
-            let duration: args.duration,
-                let unit: args.unit
-            let start = startMillis.toTimeInterval
-            let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWokoutsBySegment(start: start, end: end, duration: duration, unit: unit)  { (workouts, error) in
+            let startMillis = args["start"]!.toTimeInterval
+            let endMillis = args["end"]!.toTimeInterval
+            
+            HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
                 if let error = error as NSError? {
                     print("[getWokoutsBySegment] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))

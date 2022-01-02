@@ -559,8 +559,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
-    Map? last = await _channel.invokeMethod(
-        'getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": _quantityUnitToString[QuantityUnit.percent]});
+    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment',
+        {"start": start, "end": end, "unit": _quantityUnitToString[QuantityUnit.percent]});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
@@ -616,11 +616,11 @@ class FlutterHealthFit {
     });
   }
 
-  Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end, int duration, TimeUnit unit) async {
+  Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
     if (!Platform.isIOS) return null;
     List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
-        "getWorkoutsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
+        "getWorkoutsBySegment", {"start": start, "end": end});
+    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList() ;
   }
 
   Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
