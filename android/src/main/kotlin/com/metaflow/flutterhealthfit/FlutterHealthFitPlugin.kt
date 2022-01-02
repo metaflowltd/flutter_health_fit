@@ -36,10 +36,10 @@ enum class LumenTimeUnit(val value: Int) {
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
-    PluginRegistry.ActivityResultListener,
-    PluginRegistry.RequestPermissionsResultListener,
-    FlutterPlugin,
-    ActivityAware, EventChannel.StreamHandler {
+        PluginRegistry.ActivityResultListener,
+        PluginRegistry.RequestPermissionsResultListener,
+        FlutterPlugin,
+        ActivityAware, EventChannel.StreamHandler {
 
     companion object {
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
@@ -67,7 +67,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private var logger : EventChannel.EventSink? = null
+    private var logger: EventChannel.EventSink? = null
     private var binding: ActivityPluginBinding? = null
     private var channel: MethodChannel? = null
     private var logsChannel: EventChannel? = null
@@ -135,9 +135,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "requestBodySensorsPermission" -> requestBodySensorsPermission(result)
 
             "isAuthorized" -> result.success(
-                isAuthorized(
-                    call.argument<Boolean>("useSensitive") ?: false
-                )
+                    isAuthorized(
+                            call.argument<Boolean>("useSensitive") ?: false
+                    )
             )
 
             "signOut" -> result.success(activity?.let { signOut(it) })
@@ -181,17 +181,17 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val unitInt = call.argument<Int>("unit")!!
                 val lumenTimeUnit = LumenTimeUnit.values().first { it.value == unitInt }
                 val timeUnit =
-                    mapOf(
-                        LumenTimeUnit.DAYS to TimeUnit.DAYS,
-                        LumenTimeUnit.MINUTES to TimeUnit.MINUTES
-                    ).getValue(
-                        lumenTimeUnit
-                    )
+                        mapOf(
+                                LumenTimeUnit.DAYS to TimeUnit.DAYS,
+                                LumenTimeUnit.MINUTES to TimeUnit.MINUTES
+                        ).getValue(
+                                lumenTimeUnit
+                        )
                 getStepsInRange(
-                    start,
-                    end,
-                    duration,
-                    timeUnit
+                        start,
+                        end,
+                        duration,
+                        timeUnit
                 ) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         result.success(map)
@@ -206,8 +206,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")!!
 
                 getSleepDataInRange(
-                    start,
-                    end
+                        start,
+                        end
                 ) { samples: List<Map<String, Any?>>?, e: Throwable? ->
                     samples?.let {
                         if (samples.isEmpty()) {
@@ -217,9 +217,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         }
                     } ?: kotlin.run {
                         result.error(
-                            "failed",
-                            "Failed to retrieve sleep samples, reason: ${e?.localizedMessage}",
-                            e
+                                "failed",
+                                "Failed to retrieve sleep samples, reason: ${e?.localizedMessage}",
+                                e
                         )
                     }
                 }
@@ -227,6 +227,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
+            }
+            "getWorkoutsBySegment" -> { // only implemented on iOS
+                result.success(emptyMap<String, Any?>())
             }
 
             "getCyclingDistanceBySegment" -> { // only implemented on iOS
@@ -238,10 +241,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")!!
                 val duration = (end - start).toInt()
                 getStepsInRange(
-                    start,
-                    end,
-                    duration,
-                    TimeUnit.MILLISECONDS
+                        start,
+                        end,
+                        duration,
+                        TimeUnit.MILLISECONDS
                 ) { map: Map<Long, Int>?, e: Throwable? ->
                     if (map != null) {
                         assert(map.size <= 1) { "getTotalStepsInInterval should return only one interval. Found: ${map.size}" }
@@ -263,11 +266,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         } else {
                             val lastPoint = samples.last()
                             result.success(
-                                createHeartRateSampleMap(
-                                    lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
-                                    lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
-                                    lastPoint.dataSource.appPackageName
-                                )
+                                    createHeartRateSampleMap(
+                                            lastPoint.getTimestamp(TimeUnit.MILLISECONDS),
+                                            lastPoint.getValue(heartRateDataType.fields[0]).asFloat(),
+                                            lastPoint.dataSource.appPackageName
+                                    )
                             )
                         }
                     } else {
@@ -285,13 +288,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                             result.success(emptyList<Map<String, Any?>>())
                         } else {
                             val valueSum =
-                                samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }
-                                    .sum()
+                                    samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }
+                                            .sum()
 
                             val sampleMap = createHeartRateSampleMap(
-                                samples.last().getTimestamp(TimeUnit.MILLISECONDS),
-                                valueSum / samples.size,
-                                samples.last().dataSource.appPackageName
+                                    samples.last().getTimestamp(TimeUnit.MILLISECONDS),
+                                    valueSum / samples.size,
+                                    samples.last().dataSource.appPackageName
                             )
                             result.success(listOf(sampleMap))
                         }
@@ -324,6 +327,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isCarbsAuthorized" -> // only implemented on iOS
                 result.success(false)
 
+            "isWorkoutsAuthorized" -> // only implemented on iOS
+                result.success(false)
+
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
             else -> result.notImplemented()
@@ -335,9 +341,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             this.deferredResult = result
             activity?.let {
                 ActivityCompat.requestPermissions(
-                    it,
-                    arrayOf(Manifest.permission.BODY_SENSORS),
-                    SENSOR_PERMISSION_REQUEST_CODE
+                        it,
+                        arrayOf(Manifest.permission.BODY_SENSORS),
+                        SENSOR_PERMISSION_REQUEST_CODE
                 )
             }
         } else {
@@ -351,14 +357,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isStepsAuthorized(): Boolean {
         return isAuthorized(
-            FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
-                .build()
+                FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
+                        .build()
         )
     }
 
     private fun isSleepAuthorized(): Boolean {
         return isAuthorized(
-            FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build()
+                FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build()
         )
     }
 
@@ -380,25 +386,25 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun hasSensorPermissionCompat() =
-        (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH
-                || activity?.let {
-            ContextCompat.checkSelfPermission(
-                it,
-                Manifest.permission.BODY_SENSORS
-            )
-        } == PackageManager.PERMISSION_GRANTED)
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH
+                    || activity?.let {
+                ContextCompat.checkSelfPermission(
+                        it,
+                        Manifest.permission.BODY_SENSORS
+                )
+            } == PackageManager.PERMISSION_GRANTED)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         return when (requestCode) {
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
                 recordDataPointsIfGranted(
-                    resultCode == Activity.RESULT_OK, listOfNotNull(
+                        resultCode == Activity.RESULT_OK, listOfNotNull(
                         stepsDataType,
                         weightDataType,
                         bodyFatDataType,
                         if (hasSensorPermissionCompat()) heartRateDataType else null
-                    ),
-                    deferredResult
+                ),
+                        deferredResult
                 )
                 deferredResult = null
                 true
@@ -408,9 +414,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun recordDataPointsIfGranted(
-        isGranted: Boolean,
-        dataPoints: List<DataType>,
-        result: Result?
+            isGranted: Boolean,
+            dataPoints: List<DataType>,
+            result: Result?
     ) {
         if (isGranted) {
             val failedTypes = arrayListOf<DataType>()
@@ -430,14 +436,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun createHeartRateSampleMap(
-        millisSinceEpoc: Long,
-        value: Float,
-        sourceApp: String?
+            millisSinceEpoc: Long,
+            value: Float,
+            sourceApp: String?
     ): Map<String, Any?> {
         return mapOf(
-            "timestamp" to millisSinceEpoc,
-            "value" to value.toInt(),
-            "sourceApp" to sourceApp
+                "timestamp" to millisSinceEpoc,
+                "value" to value.toInt(),
+                "sourceApp" to sourceApp
         )
     }
 
@@ -468,10 +474,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 client.signOut().addOnCompleteListener {
                     sendNativeLog("Signed out, requesting permissions again")
                     GoogleSignIn.requestPermissions(
-                        activity,
-                        GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
-                        GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
-                        fitnessOptions
+                            activity,
+                            GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                            GoogleSignIn.getAccountForExtension(activity, fitnessOptions),
+                            fitnessOptions
                     )
                 }
             }
@@ -485,45 +491,45 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val fitnessOptions = FitnessOptions.builder().addDataType(type).build()
         activity?.let { activity ->
             Fitness.getRecordingClient(
-                activity,
-                GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+                    activity,
+                    GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
             )
-                .subscribe(type)
-                .addOnSuccessListener {
-                    callback(true)
-                }
-                .addOnFailureListener {
-                    callback(false)
-                }
+                    .subscribe(type)
+                    .addOnSuccessListener {
+                        callback(true)
+                    }
+                    .addOnFailureListener {
+                        callback(false)
+                    }
         }
     }
 
     @SuppressLint("UseSparseArrays") // Dart doesn't know sparse arrays
     private fun getStepsInRange(
-        start: Long,
-        end: Long,
-        duration: Int,
-        unit: TimeUnit,
-        result: (Map<Long, Int>?, Throwable?) -> Unit
+            start: Long,
+            end: Long,
+            duration: Int,
+            unit: TimeUnit,
+            result: (Map<Long, Int>?, Throwable?) -> Unit
     ) {
         val fitnessOptions =
-            FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
-                .build()
+                FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
+                        .build()
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val ds = DataSource.Builder()
-            .setAppPackageName("com.google.android.gms")
-            .setDataType(stepsDataType)
-            .setType(DataSource.TYPE_DERIVED)
-            .setStreamName("estimated_steps")
-            .build()
+                .setAppPackageName("com.google.android.gms")
+                .setDataType(stepsDataType)
+                .setType(DataSource.TYPE_DERIVED)
+                .setStreamName("estimated_steps")
+                .build()
 
         val request = DataReadRequest.Builder()
-            .aggregate(ds)
-            .bucketByTime(duration, unit)
-            .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-            .build()
+                .aggregate(ds)
+                .bucketByTime(duration, unit)
+                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -564,9 +570,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun getSleepDataInRange(
-        start: Long,
-        end: Long,
-        result: (List<Map<String, Any?>>?, Throwable?) -> Unit
+            start: Long,
+            end: Long,
+            result: (List<Map<String, Any?>>?, Throwable?) -> Unit
     ) {
 
         val fitnessOptions = FitnessOptions.builder().addDataType(sleepDataType).build()
@@ -575,88 +581,88 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val SLEEP_STAGE_NAMES = arrayOf(
-            "Unused",
-            "Awake (during sleep)",
-            "Sleep",
-            "Out-of-bed",
-            "Light sleep",
-            "Deep sleep",
-            "REM sleep"
+                "Unused",
+                "Awake (during sleep)",
+                "Sleep",
+                "Out-of-bed",
+                "Light sleep",
+                "Deep sleep",
+                "REM sleep"
         )
 
         val request = SessionReadRequest.Builder()
-            .read(DataType.TYPE_SLEEP_SEGMENT)
-            // By default, only activity sessions are included, not sleep sessions. Specifying
-            // includeSleepSessions also sets the behaviour to *exclude* activity sessions.
-            .includeSleepSessions()
-            .enableServerQueries()
-            .readSessionsFromAllApps()
-            .setTimeInterval(start, end, TimeUnit.MILLISECONDS)
-            .build()
+                .read(DataType.TYPE_SLEEP_SEGMENT)
+                // By default, only activity sessions are included, not sleep sessions. Specifying
+                // includeSleepSessions also sets the behaviour to *exclude* activity sessions.
+                .includeSleepSessions()
+                .enableServerQueries()
+                .readSessionsFromAllApps()
+                .setTimeInterval(start, end, TimeUnit.MILLISECONDS)
+                .build()
 
         Fitness.getSessionsClient(activity, gsa).readSession(request)
-            .addOnSuccessListener { response ->
+                .addOnSuccessListener { response ->
 
-                val resultList = mutableListOf<Map<String, Any?>>()
+                    val resultList = mutableListOf<Map<String, Any?>>()
 
-                for (session in response.sessions) {
-                    val sessionResults = mutableListOf<Map<String, Any?>>()
-                    val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
-                    val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
-                    sendNativeLog("$TAG | Sleep between $sessionStart and $sessionEnd")
+                    for (session in response.sessions) {
+                        val sessionResults = mutableListOf<Map<String, Any?>>()
+                        val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
+                        val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
+                        sendNativeLog("$TAG | Sleep between $sessionStart and $sessionEnd")
 
-                    val dataSets = response.getDataSet(session)
+                        val dataSets = response.getDataSet(session)
 
-                    for (dataSet in dataSets) {
-                        for (point in dataSet.dataPoints) {
-                            try {
-                                val sleepStageVal =
-                                    point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
-                                val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
-                                val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
-                                val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
-                                sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
-                                sessionResults.add(
-                                    mapOf(
-                                        "type" to sleepStageVal,
-                                        "start" to segmentStart,
-                                        "end" to segmentEnd,
-                                        "source" to session.appPackageName,
+                        for (dataSet in dataSets) {
+                            for (point in dataSet.dataPoints) {
+                                try {
+                                    val sleepStageVal =
+                                            point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
+                                    val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
+                                    val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
+                                    val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
+                                    sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
+                                    sessionResults.add(
+                                            mapOf(
+                                                    "type" to sleepStageVal,
+                                                    "start" to segmentStart,
+                                                    "end" to segmentEnd,
+                                                    "source" to session.appPackageName,
+                                            )
                                     )
-                                )
-                            } catch (e: Exception) {
-                                sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
-                                handleGoogleDisconnection(e, activity)
+                                } catch (e: Exception) {
+                                    sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
+                                    handleGoogleDisconnection(e, activity)
+                                }
                             }
                         }
-                    }
-                    // If we were unable to get granular data from the session, we will use not rough data:
-                    if (sessionResults.isEmpty()) {
-                        resultList.add(
-                            mapOf(
-                                "type" to 0,
-                                "start" to sessionStart,
-                                "end" to sessionEnd,
-                                "source" to session.appPackageName,
+                        // If we were unable to get granular data from the session, we will use not rough data:
+                        if (sessionResults.isEmpty()) {
+                            resultList.add(
+                                    mapOf(
+                                            "type" to 0,
+                                            "start" to sessionStart,
+                                            "end" to sessionEnd,
+                                            "source" to session.appPackageName,
+                                    )
                             )
-                        )
-                    } else {
-                        resultList.addAll(sessionResults)
+                        } else {
+                            resultList.addAll(sessionResults)
+                        }
                     }
-                }
 
-                result(resultList, null)
-            }
-            .addOnFailureListener { error ->
-                sendNativeLog("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
-                result(null, error)
-            }
+                    result(resultList, null)
+                }
+                .addOnFailureListener { error ->
+                    sendNativeLog("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
+                    result(null, error)
+                }
     }
 
     private fun getHeartRateInRange(
-        start: Long,
-        end: Long,
-        result: (List<DataPoint>?, Throwable?) -> Unit
+            start: Long,
+            end: Long,
+            result: (List<DataPoint>?, Throwable?) -> Unit
     ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(heartRateDataType).build()
 
@@ -664,9 +670,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder()
-            .setTimeRange(start, end, TimeUnit.MILLISECONDS)
-            .read(heartRateDataType)
-            .build()
+                .setTimeRange(start, end, TimeUnit.MILLISECONDS)
+                .read(heartRateDataType)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -704,14 +710,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun signOut(activity: Activity) {
         sendNativeLog("$TAG | signing out from google client")
         val client =
-            GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
+                GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
         Tasks.await(client.signOut())
     }
 
     private fun getBodyFat(
-        startTime: Long,
-        endTime: Long,
-        result: (Map<Long, Float>?, Throwable?) -> Unit
+            startTime: Long,
+            endTime: Long,
+            result: (Map<Long, Float>?, Throwable?) -> Unit
     ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(bodyFatDataType).build()
 
@@ -719,10 +725,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_BODY_FAT_PERCENTAGE)
-            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByTime(1, TimeUnit.DAYS)
-            .setLimit(1)
-            .build()
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setLimit(1)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -731,7 +737,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                        readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastBodyFat = dp?.getValue(bodyFatDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 
@@ -755,9 +761,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun getWeight(
-        startTime: Long,
-        endTime: Long,
-        result: (Map<Long, Float>?, Throwable?) -> Unit
+            startTime: Long,
+            endTime: Long,
+            result: (Map<Long, Float>?, Throwable?) -> Unit
     ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(weightDataType).build()
 
@@ -765,10 +771,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
-            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByTime(1, TimeUnit.DAYS)
-            .setLimit(1)
-            .build()
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setLimit(1)
+                .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
@@ -777,7 +783,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                        readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastWeight = dp?.getValue(weightDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 
@@ -815,9 +821,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun getFitnessOptions(useSensitive: Boolean): FitnessOptions {
         val builder = FitnessOptions.builder()
-            .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
-            .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-            .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+                .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
+                .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
+                .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         if (useSensitive) {
             builder.addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
             builder.addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
@@ -826,9 +832,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>?,
-        grantResults: IntArray?
+            requestCode: Int,
+            permissions: Array<out String>?,
+            grantResults: IntArray?
     ): Boolean {
         return when (requestCode) {
             SENSOR_PERMISSION_REQUEST_CODE -> {

@@ -16,6 +16,84 @@ enum TimeUnit: Int {
 
 class HealthkitReader: NSObject {
     
+    var workoutPredicate =  [
+        HKQuery.predicateForWorkouts(with: .americanFootball),
+        HKQuery.predicateForWorkouts(with: .archery),
+        HKQuery.predicateForWorkouts(with: .australianFootball),
+        HKQuery.predicateForWorkouts(with: .badminton),
+        HKQuery.predicateForWorkouts(with: .baseball),
+        HKQuery.predicateForWorkouts(with: .basketball),
+        HKQuery.predicateForWorkouts(with: .bowling),
+        HKQuery.predicateForWorkouts(with: .boxing),
+        HKQuery.predicateForWorkouts(with: .climbing),
+        HKQuery.predicateForWorkouts(with: .cricket),
+        HKQuery.predicateForWorkouts(with: .crossTraining),
+        HKQuery.predicateForWorkouts(with: .curling),
+        HKQuery.predicateForWorkouts(with: .cycling),
+        HKQuery.predicateForWorkouts(with: .dance),
+        HKQuery.predicateForWorkouts(with: .elliptical),
+        HKQuery.predicateForWorkouts(with: .equestrianSports),
+        HKQuery.predicateForWorkouts(with: .fencing),
+        HKQuery.predicateForWorkouts(with: .fishing),
+        HKQuery.predicateForWorkouts(with: .functionalStrengthTraining),
+        HKQuery.predicateForWorkouts(with: .golf),
+        HKQuery.predicateForWorkouts(with: .gymnastics),
+        HKQuery.predicateForWorkouts(with: .handball),
+        HKQuery.predicateForWorkouts(with: .hiking),
+        HKQuery.predicateForWorkouts(with: .hockey),
+        HKQuery.predicateForWorkouts(with: .hunting),
+        HKQuery.predicateForWorkouts(with: .lacrosse),
+        HKQuery.predicateForWorkouts(with: .martialArts),
+        HKQuery.predicateForWorkouts(with: .mindAndBody),
+        HKQuery.predicateForWorkouts(with: .paddleSports),
+        HKQuery.predicateForWorkouts(with: .play),
+        HKQuery.predicateForWorkouts(with: .preparationAndRecovery),
+        HKQuery.predicateForWorkouts(with: .racquetball),
+        HKQuery.predicateForWorkouts(with: .rowing),
+        HKQuery.predicateForWorkouts(with: .rugby),
+        HKQuery.predicateForWorkouts(with: .running),
+        HKQuery.predicateForWorkouts(with: .sailing),
+        HKQuery.predicateForWorkouts(with: .skatingSports),
+        HKQuery.predicateForWorkouts(with: .snowSports),
+        HKQuery.predicateForWorkouts(with: .soccer),
+        HKQuery.predicateForWorkouts(with: .softball),
+        HKQuery.predicateForWorkouts(with: .squash),
+        HKQuery.predicateForWorkouts(with: .stairClimbing),
+        HKQuery.predicateForWorkouts(with: .surfingSports),
+        HKQuery.predicateForWorkouts(with: .swimming),
+        HKQuery.predicateForWorkouts(with: .tableTennis),
+        HKQuery.predicateForWorkouts(with: .tennis),
+        HKQuery.predicateForWorkouts(with: .trackAndField),
+        HKQuery.predicateForWorkouts(with: .traditionalStrengthTraining),
+        HKQuery.predicateForWorkouts(with: .volleyball),
+        HKQuery.predicateForWorkouts(with: .walking),
+        HKQuery.predicateForWorkouts(with: .waterFitness),
+        HKQuery.predicateForWorkouts(with: .waterPolo),
+        HKQuery.predicateForWorkouts(with: .waterSports),
+        HKQuery.predicateForWorkouts(with: .wrestling),
+        HKQuery.predicateForWorkouts(with: .yoga),
+        HKQuery.predicateForWorkouts(with: .barre),
+        HKQuery.predicateForWorkouts(with: .coreTraining),
+        HKQuery.predicateForWorkouts(with: .crossCountrySkiing),
+        HKQuery.predicateForWorkouts(with: .downhillSkiing),
+        HKQuery.predicateForWorkouts(with: .flexibility),
+        HKQuery.predicateForWorkouts(with: .highIntensityIntervalTraining),
+        HKQuery.predicateForWorkouts(with: .jumpRope),
+        HKQuery.predicateForWorkouts(with: .kickboxing),
+        HKQuery.predicateForWorkouts(with: .pilates),
+        HKQuery.predicateForWorkouts(with: .snowboarding),
+        HKQuery.predicateForWorkouts(with: .stairs),
+        HKQuery.predicateForWorkouts(with: .stepTraining),
+        HKQuery.predicateForWorkouts(with: .wheelchairWalkPace),
+        HKQuery.predicateForWorkouts(with: .wheelchairRunPace),
+        HKQuery.predicateForWorkouts(with: .taiChi),
+        HKQuery.predicateForWorkouts(with: .mixedCardio),
+        HKQuery.predicateForWorkouts(with: .handCycling),
+        HKQuery.predicateForWorkouts(with: .other),
+    ]
+    
+    
+    
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
     
@@ -33,16 +111,16 @@ class HealthkitReader: NSObject {
     var stepsQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .stepCount)!
     }
-        
+    
     var sleepCategoryType: HKCategoryType {
         return HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
     }
-
+    
     var cyclingDistanceQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .distanceCycling)!
         
     }
-
+    
     var flightsClimbedQuantityType : HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!
     }
@@ -79,7 +157,7 @@ class HealthkitReader: NSObject {
     var restingHeartRateQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
     }
-
+    
     @available(iOS 11.0, *)
     var walkingHeartRateAverageQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .walkingHeartRateAverage)!
@@ -93,9 +171,13 @@ class HealthkitReader: NSObject {
     var waistSizeQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!
     }
-
+    
     var bodyFatPercentageQuantityType: HKQuantityType{
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
+    }
+    
+    var workoutType: HKObjectType{
+        return HKObjectType.workoutType()
     }
     
     func quantityTypesToRead() -> [HKQuantityType]{
@@ -114,6 +196,7 @@ class HealthkitReader: NSObject {
             dietaryProtein,
             dietaryCarbohydrates,
             bodyFatPercentageQuantityType,
+            
         ]
         if #available(iOS 11.0, *) {
             types += [restingHeartRateQuantityType,
@@ -143,7 +226,7 @@ class HealthkitReader: NSObject {
                 
                 //this is probably why my data is wrong
                 let predicate = HKQuery.predicateForSamples(withStart: yesterday, end: Date().startDay, options: [])
-
+                
                 let query = HKSampleQuery(sampleType:heartRateType, predicate:predicate, limit:0, sortDescriptors:[sortByTime], resultsHandler:{(query, results, error) in
                     
                     guard let results = results else {
@@ -185,13 +268,13 @@ class HealthkitReader: NSObject {
     
     var healthKitTypesToRead : Set<HKObjectType> {
         return Set([
-                HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
-                HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
-                HKObjectType.workoutType(),
-                HealthkitReader.weightQuantityType(),
-                HealthkitReader.heightQuantityType(),
-                sleepCategoryType,
-            ] + quantityTypesToRead())
+            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
+            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
+            workoutType,
+            HealthkitReader.weightQuantityType(),
+            HealthkitReader.heightQuantityType(),
+            sleepCategoryType,
+        ] + quantityTypesToRead())
     }
     
     func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
@@ -213,8 +296,8 @@ class HealthkitReader: NSObject {
     }
     
     func getSleepSamplesForRange(start: TimeInterval,
-                                  end: TimeInterval,
-                                  handler: @escaping (_ result: [Any]?, _ error: Error?) -> Void)  {
+                                 end: TimeInterval,
+                                 handler: @escaping (_ result: [Any]?, _ error: Error?) -> Void)  {
         
         // Use a sortDescriptor to get the recent data first
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
@@ -228,35 +311,35 @@ class HealthkitReader: NSObject {
             predicate: predicate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]) {
-        (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in
-            
-            if let error = error {
-                print("Failed to get sleep data, the reason: \(String(describing: error))")
-                handler(nil, error)
-                return
-            }
-            
-            if let rawResult = tmpResult {
-                let map = rawResult.map { item -> [String: Any] in
-                    let sample = item as! HKCategorySample
-                    let value = sample.value
-                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
-                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
-                    let source = sample.sourceRevision.source.bundleIdentifier
-                    
-                    print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
-                    
-                    return [
-                        "type": value,
-                        "start": startDate,
-                        "end": endDate,
-                        "source": source
-                    ]
-                    
+                (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in
+                
+                if let error = error {
+                    print("Failed to get sleep data, the reason: \(String(describing: error))")
+                    handler(nil, error)
+                    return
                 }
-                handler(map, nil)
+                
+                if let rawResult = tmpResult {
+                    let map = rawResult.map { item -> [String: Any] in
+                        let sample = item as! HKCategorySample
+                        let value = sample.value
+                        let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                        let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                        let source = sample.sourceRevision.source.bundleIdentifier
+                        
+                        print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
+                        
+                        return [
+                            "type": value,
+                            "start": startDate,
+                            "end": endDate,
+                            "source": source
+                        ]
+                        
+                    }
+                    handler(map, nil)
+                }
             }
-        }
         
         healthStore.execute(query)
     }
@@ -297,7 +380,7 @@ class HealthkitReader: NSObject {
                 completion(nil, error)
                 return
             }
-
+            
             var dic = [Int: Double]()
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
@@ -306,7 +389,7 @@ class HealthkitReader: NSObject {
                     print("Amount of \(quantityType): \(quantity), since: \(statistics.startDate) until: \(statistics.endDate)")
                     
                     let timestamp = Int(statistics.startDate.timeIntervalSince1970 * 1000)
-
+                    
                     dic[timestamp] = quantity
                     
                 }
@@ -314,12 +397,12 @@ class HealthkitReader: NSObject {
             completion(dic, nil)
         }
     }
-
+    
     func getQuantity(quantityType: HKQuantityType,
-                             start: TimeInterval,
-                             end: TimeInterval,
-                             unit: String,
-                             completion: @escaping ([Int: Double]?, Error?) -> Void) {
+                     start: TimeInterval,
+                     end: TimeInterval,
+                     unit: String,
+                     completion: @escaping ([Int: Double]?, Error?) -> Void) {
         
         let unitType = HKUnit(from: unit)
         
@@ -330,7 +413,7 @@ class HealthkitReader: NSObject {
         let predicate = HKQuery.predicateForSamples(withStart: startDate,
                                                     end: endDate,
                                                     options: [])
-
+        
         let query = HKSampleQuery(sampleType:quantityType,
                                   predicate:predicate,
                                   limit:1,
@@ -354,48 +437,48 @@ class HealthkitReader: NSObject {
     }
     
     func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
-            let startDate = Date(timeIntervalSince1970: start)
-            let endDate = Date(timeIntervalSince1970: end)
-            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
-
-            // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
-            let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-
-            let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
-                query, results, error in
-
-                guard let results = results, results.count > 0 else {
-                    completion(nil, error);
-                    return;
-                }
-
-                let quantitySample = results.first as! HKQuantitySample
-                var dic = [Int: Double]()
-                let weightInKilograms = quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo))
-                let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
-                dic[timestamp]=weightInKilograms
-                completion(dic, error)
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+        
+        // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
+        let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
+            query, results, error in
+            
+            guard let results = results, results.count > 0 else {
+                completion(nil, error);
+                return;
             }
-
-            healthStore.execute(query)
+            
+            let quantitySample = results.first as! HKQuantitySample
+            var dic = [Int: Double]()
+            let weightInKilograms = quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo))
+            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
+            dic[timestamp]=weightInKilograms
+            completion(dic, error)
         }
+        
+        healthStore.execute(query)
+    }
     
     func getHeartRateSample(start: TimeInterval, end: TimeInterval, completion: @escaping ([String: Any]?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
-
+        
         // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
         let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-
+        
         let query = HKSampleQuery(sampleType: heartRateQuantityType, predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
             query, results, error in
-
+            
             guard let results = results, results.count > 0 else {
                 completion(nil, error);
                 return;
             }
-
+            
             let quantitySample = results.first as! HKQuantitySample
             let heartRate = quantitySample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
             let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
@@ -417,7 +500,7 @@ class HealthkitReader: NSObject {
             }
             completion(dic, error)
         }
-
+        
         healthStore.execute(query)
     }
     
@@ -429,45 +512,45 @@ class HealthkitReader: NSObject {
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
                                       options: [.discreteAverage, .separateBySource]) { query, queryResult, error in
-                                        
-                                        guard let queryResult = queryResult else {
-                                            let error = error! as NSError
-                                            print("[getAverageQuantity] got error: \(error)")
-                                            completion(nil, error)
-                                            return
-                                        }
-                                        
-                                        var list: [[String: Any]] = []
-                                        if let sources = queryResult.sources {
-                                            for source in sources {
-                                                guard let quantity = queryResult.averageQuantity(for: source) else {
-                                                    continue
-                                                }
-                                                let value = quantity.doubleValue(for: unit)
-                                                let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
-                                                let dic: [String: Any] = [
-                                                    "value": value,
-                                                    "timestamp": timestamp,
-                                                    "sourceApp": source.bundleIdentifier,
-                                                ]
-                                                list.append(dic)
-                                            }
-                                        } else if let quantity = queryResult.averageQuantity() {
-                                            let value = quantity.doubleValue(for: unit)
-                                            let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
-                                            let dic: [String: Any] = [
-                                                "value": value,
-                                                "timestamp": timestamp,
-                                            ]
-                                            list.append(dic)
-                                        }
-
-                                        completion(list, nil)
+            
+            guard let queryResult = queryResult else {
+                let error = error! as NSError
+                print("[getAverageQuantity] got error: \(error)")
+                completion(nil, error)
+                return
+            }
+            
+            var list: [[String: Any]] = []
+            if let sources = queryResult.sources {
+                for source in sources {
+                    guard let quantity = queryResult.averageQuantity(for: source) else {
+                        continue
+                    }
+                    let value = quantity.doubleValue(for: unit)
+                    let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
+                    let dic: [String: Any] = [
+                        "value": value,
+                        "timestamp": timestamp,
+                        "sourceApp": source.bundleIdentifier,
+                    ]
+                    list.append(dic)
+                }
+            } else if let quantity = queryResult.averageQuantity() {
+                let value = quantity.doubleValue(for: unit)
+                let timestamp = Int(queryResult.startDate.timeIntervalSince1970 * 1000)
+                let dic: [String: Any] = [
+                    "value": value,
+                    "timestamp": timestamp,
+                ]
+                list.append(dic)
+            }
+            
+            completion(list, nil)
         }
         
         healthStore.execute(query)
     }
-
+    
     func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
@@ -477,23 +560,23 @@ class HealthkitReader: NSObject {
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
                                       options: .cumulativeSum) { query, queryResult, error in
-                                        
-                                        guard let queryResult = queryResult else {
-                                            let error = error! as NSError
-                                            print("[getTotalStepsInInterval] got error: \(error)")
-                                            completion(nil, error)
-                                            return
-                                        }
-                                        
-                                        var steps = 0.0
-                                        
-                                        if let quantity = queryResult.sumQuantity() {
-                                            let unit = HKUnit.count()
-                                            steps = quantity.doubleValue(for: unit)
-                                            print("Amount of steps: \(steps), since: \(queryResult.startDate) until: \(queryResult.endDate)")
-                                        }
-                                        
-                                        completion(Int(steps), nil)
+            
+            guard let queryResult = queryResult else {
+                let error = error! as NSError
+                print("[getTotalStepsInInterval] got error: \(error)")
+                completion(nil, error)
+                return
+            }
+            
+            var steps = 0.0
+            
+            if let quantity = queryResult.sumQuantity() {
+                let unit = HKUnit.count()
+                steps = quantity.doubleValue(for: unit)
+                print("Amount of steps: \(steps), since: \(queryResult.startDate) until: \(queryResult.endDate)")
+            }
+            
+            completion(Int(steps), nil)
         }
         
         healthStore.execute(query)
@@ -509,32 +592,32 @@ class HealthkitReader: NSObject {
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
                                       options: [.cumulativeSum, .separateBySource]) { query, queryResult, error in
-                                        
-                                        guard let queryResult = queryResult else {
-                                            let error = error! as NSError
-                                            print("[getSampleConsumedInInterval] for sampleType: \(sampleType) got error: \(error)")
-                                            completion(nil, error)
-                                            return
-                                        }
-                                        
-                                        if let sources = queryResult.sources {
-                                            for source in sources {
-                                                guard let quantityBySource = queryResult.sumQuantity(for: source) else {
-                                                    continue
-                                                }
-                                                let value = quantityBySource.doubleValue(for: unit)
-                                                print("[getSampleConsumedInInterval] value: \(value), sourceApp: \(source.bundleIdentifier)")
-                                                results["\(source.name):\(source.bundleIdentifier)"] = Int(value)
-                                            }
-                                        }
-                                        
-                                        if let aggregatedQuantity = queryResult.sumQuantity() {
-                                            let value = aggregatedQuantity.doubleValue(for: unit)
-                                            print("[getSampleConsumedInInterval] aggregated value: \(value)")
-                                            results["Aggregated"] = Int(value)
-                                        }
-                                        
-                                        completion(results, nil)
+            
+            guard let queryResult = queryResult else {
+                let error = error! as NSError
+                print("[getSampleConsumedInInterval] for sampleType: \(sampleType) got error: \(error)")
+                completion(nil, error)
+                return
+            }
+            
+            if let sources = queryResult.sources {
+                for source in sources {
+                    guard let quantityBySource = queryResult.sumQuantity(for: source) else {
+                        continue
+                    }
+                    let value = quantityBySource.doubleValue(for: unit)
+                    print("[getSampleConsumedInInterval] value: \(value), sourceApp: \(source.bundleIdentifier)")
+                    results["\(source.name):\(source.bundleIdentifier)"] = Int(value)
+                }
+            }
+            
+            if let aggregatedQuantity = queryResult.sumQuantity() {
+                let value = aggregatedQuantity.doubleValue(for: unit)
+                print("[getSampleConsumedInInterval] aggregated value: \(value)")
+                results["Aggregated"] = Int(value)
+            }
+            
+            completion(results, nil)
         }
         
         healthStore.execute(query)
@@ -554,26 +637,63 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
-    func readHealthKitWokoutOfType(_ workoutType:HKWorkoutActivityType, completion:@escaping (([HKWorkout])->())){
+    
+    func getWokoutsBySegment(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
         
-        let predicate =  HKQuery.predicateForWorkouts(with: workoutType)
-        // 2. Order the workouts by date
-        let sortDescriptor = NSSortDescriptor(key:HKSampleSortIdentifierStartDate, ascending: false)
-        // 3. Create the query
-        let sampleQuery = HKSampleQuery(sampleType: HKWorkoutType.workoutType(), predicate: predicate, limit: 0, sortDescriptors: [sortDescriptor])
-            {
-                (sampleQuery, results, error ) -> Void in
-                
-                if let queryError = error {
-                    print( "There was an error while reading the samples: \(queryError.localizedDescription)")
-                    completion([HKWorkout]())
-                }
-                
-                if (results != nil){
-                    completion(results!.map { $0 as! HKWorkout})
-                }
+        if #available(iOS 13.0, *) {
+            workoutPredicate += [
+                HKQuery.predicateForWorkouts(with: .discSports),
+                HKQuery.predicateForWorkouts(with: .fitnessGaming)
+            ]
+            if #available(iOS 14.0, *) {
+                workoutPredicate += [
+                    HKQuery.predicateForWorkouts(with: .cooldown),
+                ]
+            }
         }
-        self.healthStore.execute(sampleQuery)
+        let timePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
+        let combinedPredicate = NSCompoundPredicate.init(andPredicateWithSubpredicates: [NSCompoundPredicate(orPredicateWithSubpredicates:workoutPredicate), timePredicate])
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let query = HKSampleQuery(
+            sampleType: HKObjectType.workoutType(),
+            predicate: combinedPredicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) {
+            (query, samples, error) in
+            
+            if let error = error {
+                print("Failed to get sleep data, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            if let rawResult = samples {
+                let map = rawResult.map { item -> [String: Any] in
+                    let sample = item as! HKWorkout
+                    let type = sample.workoutActivityType.rawValue
+                    let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie())
+                    let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter())
+                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                    let source = sample.sourceRevision.source.bundleIdentifier
+                    
+                    return [
+                        "type": type,
+                        "energy": energy,
+                        "distance": distance,
+                        "start": startDate,
+                        "end": endDate,
+                        "source": source,
+                    ]
+                }
+                handler(map, nil)
+            }
+        }
+        healthStore.execute(query)
     }
     
     //MARK: - Type Makers
@@ -585,7 +705,7 @@ class HealthkitReader: NSObject {
     class func heightQuantityType() -> HKQuantityType{
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.height)!
     }
-
+    
     //MARK: - For Profile
     
     func getLastWeightReading(_ completion:@escaping ( (_ weight:Double?) -> ())){
@@ -706,4 +826,5 @@ enum Gender : Int{
         return Gender(rawValue: (serverParam - 1) )!
     }
 }
+
 
