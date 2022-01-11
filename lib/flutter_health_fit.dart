@@ -153,6 +153,7 @@ enum WorkoutSampleType {
 }
 
 class WorkoutSample {
+  final String id;
   final WorkoutSampleType type;
   final DateTime start;
   final DateTime end;
@@ -161,6 +162,7 @@ class WorkoutSample {
   final String source;
 
   WorkoutSample({
+    required this.id,
     required this.type,
     required this.start,
     required this.end,
@@ -171,11 +173,12 @@ class WorkoutSample {
 
   @override
   String toString() {
-    return 'WorkoutSample{type: $type, start: $start, end: $end, energy: $energy, distance: $distance, source: $source}';
+    return 'WorkoutSample{id: $id, type: $type, start: $start, end: $end, energy: $energy, distance: $distance, source: $source}';
   }
 
   WorkoutSample.fromMap(Map<String, dynamic> map)
-      : type = _typeFromInt(map["type"].toInt()),
+      : id = map["id"].toString(),
+        type = _typeFromInt(map["type"].toInt()),
         start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
         end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
         energy = map["energy"],
@@ -618,9 +621,8 @@ class FlutterHealthFit {
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
     if (!Platform.isIOS) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
-        "getWorkoutsBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList() ;
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
+    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }
 
   Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {

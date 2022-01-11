@@ -674,6 +674,7 @@ class HealthkitReader: NSObject {
             if let rawResult = samples {
                 let map = rawResult.map { item -> [String: Any] in
                     let sample = item as! HKWorkout
+                    let id = sample.uuid.uuidString
                     let type = sample.workoutActivityType.rawValue
                     let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie())
                     let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter())
@@ -682,6 +683,7 @@ class HealthkitReader: NSObject {
                     let source = sample.sourceRevision.source.bundleIdentifier
                     
                     return [
+                        "id": id,
                         "type": type,
                         "energy": energy,
                         "distance": distance,
