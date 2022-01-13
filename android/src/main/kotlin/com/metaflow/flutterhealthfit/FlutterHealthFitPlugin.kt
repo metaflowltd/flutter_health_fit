@@ -823,7 +823,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val builder = FitnessOptions.builder()
                 .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
                 .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-                .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         if (useSensitive) {
             builder.addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
             builder.addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
