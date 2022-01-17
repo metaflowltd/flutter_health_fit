@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future _authorizeHealthOrFit() async {
-    bool isAuthorized = await FlutterHealthFit().authorize(true);
+    bool isAuthorized = await FlutterHealthFit().authorize();
     setState(() {
       _isAuthorized = isAuthorized;
     });
