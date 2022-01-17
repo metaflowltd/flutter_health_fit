@@ -22,7 +22,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        switch call.method {
+    switch call.method {
         case "requestAuthorization":
             HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
                 result(success)
@@ -70,9 +70,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
         case "getWaistSizeBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType, call: call, result: result)
-            
+        
         case "getBodyFatPercentageBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType, call: call, result: result)
+            
+        case "getHRVBySegment":
+            getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.hrvQuantityType, call: call, result: result)
             
         case "getWeightInInterval":
             let myArgs = call.arguments as! [String: Int]
@@ -120,8 +123,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(rate)
                 }
             }
-            
-            
         case "getAverageWalkingHeartRate":
             fallthrough
         case "getAverageRestingHeartRate":
@@ -219,10 +220,14 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "isWaistSizeAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.waistSizeQuantityType], result: result)
-            
+        
         case "isBodyFatPercentageAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.bodyFatPercentageQuantityType], result: result)
+        
+        case "isHRVAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.hrvQuantityType], result: result)
             
         case "isWorkoutsAuthorized":
             let reader = HealthkitReader.sharedInstance
