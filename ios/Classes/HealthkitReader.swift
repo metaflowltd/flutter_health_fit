@@ -175,13 +175,17 @@ class HealthkitReader: NSObject {
     var bodyFatPercentageQuantityType: HKQuantityType{
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
     }
-    
+
+    var hrvQuantityType: HKQuantityType{
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
+    }
+
     var workoutType: HKObjectType{
         return HKObjectType.workoutType()
     }
     
     func quantityTypesToRead() -> [HKQuantityType]{
-        var types = [
+        return [
             stepsQuantityType,
             HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
             cyclingDistanceQuantityType,
@@ -196,16 +200,12 @@ class HealthkitReader: NSObject {
             dietaryProtein,
             dietaryCarbohydrates,
             bodyFatPercentageQuantityType,
-            
+            restingHeartRateQuantityType,
+            walkingHeartRateAverageQuantityType,
+            heartRateVariabilityQuantityType,
+            waistSizeQuantityType,
+            hrvQuantityType,
         ]
-        if #available(iOS 11.0, *) {
-            types += [restingHeartRateQuantityType,
-                      walkingHeartRateAverageQuantityType,
-                      heartRateVariabilityQuantityType,
-                      waistSizeQuantityType,
-            ]
-        }
-        return types
     }
     
     func getHealthDataValue ( type : HKQuantityTypeIdentifier , strUnitType : String , complition: @escaping (((([[String:Any]])?) -> Void)) )
