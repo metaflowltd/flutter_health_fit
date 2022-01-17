@@ -127,18 +127,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
 
-            "requestAuthorization" -> {
-                val useSensitive = call.argument<Boolean>("useSensitive") ?: false
-                connect(useSensitive, result)
-            }
+            "requestAuthorization" -> connect(result)
 
             "requestBodySensorsPermission" -> requestBodySensorsPermission(result)
 
-            "isAuthorized" -> result.success(
-                    isAuthorized(
-                            call.argument<Boolean>("useSensitive") ?: false
-                    )
-            )
+            "isAuthorized" -> result.success(isAuthorized())
 
             "signOut" -> result.success(activity?.let { signOut(it) })
 
@@ -447,8 +440,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         )
     }
 
-    private fun isAuthorized(useSensitive: Boolean): Boolean {
-        val fitnessOptions = getFitnessOptions(useSensitive)
+    private fun isAuthorized(): Boolean {
+        val fitnessOptions = getFitnessOptions()
         val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
         sendNativeLog("isAuthorized: Google account = $account")
         val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
@@ -462,10 +455,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private fun connect(useSensitive: Boolean, result: Result) {
-        sendNativeLog("Connecting with useSensitive = $useSensitive")
-        val fitnessOptions = getFitnessOptions(useSensitive)
-        if (!isAuthorized(useSensitive)) {
+    private fun connect(result: Result) {
+        sendNativeLog("Connecting")
+        val fitnessOptions = getFitnessOptions()
+        if (!isAuthorized()) {
             sendNativeLog("User has no permissions")
             deferredResult = result
             activity?.let { activity ->
@@ -819,17 +812,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private fun getFitnessOptions(useSensitive: Boolean): FitnessOptions {
-        val builder = FitnessOptions.builder()
-                .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
-                .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-                .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
-        if (useSensitive) {
-            builder.addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
-            builder.addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
-        }
-        return builder.build()
-    }
+    private fun getFitnessOptions(): FitnessOptions = FitnessOptions.builder()
+        .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
+        .build()
 
     override fun onRequestPermissionsResult(
             requestCode: Int,

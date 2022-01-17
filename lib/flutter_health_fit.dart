@@ -461,13 +461,8 @@ class FlutterHealthFit {
   /// (for example, in an app update).
   ///
   /// On Android this method works as expected.
-  ///
-  /// [useSensitive] on Android, if this is true, will also check missing permissions of sensitive and restricted scopes, such as heart rate.
-  /// https://support.google.com/cloud/answer/9110914#sensitive-scopes
-  /// https://support.google.com/cloud/answer/9110914#restricted-scopes
-  /// On iOS has no meaning.
-  Future<bool> isAuthorized({bool? useSensitive}) async {
-    final status = await _channel.invokeMethod("isAuthorized", {"useSensitive": useSensitive});
+  Future<bool> isAuthorized() async {
+    final status = await _channel.invokeMethod("isAuthorized");
     return status;
   }
 
@@ -559,12 +554,8 @@ class FlutterHealthFit {
   }
 
   /// Will ask to authorize, prompting the user if necessary.
-  /// [useSensitive] on Android, if this is true, will also ask permissions of sensitive and restricted scopes, such as heart rate.
-  /// https://support.google.com/cloud/answer/9110914#sensitive-scopes
-  /// https://support.google.com/cloud/answer/9110914#restricted-scopes
-  /// On iOS has no meaning.
-  Future<bool> authorize(bool? useSensitive) async {
-    return await _channel.invokeMethod('requestAuthorization', {"useSensitive": useSensitive});
+  Future<bool> authorize() async {
+    return await _channel.invokeMethod('requestAuthorization');
   }
 
   /// Will ask to authorize android.permission.BODY_SENSORS permission on Android.
