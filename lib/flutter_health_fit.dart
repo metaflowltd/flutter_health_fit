@@ -4,7 +4,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
-enum QuantityUnit { percent, cm, second, }
+enum QuantityUnit {
+  percent,
+  cm,
+  second,
+}
+
 extension QuantityUnitExtension on QuantityUnit {
   String get stringValue {
     switch (this) {
@@ -527,6 +532,13 @@ class FlutterHealthFit {
     return status;
   }
 
+  Future<bool> isMenstrualFlowAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    final status = await _channel.invokeMethod("isMenstrualFlowAuthorized");
+    return status;
+  }
+
   /// Checks if weight permission has been authorized
   Future<bool> isWeightAuthorized() async {
     final status = await _channel.invokeMethod("isWeightAuthorized");
@@ -571,8 +583,8 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
-    Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment',
-        {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
+    Map? last = await _channel.invokeMethod(
+        'getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
@@ -582,8 +594,7 @@ class FlutterHealthFit {
   Future<Map<DateTime, double>?> getHRV(int start, int end, {QuantityUnit unit = QuantityUnit.second}) async {
     if (!Platform.isIOS) return null;
 
-    Map? last = await _channel.invokeMethod('getHRVBySegment',
-        {"start": start, "end": end, "unit": unit.stringValue});
+    Map? last = await _channel.invokeMethod('getHRVBySegment', {"start": start, "end": end, "unit": unit.stringValue});
 
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
@@ -591,9 +602,19 @@ class FlutterHealthFit {
     });
   }
 
+  Future<Map<DateTime, bool>?> getMenstrualFlow(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
+    Map? dataMap = await _channel.invokeMethod('getMenstrualFlowBySegment', {"start": start, "end": end});
+
+    final menstrualFlowMap = dataMap?.map((key, value) => MapEntry(DateTime.fromMillisecondsSinceEpoch(key),
+        (value is bool) ? value : false ));
+    return menstrualFlowMap;
+  }
+
   Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
-    Map? last = await _channel
-        .invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
+    Map? last =
+        await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
