@@ -4,7 +4,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 enum TimeUnit { minutes, days }
-enum QuantityUnit { percent, cm, second, }
+enum QuantityUnit {
+  percent,
+  cm,
+  second,
+}
+
 extension QuantityUnitExtension on QuantityUnit {
   String get stringValue {
     switch (this) {
@@ -22,6 +27,41 @@ extension QuantityUnitExtension on QuantityUnit {
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
 enum SleepSampleType { inBed, asleep, awake }
+
+enum Flow {
+  notSpecified,
+  spotting, // Spotting
+  light, // Light
+  medium, // Medium
+  heavy // Heavy
+}
+
+class MenstrualData {
+  final DateTime dateTime;
+  final Flow flow;
+
+  MenstrualData(this.dateTime, this.flow);
+
+  MenstrualData.fromRawData(this.dateTime, int rawFlowValue)
+      : flow = _flowFromInt(rawFlowValue);
+
+  static Flow _flowFromInt(int input) {
+    switch (input) {
+      case 0:
+        return Flow.notSpecified;
+      case 1:
+        return Flow.spotting;
+      case 2:
+        return Flow.light;
+      case 3:
+        return Flow.medium;
+      case 4:
+        return Flow.heavy;
+      default:
+        throw ArgumentError("Can not map $input to Flow");
+    }
+  }
+}
 
 enum GFSleepSampleType {
   // Unspecified or unknown if user is sleeping.
@@ -416,7 +456,8 @@ class HeartRateSample {
 
   int get motionLevel {
     if (metadata != null) {
-      final heartRateMotionContext = metadata!["HKMetadataKeyHeartRateMotionContext"];
+      final heartRateMotionContext =
+          metadata!["HKMetadataKeyHeartRateMotionContext"];
       if (heartRateMotionContext is num) {
         return heartRateMotionContext.round();
       }
@@ -439,14 +480,18 @@ class HeartRateSample {
   HeartRateSample.fromMap(Map<String, dynamic> map)
       : dateTime = DateTime.fromMillisecondsSinceEpoch(map["timestamp"]),
         heartRate = map["value"].toInt(),
-        metadata = map["metadata"] == null ? null : Map<String, dynamic>.from(map["metadata"]),
+        metadata = map["metadata"] == null
+            ? null
+            : Map<String, dynamic>.from(map["metadata"]),
         sourceApp = map["sourceApp"],
         sourceDevice = map["sourceDevice"];
 }
 
 class FlutterHealthFit {
-  static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
-  static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
+  static const MethodChannel _channel =
+      const MethodChannel('flutter_health_fit');
+  static const EventChannel _logsChannel =
+      const EventChannel('flutter_health_fit_logs_channel');
 
   factory FlutterHealthFit() => _singleton;
 
@@ -468,8 +513,9 @@ class FlutterHealthFit {
 
   /// This stream exposes native logs coming from the plugin, in order to be able
   /// debug
-  Stream<String>? get androidNativeLogsMessages =>
-      Platform.isAndroid ? _logsChannel.receiveBroadcastStream().map((event) => event as String) : null;
+  Stream<String>? get androidNativeLogsMessages => Platform.isAndroid
+      ? _logsChannel.receiveBroadcastStream().map((event) => event as String)
+      : null;
 
   /// Checks if any health permission has been authorized
   Future<bool> isAnyPermissionAuthorized() async {
@@ -563,14 +609,16 @@ class FlutterHealthFit {
   /// on iOS, returns true immediately and does nothing.
   Future<bool> authorizeBodySensors() async {
     if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
-    return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
+    return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ??
+        false;
   }
 
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
     return await _channel.invokeMethod('getBasicHealthData');
   }
 
-  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
+  Future<Map<DateTime, double>?> getBodyFatPercentage(
+      int start, int end) async {
     Map? last = await _channel.invokeMethod('getBodyFatPercentageBySegment',
         {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
     return last?.cast<int, double>().map((int key, double value) {
@@ -579,21 +627,22 @@ class FlutterHealthFit {
     });
   }
 
-  Future<Map<DateTime, double>?> getHRV(int start, int end, {QuantityUnit unit = QuantityUnit.second}) async {
+  Future<Map<DateTime, double>?> getHRV(int start, int end,
+      {QuantityUnit unit = QuantityUnit.second}) async {
     if (!Platform.isIOS) return null;
 
     Map? last = await _channel.invokeMethod('getHRVBySegment',
         {"start": start, "end": end, "unit": unit.stringValue});
-
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
   }
 
-  Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
-    Map? last = await _channel
-        .invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
+  Future<Map<DateTime, double>?> getWaistSize(int start, int end,
+      {QuantityUnit unit = QuantityUnit.cm}) async {
+    Map? last = await _channel.invokeMethod('getWaistSizeBySegment',
+        {"start": start, "end": end, "unit": unit.stringValue});
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
@@ -601,73 +650,110 @@ class FlutterHealthFit {
   }
 
   Future<Map<DateTime, double>?> getWeight(int start, int end) async {
-    Map? lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
+    Map? lastWeight = await _channel
+        .invokeMethod('getWeightInInterval', {"start": start, "end": end});
     return lastWeight?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
   }
 
+  Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
+    final List<MenstrualData> result = [];
+
+    Map? monthlyCycle = await _channel.invokeMethod('getMenstrualData', {
+      "start": start,
+      "end": end,
+    });
+
+    monthlyCycle?.cast<int, int>().forEach((int key, int value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      result.add(MenstrualData.fromRawData(dateTime, value));
+    });
+
+    return result;
+  }
+
   Future<HeartRateSample?> getLatestHeartRateSample(int start, int end) =>
       _getHeartRate("getHeartRateSample", start, end);
 
-  Future<List<HeartRateSample>> getAverageWalkingHeartRate(int start, int end) =>
+  Future<List<HeartRateSample>> getAverageWalkingHeartRate(
+          int start, int end) =>
       _getAverageHeartRates("getAverageWalkingHeartRate", start, end);
 
-  Future<List<HeartRateSample>> getAverageRestingHeartRate(int start, int end) =>
+  Future<List<HeartRateSample>> getAverageRestingHeartRate(
+          int start, int end) =>
       _getAverageHeartRates("getAverageRestingHeartRate", start, end);
 
-  Future<HeartRateSample?> _getHeartRate(String methodName, int start, int end) async {
-    final sample = await _channel.invokeMapMethod<String, dynamic>(methodName, {"start": start, "end": end});
+  Future<HeartRateSample?> _getHeartRate(
+      String methodName, int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>(
+        methodName, {"start": start, "end": end});
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
-  Future<List<HeartRateSample>> _getAverageHeartRates(String methodName, int start, int end) async {
-    final averageBySource = await _channel.invokeListMethod<Map>(methodName, {"start": start, "end": end});
+  Future<List<HeartRateSample>> _getAverageHeartRates(
+      String methodName, int start, int end) async {
+    final averageBySource = await _channel
+        .invokeListMethod<Map>(methodName, {"start": start, "end": end});
 
     if (averageBySource == null || averageBySource.isEmpty) return [];
 
-    return averageBySource.map((Map average) => HeartRateSample.fromMap(Map<String, dynamic>.from(average))).toList();
+    return averageBySource
+        .map((Map average) =>
+            HeartRateSample.fromMap(Map<String, dynamic>.from(average)))
+        .toList();
   }
 
-  Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map stepsByTimestamp = await _channel
-        .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+  Future<Map<DateTime, int>> getStepsBySegment(
+      int start, int end, int duration, TimeUnit unit) async {
+    Map stepsByTimestamp = await _channel.invokeMethod("getStepsBySegment",
+        {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return stepsByTimestamp.cast<int, int>().map((int key, int value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      dateTime = DateTime(dateTime.year, dateTime.month,
+          dateTime.day); // remove hours, minutes, seconds
       return MapEntry(dateTime, value);
     });
   }
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
     if (!Platform.isIOS) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
+        "getWorkoutsBySegment", {"start": start, "end": end});
+    return rawSamples
+        ?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
-  Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map flightsByTimestamp = await _channel
-        .invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+  Future<Map<DateTime, int>> getFlightsBySegment(
+      int start, int end, int duration, TimeUnit unit) async {
+    Map flightsByTimestamp = await _channel.invokeMethod("getFlightsBySegment",
+        {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return flightsByTimestamp.cast<int, int>().map((int key, int value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      dateTime = DateTime(dateTime.year, dateTime.month,
+          dateTime.day); // remove hours, minutes, seconds
       return MapEntry(dateTime, value);
     });
   }
 
-  Future<Map<DateTime, double>> getCyclingBySegment(int start, int end, int duration, TimeUnit unit) async {
+  Future<Map<DateTime, double>> getCyclingBySegment(
+      int start, int end, int duration, TimeUnit unit) async {
     Map cyclingByTimestamp = await _channel.invokeMethod(
-        "getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+        "getCyclingDistanceBySegment",
+        {"start": start, "end": end, "duration": duration, "unit": unit.index});
     return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
       var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+      dateTime = DateTime(dateTime.year, dateTime.month,
+          dateTime.day); // remove hours, minutes, seconds
       return MapEntry(dateTime, value);
     });
   }
 
   Future<int?> getTotalStepsInInterval(int start, int end) async {
-    final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
+    final steps = await _channel
+        .invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
     return steps;
   }
 
@@ -682,8 +768,11 @@ class FlutterHealthFit {
   /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<SleepSample>?> getSleepIOS(int start, int end) async {
     if (!Platform.isIOS) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
+        "getSleepBySegment", {"start": start, "end": end});
+    return rawSamples
+        ?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   /// Returns the sleep data from GoogleFit.
@@ -691,8 +780,11 @@ class FlutterHealthFit {
   /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<GFSleepSample>?> getSleepAndroid(int start, int end) async {
     if (!Platform.isAndroid) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    List<Map>? rawSamples = await _channel.invokeListMethod<Map>(
+        "getSleepBySegment", {"start": start, "end": end});
+    return rawSamples
+        ?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   /// Calories returned in kCal for a given dated range, separated by sources.
@@ -700,7 +792,8 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getEnergyConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
+    return await _channel.invokeMapMethod<String, int>(
+        "getEnergyConsumed", {"start": start, "end": end});
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -708,7 +801,8 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getFiberConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
+    return await _channel.invokeMapMethod<String, int>(
+        "getFiberConsumed", {"start": start, "end": end});
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -716,7 +810,8 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getCarbsConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
+    return await _channel.invokeMapMethod<String, int>(
+        "getCarbsConsumed", {"start": start, "end": end});
   }
 
   /// Sugar returned in grams for a given dated range, separated by sources.
@@ -724,7 +819,8 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getSugarConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
+    return await _channel.invokeMapMethod<String, int>(
+        "getSugarConsumed", {"start": start, "end": end});
   }
 
   /// Fat returned in grams for a given dated range, separated by sources.
@@ -732,7 +828,8 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getFatConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
+    return await _channel.invokeMapMethod<String, int>(
+        "getFatConsumed", {"start": start, "end": end});
   }
 
   /// Protein returned in grams for a given dated range, separated by sources.
@@ -740,19 +837,21 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getProteinConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
+    return _channel.invokeMapMethod<String, int>(
+        "getProteinConsumed", {"start": start, "end": end});
   }
 
   Future<double?> get getWalkingAndRunningDistance async {
     return await _getActivityData(_ActivityType.walkRun, "m");
   }
 
-  Future<double?> _getActivityData(_ActivityType activityType, String units) async {
+  Future<double?> _getActivityData(
+      _ActivityType activityType, String units) async {
     var result;
 
     try {
-      result =
-          await _channel.invokeMethod('getActivity', {"name": activityType.toString().split(".").last, "units": units});
+      result = await _channel.invokeMethod('getActivity',
+          {"name": activityType.toString().split(".").last, "units": units});
     } catch (e) {
       print(e.toString());
       return null;
@@ -770,7 +869,8 @@ class FlutterHealthFit {
     /// Not supported for Android yet
     if (Platform.isIOS) {
       try {
-        return List<String>.from(await _channel.invokeMethod('getStepsSources'));
+        return List<String>.from(
+            await _channel.invokeMethod('getStepsSources'));
       } catch (e) {
         return null;
       }
