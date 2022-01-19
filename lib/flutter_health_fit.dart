@@ -635,9 +635,13 @@ class FlutterHealthFit {
   }
 
   Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
+    List<MenstrualData> result = [];
+
+    // TODO remove after approval of reproductive_health scope
+    if (!Platform.isIOS) return result;
+
     Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
 
-    List<MenstrualData> result = [];
     monthlyCycle?.cast<int, int>().forEach((int key, int value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       result.add(MenstrualData.fromRawData(dateTime, value));

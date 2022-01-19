@@ -13,10 +13,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
-import com.google.android.gms.fitness.data.DataPoint
-import com.google.android.gms.fitness.data.DataSource
-import com.google.android.gms.fitness.data.DataType
-import com.google.android.gms.fitness.data.Field
+import com.google.android.gms.fitness.data.*
 import com.google.android.gms.fitness.request.DataReadRequest
 import com.google.android.gms.fitness.request.SessionReadRequest
 import com.google.android.gms.tasks.Tasks
@@ -51,6 +48,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
         val sleepDataType: DataType = DataType.TYPE_SLEEP_SEGMENT
         val bodyFatDataType: DataType = DataType.TYPE_BODY_FAT_PERCENTAGE
+        val menstruationDataType: DataType = HealthDataTypes.TYPE_MENSTRUATION
 
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
@@ -149,6 +147,18 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 getWeight(start, end) { map: Map<Long, Float>?, e: Throwable? ->
                     if (e != null) {
                         result.error("failed", e.message, null)
+                    } else {
+                        result.success(map)
+                    }
+                }
+            }
+
+            "getMenstrualDataBySegment" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                getMenstruationData(start, end) { map: Map<Long, Int>?, e: Throwable? ->
+                    if (e != null) {
+                        result.error("failed to get monthly cycle data", e.message, null)
                     } else {
                         result.success(map)
                     }
@@ -311,6 +321,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isSleepAuthorized" -> result.success(isSleepAuthorized())
 
+            "isMenstrualDataAuthorized" -> result.success(isMenstrualCycleAuthorized())
+
             "isWeightAuthorized" -> result.success(isWeightAuthorized())
 
             "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
@@ -369,6 +381,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
     }
 
+    private fun isMenstrualCycleAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(menstruationDataType).build())
+    }
+
     private fun isHeartRateSampleAuthorized(): Boolean {
         return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
     }
@@ -395,6 +411,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         stepsDataType,
                         weightDataType,
                         bodyFatDataType,
+                        // TODO remove after approval of reproductive_health scope
+//                        menstruationDataType,
                         if (hasSensorPermissionCompat()) heartRateDataType else null
                 ),
                         deferredResult
@@ -753,6 +771,47 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }.start()
     }
 
+    private fun getMenstruationData(
+            startTime: Long,
+            endTime: Long,
+            result: (Map<Long, Int>?, Throwable?) -> Unit
+    ) {
+        val fitnessOptions = FitnessOptions.builder().addDataType(menstruationDataType).build()
+
+        val activity = activity ?: return
+        val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+
+        val request = DataReadRequest.Builder().read(HealthDataTypes.TYPE_MENSTRUATION)
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setLimit(1)
+                .build()
+
+        Fitness.getHistoryClient(activity, gsa)
+                .readData(request)
+                .addOnSuccessListener { response ->
+                    val resultMap = mutableMapOf<Long, Int>()
+                    for (dataSet in response.buckets.flatMap { it.dataSets }) {
+                        dataSet
+                                .dataPoints
+                                .lastOrNull()
+                                ?.let {
+                                    try {
+                                        resultMap[it.getTimestamp(TimeUnit.MILLISECONDS)] =
+                                                it.getValue(menstruationDataType.fields[0]).asInt()
+                                    } catch (e: Exception) {
+                                        sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
+                                        handleGoogleDisconnection(e, activity)
+                                    }
+                                }
+                    }
+                    result(resultMap, null)
+                }
+                .addOnFailureListener { exception ->
+                    result(null, exception)
+                }
+    }
+
     private fun getWeight(
             startTime: Long,
             endTime: Long,
@@ -813,12 +872,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun getFitnessOptions(): FitnessOptions = FitnessOptions.builder()
-        .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
-        .build()
+            .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
+            .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
+            // TODO remove after approval of reproductive_health scope
+//        .addDataType(menstruationDataType, FitnessOptions.ACCESS_READ)
+            .build()
 
     override fun onRequestPermissionsResult(
             requestCode: Int,
