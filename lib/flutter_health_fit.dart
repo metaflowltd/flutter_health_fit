@@ -634,6 +634,18 @@ class FlutterHealthFit {
     });
   }
 
+  Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
+    Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
+
+    List<MenstrualData> result = [];
+    monthlyCycle?.cast<int, int>().forEach((int key, int value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      result.add(MenstrualData.fromRawData(dateTime, value));
+    });
+
+    return result;
+  }
+
   Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
     Map? last =
         await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
@@ -649,22 +661,6 @@ class FlutterHealthFit {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
-  }
-
-  Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
-    final List<MenstrualData> result = [];
-
-    Map? monthlyCycle = await _channel.invokeMethod('getMenstrualData', {
-      "start": start,
-      "end": end,
-    });
-
-    monthlyCycle?.cast<int, int>().forEach((int key, int value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      result.add(MenstrualData.fromRawData(dateTime, value));
-    });
-
-    return result;
   }
 
   Future<HeartRateSample?> getLatestHeartRateSample(int start, int end) =>
