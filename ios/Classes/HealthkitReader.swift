@@ -484,7 +484,7 @@ class HealthkitReader: NSObject {
                 case .none:
                     flowValue = 0
                 }
-//                let menstrualCycleStart = (result.metadata?["HKMenstrualCycleStart"] as? Bool) ?? false
+
                 dict[time] = flowValue
                 return dict
             }
