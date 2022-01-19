@@ -77,7 +77,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "getHRVBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.hrvQuantityType, call: call, result: result)
         
-        case "getMenstrualFlowBySegment":
+        case "getMenstrualDataBySegment":
             getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
         
         case "getWeightInInterval":
@@ -232,7 +232,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.hrvQuantityType], result: result)
 
-        case "isMenstrualFlowAuthorized":
+        case "isMenstrualDataAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.menstrualFlowCategoryType], result: result)
 

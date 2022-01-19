@@ -28,6 +28,40 @@ enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
 enum SleepSampleType { inBed, asleep, awake }
 
+enum Flow {
+  notSpecified,
+  spotting, // Spotting
+  light, // Light
+  medium, // Medium
+  heavy // Heavy
+}
+
+class MenstrualData {
+  final DateTime dateTime;
+  final Flow flow;
+
+  MenstrualData(this.dateTime, this.flow);
+
+  MenstrualData.fromRawData(this.dateTime, int rawFlowValue) : flow = _flowFromInt(rawFlowValue);
+
+  static Flow _flowFromInt(int input) {
+    switch (input) {
+      case 0:
+        return Flow.notSpecified;
+      case 1:
+        return Flow.spotting;
+      case 2:
+        return Flow.light;
+      case 3:
+        return Flow.medium;
+      case 4:
+        return Flow.heavy;
+      default:
+        throw ArgumentError("Can not map $input to Flow");
+    }
+  }
+}
+
 enum GFSleepSampleType {
   // Unspecified or unknown if user is sleeping.
   unspecified,
@@ -532,10 +566,9 @@ class FlutterHealthFit {
     return status;
   }
 
-  Future<bool> isMenstrualFlowAuthorized() async {
-    if (!Platform.isIOS) return false;
-
-    final status = await _channel.invokeMethod("isMenstrualFlowAuthorized");
+  /// Checks if menstrual data permission has been authorized
+  Future<bool> isMenstrualDataAuthorized() async {
+    final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
     return status;
   }
 
@@ -595,21 +628,22 @@ class FlutterHealthFit {
     if (!Platform.isIOS) return null;
 
     Map? last = await _channel.invokeMethod('getHRVBySegment', {"start": start, "end": end, "unit": unit.stringValue});
-
     return last?.cast<int, double>().map((int key, double value) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
       return MapEntry(dateTime, value);
     });
   }
 
-  Future<Map<DateTime, bool>?> getMenstrualFlow(int start, int end) async {
-    if (!Platform.isIOS) return null;
+  Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
+    Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
 
-    Map? dataMap = await _channel.invokeMethod('getMenstrualFlowBySegment', {"start": start, "end": end});
+    List<MenstrualData> result = [];
+    monthlyCycle?.cast<int, int>().forEach((int key, int value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      result.add(MenstrualData.fromRawData(dateTime, value));
+    });
 
-    final menstrualFlowMap = dataMap?.map((key, value) => MapEntry(DateTime.fromMillisecondsSinceEpoch(key),
-        (value is bool) ? value : false ));
-    return menstrualFlowMap;
+    return result;
   }
 
   Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
