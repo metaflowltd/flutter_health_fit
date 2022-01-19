@@ -444,7 +444,7 @@ class HealthkitReader: NSObject {
     func getCategory(categoryType: HKCategoryType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     completion: @escaping ([Int: Bool]?, Error?) -> Void) {
+                     completion: @escaping ([Int: Int]?, Error?) -> Void) {
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
@@ -465,11 +465,27 @@ class HealthkitReader: NSObject {
                 return
             }
             
-            let dict = results.reduce([Int:Bool]()) { (dict, result) -> [Int:Bool] in
+            let dict = results.reduce([Int:Int]()) { (dict, result) -> [Int:Int] in
                 var dict = dict
                 let time = Int(result.startDate.timeIntervalSince1970 * 1000)
-                let menstrualCycleStart = (result.metadata?["HKMenstrualCycleStart"] as? Bool) ?? false
-                dict[time] = menstrualCycleStart
+                let value = (result as? HKCategorySample)?.value ?? HKCategoryValueMenstrualFlow.unspecified.rawValue
+                
+                let sample: HKCategoryValueMenstrualFlow = HKCategoryValueMenstrualFlow(rawValue: value) ?? HKCategoryValueMenstrualFlow.unspecified
+                let flowValue: Int
+                switch sample {
+                case .unspecified:
+                    flowValue = 0
+                case .light:
+                    flowValue = 2
+                case .medium:
+                    flowValue = 3
+                case .heavy:
+                    flowValue = 4
+                case .none:
+                    flowValue = 0
+                }
+//                let menstrualCycleStart = (result.metadata?["HKMenstrualCycleStart"] as? Bool) ?? false
+                dict[time] = flowValue
                 return dict
             }
             
