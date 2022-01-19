@@ -572,12 +572,6 @@ class FlutterHealthFit {
     return status;
   }
 
-  /// Checks if menstrual data permission has been authorized
-  Future<bool> isMenstrualDataAuthorized() async {
-    final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
-    return status;
-  }
-
   /// Checks if weight permission has been authorized
   Future<bool> isWeightAuthorized() async {
     final status = await _channel.invokeMethod("isWeightAuthorized");
