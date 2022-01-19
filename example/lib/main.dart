@@ -15,6 +15,7 @@ class _MyAppState extends State<MyApp> {
   String _lastWeightString = "";
   String _activityData = "";
   String _heartData = "";
+  List<String> _menstrualData = [];
   bool _isAllAuth = false;
   bool _isAnyAuth = false;
   bool _isSleep = false;
@@ -22,6 +23,9 @@ class _MyAppState extends State<MyApp> {
   bool _isWeight = false;
   bool _isSteps = false;
   bool _isWorkouts = false;
+  bool _isMenstrualData = false;
+
+  TextEditingController _menstrualDaysController = TextEditingController(text: '7');
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -32,6 +36,7 @@ class _MyAppState extends State<MyApp> {
     final isWeight = await flutterHealthFit.isWeightAuthorized();
     final isSteps = await flutterHealthFit.isStepsAuthorized();
     final isWorkouts = await flutterHealthFit.isWorkoutsAuthorized();
+    final isMenstrualData = await flutterHealthFit.isMenstrualDataAuthorized();
     setState(() {
       _isAllAuth = isAllAuth;
       _isAnyAuth = isAnyAuth;
@@ -40,6 +45,7 @@ class _MyAppState extends State<MyApp> {
       _isWeight = isWeight;
       _isSteps = isSteps;
       _isWorkouts = isWorkouts;
+      _isMenstrualData = isMenstrualData;
     });
   }
 
@@ -103,6 +109,18 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  _getMenstrualData() async {
+    final now = DateTime.now();
+    final daysBack = now.subtract(Duration(days: int.tryParse(_menstrualDaysController.value.text) ?? 7));
+    final menstrualData = await FlutterHealthFit().getMenstrualData(
+      daysBack.millisecondsSinceEpoch,
+      now.millisecondsSinceEpoch,
+    );
+    setState(() {
+      _menstrualData = menstrualData.map((element) => "${element.dateTime} : ${element.flow}").toList();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -119,13 +137,18 @@ class _MyAppState extends State<MyApp> {
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: ListView(
               children: <Widget>[
                 Text('Health/Fit Authorized: $_isAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-                Text(
-                    "isAllAuth: $_isAllAuth, isAnyAuth: $_isAnyAuth, isSleep: $_isSleep, isHeart: $_isHeart, isWeight: $_isWeight, isSteps: $_isSteps isWorkouts: $_isWorkouts"),
+                Text("isAllAuth: $_isAllAuth,"
+                    " isAnyAuth: $_isAnyAuth,"
+                    " isSleep: $_isSleep,"
+                    " isHeart: $_isHeart,"
+                    " isWeight: $_isWeight,"
+                    " isSteps: $_isSteps,"
+                    " isWorkouts: $_isWorkouts,"
+                    " isMenstrualData: $_isMenstrualData"),
                 Text('Body sensors Authorized: $_isBodyAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
                 ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
@@ -136,6 +159,29 @@ class _MyAppState extends State<MyApp> {
                 Text('\n$_activityData\n'),
                 ElevatedButton(child: Text("Get heart Data"), onPressed: _getHeartData),
                 Text('\n$_heartData\n'),
+                Divider(height: 1),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(child: Text("Get Menstrual Data For Days"), onPressed: _getMenstrualData),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Container(
+                      width: 30,
+                      child: TextField(
+                        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
+                        controller: _menstrualDaysController,
+                      ),
+                    ),
+                  ],
+                ),
+                ListView.builder(
+                  itemCount: _menstrualData.length,
+                  shrinkWrap: true,
+                  physics: ScrollPhysics(),
+                  itemBuilder: (context, index) => Text('\n${_menstrualData[index]}\n'),
+                )
               ],
             ),
           ),
