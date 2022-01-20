@@ -172,12 +172,16 @@ class HealthkitReader: NSObject {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!
     }
     
-    var bodyFatPercentageQuantityType: HKQuantityType{
+    var bodyFatPercentageQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
     }
 
-    var hrvQuantityType: HKQuantityType{
+    var hrvQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
+    }
+
+    var menstrualFlowCategoryType: HKCategoryType {
+        return HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.menstrualFlow)!
     }
 
     var workoutType: HKObjectType{
@@ -271,6 +275,7 @@ class HealthkitReader: NSObject {
             HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
             HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
             workoutType,
+            menstrualFlowCategoryType,
             HealthkitReader.weightQuantityType(),
             HealthkitReader.heightQuantityType(),
             sleepCategoryType,
@@ -435,6 +440,60 @@ class HealthkitReader: NSObject {
         })
         healthStore.execute(query)
     }
+    
+    func getCategory(categoryType: HKCategoryType,
+                     start: TimeInterval,
+                     end: TimeInterval,
+                     completion: @escaping ([Int: Int]?, Error?) -> Void) {
+        
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        let sortByTime = NSSortDescriptor(key:HKSampleSortIdentifierEndDate, ascending:false)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate,
+                                                    end: endDate,
+                                                    options: [])
+        
+        let query = HKSampleQuery(sampleType:categoryType,
+                                  predicate:predicate,
+                                  limit:HKObjectQueryNoLimit,
+                                  sortDescriptors:[sortByTime],
+                                  resultsHandler:{(query, results, error) in
+            
+            guard let results = results else {
+                completion(nil, error)
+                return
+            }
+            
+            let dict = results.reduce([Int:Int]()) { (dict, result) -> [Int:Int] in
+                var dict = dict
+                let time = Int(result.startDate.timeIntervalSince1970 * 1000)
+                let value = (result as? HKCategorySample)?.value ?? HKCategoryValueMenstrualFlow.unspecified.rawValue
+                
+                let sample: HKCategoryValueMenstrualFlow = HKCategoryValueMenstrualFlow(rawValue: value) ?? HKCategoryValueMenstrualFlow.unspecified
+                let flowValue: Int
+                switch sample {
+                case .unspecified:
+                    flowValue = 0
+                case .light:
+                    flowValue = 2
+                case .medium:
+                    flowValue = 3
+                case .heavy:
+                    flowValue = 4
+                case .none:
+                    flowValue = 0
+                }
+
+                dict[time] = flowValue
+                return dict
+            }
+            
+            completion(dict, nil)
+        })
+        healthStore.execute(query)
+    }
+    
     
     func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)

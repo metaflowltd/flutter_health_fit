@@ -76,7 +76,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
         case "getHRVBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.hrvQuantityType, call: call, result: result)
-            
+        
+        case "getMenstrualDataBySegment":
+            getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
+        
         case "getWeightInInterval":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
@@ -228,7 +231,11 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "isHRVAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.hrvQuantityType], result: result)
-            
+
+        case "isMenstrualDataAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.menstrualFlowCategoryType], result: result)
+
         case "isWorkoutsAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.workoutType], result: result)
@@ -399,6 +406,29 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let error = error! as NSError
             print("[\(#function)] got error: \(error)")
             result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+        }
+    }
+
+    private func getCategoryBySegment(categoryType: HKCategoryType,
+                                              call: FlutterMethodCall,
+                                              result: @escaping FlutterResult) {
+        
+        guard let args = call.arguments as? [String: Any],
+              let startMillis = args["start"] as? Int,
+              let endMillis = args["end"] as? Int else {
+                  result(FlutterError(code: "2666", message: "Missing args", details: call.method))
+                  return
+              }
+        
+        HealthkitReader.sharedInstance.getCategory(categoryType: categoryType,
+                                                   start: startMillis.toTimeInterval,
+                                                   end: endMillis.toTimeInterval) { values, error in
+            if let error = error as NSError? {
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            }
+            else {
+                result(values)
+            }
         }
     }
     
