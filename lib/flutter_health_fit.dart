@@ -558,11 +558,11 @@ class FlutterHealthFit {
     return status;
   }
 
-  /// Checks if HRV permission has been authorized
-  Future<bool> isHRVAuthorized() async {
+  /// Checks if HeartRateVariability permission has been authorized
+  Future<bool> isHeartRateVariabilityAuthorized() async {
     if (!Platform.isIOS) return false;
 
-    final status = await _channel.invokeMethod("isHRVAuthorized");
+    final status = await _channel.invokeMethod("isHeartRateVariabilityAuthorized");
     return status;
   }
 
@@ -624,16 +624,6 @@ class FlutterHealthFit {
     });
   }
 
-  Future<Map<DateTime, double>?> getHRV(int start, int end, {QuantityUnit unit = QuantityUnit.second}) async {
-    if (!Platform.isIOS) return null;
-
-    Map? last = await _channel.invokeMethod('getHRVBySegment', {"start": start, "end": end, "unit": unit.stringValue});
-    return last?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
-  }
-
   Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
     List<MenstrualData> result = [];
 
@@ -667,26 +657,20 @@ class FlutterHealthFit {
     });
   }
 
-  Future<HeartRateSample?> getLatestHeartRateSample(int start, int end) =>
-      _getHeartRate("getHeartRateSample", start, end);
-
-  Future<List<HeartRateSample>> getAverageWalkingHeartRate(int start, int end) =>
-      _getAverageHeartRates("getAverageWalkingHeartRate", start, end);
-
-  Future<List<HeartRateSample>> getAverageRestingHeartRate(int start, int end) =>
-      _getAverageHeartRates("getAverageRestingHeartRate", start, end);
-
-  Future<HeartRateSample?> _getHeartRate(String methodName, int start, int end) async {
-    final sample = await _channel.invokeMapMethod<String, dynamic>(methodName, {"start": start, "end": end});
+  Future<HeartRateSample?> getLatestHeartRate(int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
-  Future<List<HeartRateSample>> _getAverageHeartRates(String methodName, int start, int end) async {
-    final averageBySource = await _channel.invokeListMethod<Map>(methodName, {"start": start, "end": end});
+  Future<HeartRateSample?> getAverageHeartRate(int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
+    return sample == null ? null : HeartRateSample.fromMap(sample);
+  }
 
-    if (averageBySource == null || averageBySource.isEmpty) return [];
-
-    return averageBySource.map((Map average) => HeartRateSample.fromMap(Map<String, dynamic>.from(average))).toList();
+  Future<HeartRateSample?> getAverageHeartRateVariability(int start, int end) async {
+    final sample =
+        await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
+    return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
