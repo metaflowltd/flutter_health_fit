@@ -662,8 +662,13 @@ class FlutterHealthFit {
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
-  Future<HeartRateSample?> getAverageHeartRate(int start, int end) async {
-    final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
+  Future<HeartRateSample?> getAverageWalkingHeartRate(int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
+    return sample == null ? null : HeartRateSample.fromMap(sample);
+  }
+
+  Future<HeartRateSample?> getAverageRestingHeartRate(int start, int end) async {
+    final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 

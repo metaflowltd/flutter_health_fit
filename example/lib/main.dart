@@ -99,7 +99,7 @@ class _MyAppState extends State<MyApp> {
     final now = DateTime.now();
     final yesterday = now.subtract(Duration(days: 1));
     final current =
-        await FlutterHealthFit().getLatestHeartRateSample(yesterday.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
+        await FlutterHealthFit().getLatestHeartRate(yesterday.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
     final resting = await FlutterHealthFit()
         .getAverageRestingHeartRate(yesterday.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
     final walking = await FlutterHealthFit()
