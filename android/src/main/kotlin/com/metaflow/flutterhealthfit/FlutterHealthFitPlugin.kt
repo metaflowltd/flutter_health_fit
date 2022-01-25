@@ -258,7 +258,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
-            "getHeartRateSample" -> {
+            "getLatestHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
 
@@ -282,7 +282,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
-            "getAverageRestingHeartRate" -> {
+            "getAverageHeartRate" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
@@ -306,8 +306,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     }
                 }
             }
-
-            "getAverageWalkingHeartRate" -> result.success(null)
 
             "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 

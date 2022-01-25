@@ -534,6 +534,12 @@ class HealthkitReader: NSObject {
             query, results, error in
             
             guard let results = results, results.count > 0 else {
+                let error = error as NSError?
+                if error?.code == 11 {
+                    // no data
+                    completion(nil, nil)
+                    return
+                }
                 completion(nil, error);
                 return;
             }
@@ -573,8 +579,13 @@ class HealthkitReader: NSObject {
                                       options: [.discreteAverage, .separateBySource]) { query, queryResult, error in
             
             guard let queryResult = queryResult else {
-                let error = error! as NSError
-                print("[getAverageQuantity] got error: \(error)")
+                let error = error as NSError?
+                if error?.code == 11 {
+                    // no data
+                    completion(nil, nil)
+                    return
+                }
+                print("[getAverageQuantity] got error: \(String(describing: error))")
                 completion(nil, error)
                 return
             }

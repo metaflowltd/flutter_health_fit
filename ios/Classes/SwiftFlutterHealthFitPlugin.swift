@@ -74,9 +74,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "getBodyFatPercentageBySegment":
             getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType, call: call, result: result)
             
-        case "getHRVBySegment":
-            getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.hrvQuantityType, call: call, result: result)
-        
         case "getMenstrualDataBySegment":
             getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
         
@@ -96,7 +93,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
             
         case "getWorkoutsBySegment":
-            
             let args = call.arguments as! [String: Int]
             let startMillis = args["start"]!.toTimeInterval
             let endMillis = args["end"]!.toTimeInterval
@@ -112,7 +108,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     print("No workouts found")
                 }
             }
-        case "getHeartRateSample":
+        case "getLatestHeartRate":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
@@ -126,30 +122,46 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(rate)
                 }
             }
-        case "getAverageWalkingHeartRate":
-            fallthrough
-        case "getAverageRestingHeartRate":
-            let myArgs = call.arguments as! [String: Int]
-            let startMillis = myArgs["start"]!
-            let endMillis = myArgs["end"]!
-            let start = startMillis.toTimeInterval
-            let end = endMillis.toTimeInterval
-            guard #available(iOS 11.0, *) else {
-                result(nil)
-                return
-            }
-            let sampleType = call.method == "getAverageWalkingHeartRate" ? HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType : HealthkitReader.sharedInstance.restingHeartRateQuantityType
-            HealthkitReader.sharedInstance.getAverageQuantity(sampleType: sampleType,
-                                                              unit: HKUnit.count().unitDivided(by: HKUnit.minute()),
-                                                              start: start, end: end) { (rates: [[String : Any]]?, error: Error?) in
+        case "getAverageHeartRate":
+            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.heartRateQuantityType,
+                         call: call,
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
                 if let error = error as NSError? {
-                    print("[\(call.method)] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 } else {
-                    result(rates)
+                    result(rates?.first)
                 }
             }
-            
+        case "getAverageWalkingHeartRate":
+            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType,
+                         call: call,
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(rates?.first)
+                }
+            }
+        case "getAverageRestingHeartRate":
+            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.restingHeartRateQuantityType,
+                         call: call,
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(rates?.first)
+                }
+            }
+        case "getAverageHeartRateVariability":
+            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.hrvQuantityType,
+                         call: call,
+                               unit: HKUnit.secondUnit(with: .milli)) { (rates: [[String : Any]]?, error: Error?) in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(rates?.first)
+                }
+            }
         case "getTotalStepsInInterval":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
@@ -228,7 +240,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.bodyFatPercentageQuantityType], result: result)
         
-        case "isHRVAuthorized":
+        case "isHeartRateVariabilityAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.hrvQuantityType], result: result)
 
@@ -365,7 +377,31 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(value)
             }
         }
-        
+    }
+    
+    private func getAverageQuantity(quantityType: HKQuantityType,
+                                    call: FlutterMethodCall,
+                                    unit: HKUnit,
+                                    result: @escaping ([[String: Any]]?, Error?) -> Void) {
+        guard let myArgs = call.arguments as? [String: Int],
+              let startMillis = myArgs["start"],
+              let endMillis = myArgs["end"] else {
+                  result( nil, NSError(domain: "", code: 2666, userInfo: ["title" : "Missing args", "details": call.method]))
+            return
+        }
+        let start = startMillis.toTimeInterval
+        let end = endMillis.toTimeInterval
+
+        HealthkitReader.sharedInstance.getAverageQuantity(sampleType: quantityType,
+                                                          unit: unit,
+                                                          start: start,
+                                                          end: end) { (rates: [[String : Any]]?, error: Error?) in
+            if let error = error as NSError? {
+                result( nil, error)
+            } else {
+                result(rates, nil)
+            }
+        }
     }
     
     private func getSleepSamples(call: FlutterMethodCall,
