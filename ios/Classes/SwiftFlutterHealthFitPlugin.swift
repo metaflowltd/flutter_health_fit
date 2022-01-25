@@ -122,6 +122,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(rate)
                 }
             }
+        case "getAverageHeartRate":
+            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.heartRateQuantityType,
+                         call: call,
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(rates?.first)
+                }
+            }
         case "getAverageWalkingHeartRate":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType,
                          call: call,

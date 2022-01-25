@@ -16,6 +16,7 @@ class _MyAppState extends State<MyApp> {
   String _activityData = "";
   String _heartData = "";
   List<String> _menstrualData = [];
+  List<String> _bodyFatData = [];
   bool _isAllAuth = false;
   bool _isAnyAuth = false;
   bool _isSleep = false;
@@ -24,8 +25,10 @@ class _MyAppState extends State<MyApp> {
   bool _isSteps = false;
   bool _isWorkouts = false;
   bool _isMenstrualData = false;
+  bool _isBodyFatPercentage = false;
 
   TextEditingController _menstrualDaysController = TextEditingController(text: '7');
+  TextEditingController _bodyFatPercentageDaysController = TextEditingController(text: '7');
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -34,6 +37,7 @@ class _MyAppState extends State<MyApp> {
     final isSleep = await flutterHealthFit.isSleepAuthorized();
     final isHeart = await flutterHealthFit.isHeartRateAuthorized();
     final isWeight = await flutterHealthFit.isWeightAuthorized();
+    final isBodyFatPercentage = await flutterHealthFit.isBodyFatPercentageAuthorized();
     final isSteps = await flutterHealthFit.isStepsAuthorized();
     final isWorkouts = await flutterHealthFit.isWorkoutsAuthorized();
     final isMenstrualData = await flutterHealthFit.isMenstrualDataAuthorized();
@@ -46,6 +50,7 @@ class _MyAppState extends State<MyApp> {
       _isSteps = isSteps;
       _isWorkouts = isWorkouts;
       _isMenstrualData = isMenstrualData;
+      _isBodyFatPercentage = isBodyFatPercentage;
     });
   }
 
@@ -97,7 +102,7 @@ class _MyAppState extends State<MyApp> {
 
   _getHeartData() async {
     final now = DateTime.now();
-    final yesterday = now.subtract(Duration(days: 1));
+    final yesterday = now.subtract(Duration(days: 100));
     final current =
         await FlutterHealthFit().getLatestHeartRate(yesterday.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
     final resting = await FlutterHealthFit()
@@ -118,6 +123,18 @@ class _MyAppState extends State<MyApp> {
     );
     setState(() {
       _menstrualData = menstrualData.map((element) => "${element.dateTime} : ${element.flow}").toList();
+    });
+  }
+
+  _getBodyFatPercentage() async {
+    final now = DateTime.now();
+    final daysBack = now.subtract(Duration(days: int.tryParse(_bodyFatPercentageDaysController.value.text) ?? 7));
+    final bodyFatData = await FlutterHealthFit().getBodyFatPercentage(
+      daysBack.millisecondsSinceEpoch,
+      now.millisecondsSinceEpoch,
+    );
+    setState(() {
+      _bodyFatData = bodyFatData?.entries.map((element) => "${element.key} : ${element.value}").toList() ?? [];
     });
   }
 
@@ -148,7 +165,8 @@ class _MyAppState extends State<MyApp> {
                     " isWeight: $_isWeight,"
                     " isSteps: $_isSteps,"
                     " isWorkouts: $_isWorkouts,"
-                    " isMenstrualData: $_isMenstrualData"),
+                    " isMenstrualData: $_isMenstrualData,"
+                    " isBodyFatPercentage: $_isBodyFatPercentage,"),
                 Text('Body sensors Authorized: $_isBodyAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
                 ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
@@ -181,7 +199,30 @@ class _MyAppState extends State<MyApp> {
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
                   itemBuilder: (context, index) => Text('\n${_menstrualData[index]}\n'),
-                )
+                ),
+                Divider(height: 1),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(child: Text("Get body fat percentage for fays"), onPressed: _getBodyFatPercentage),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Container(
+                      width: 30,
+                      child: TextField(
+                        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
+                        controller: _bodyFatPercentageDaysController,
+                      ),
+                    ),
+                  ],
+                ),
+                ListView.builder(
+                  itemCount: _bodyFatData.length,
+                  shrinkWrap: true,
+                  physics: ScrollPhysics(),
+                  itemBuilder: (context, index) => Text('\n${_bodyFatData[index]}\n'),
+                ),
               ],
             ),
           ),
