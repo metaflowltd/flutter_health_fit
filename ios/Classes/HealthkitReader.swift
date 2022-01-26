@@ -444,13 +444,23 @@ class HealthkitReader: NSObject {
                 return
             }
             
-            guard let quantitySample = results.first as? HKQuantitySample else {
-                completion(nil, nil)
-                return
+            var out: [Int:Double] = [:]
+            
+            results.forEach { result in
+                guard let quantitySample = result as? HKQuantitySample else {
+                    return
+                }
+                let quantity = quantitySample.quantity.doubleValue(for: unitType)
+                let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
+                out[timestamp] = quantity
             }
-            let quantity = quantitySample.quantity.doubleValue(for: unitType)
-            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
-            completion([timestamp : quantity], nil)
+            
+            if out.isEmpty == true {
+                completion(nil, nil)
+            }
+            else {
+                completion(out, nil)
+            }
         })
         healthStore.execute(query)
     }
