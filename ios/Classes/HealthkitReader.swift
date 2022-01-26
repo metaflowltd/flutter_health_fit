@@ -421,10 +421,8 @@ class HealthkitReader: NSObject {
     func getQuantity(quantityType: HKQuantityType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     unit: String,
-                     completion: @escaping ([Int: Double]?, Error?) -> Void) {
-        
-        let unitType = HKUnit(from: unit)
+                     unitType: HKUnit,
+                     completion: @escaping ([Int: Double]?, Error?) -> Void) {        
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)

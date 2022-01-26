@@ -5,6 +5,34 @@ import HealthKit
 
 @available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
+    private enum HKUnitStr: String {
+        case second = "s"
+        case percent = "%"
+        case cm = "cm"
+        case glucoseMillimolesPerLiter = "glucose_mmol/L"
+        case count = "count"
+        case liter = "liter"
+        case literPerMin = "liter/Min"
+        
+        func hkUnit() -> HKUnit {
+            switch self {
+            case .second:
+                return HKUnit.second()
+            case .percent:
+                return HKUnit.percent()
+            case .cm:
+                return HKUnit.meterUnit(with: .centi)
+            case .glucoseMillimolesPerLiter:
+                return HKUnit.moleUnit(with: .milli, molarMass: HKUnitMolarMassBloodGlucose).unitDivided(by: HKUnit.liter())
+            case .count:
+                return HKUnit.count()
+            case .liter:
+                return HKUnit.liter()
+            case .literPerMin:
+                return HKUnit.liter().unitDivided(by: HKUnit.minute())
+            }
+        }
+    }
     
     private let methodNamesToQuantityTypes: [String: HKQuantityType] = [
         "getEnergyConsumed": HealthkitReader.sharedInstance.dietaryEnergyConsumed,
@@ -69,10 +97,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.cyclingDistanceQuantityType, call: call, result: result)
             
         case "getWaistSizeBySegment":
-            getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType, call: call, result: result)
+            getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
+                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.cm.hkUnit()),
+                        call: call,
+                        result: result)
         
         case "getBodyFatPercentageBySegment":
-            getQuantityBySegmentWithUnit(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType, call: call, result: result)
+            getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
+                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.percent.hkUnit()),
+                        call: call,
+                        result: result)
             
         case "getMenstrualDataBySegment":
             getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
@@ -196,6 +230,24 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             HealthkitReader.sharedInstance.getStepsSources { (steps: Array<String>) in
                 result(steps)
             }
+        
+        case "getBloodGlucose":
+            getQuantity(quantityType: HealthkitReader.sharedInstance.bloodGlucoseQuantityType,
+                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.glucoseMillimolesPerLiter.hkUnit()),
+                        call: call,
+                        result: result)
+        
+        case "getForcedVitalCapacity":
+            getQuantity(quantityType: HealthkitReader.sharedInstance.forcedVitalCapacityQuantityType,
+                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.liter.hkUnit()),
+                        call: call,
+                        result: result)
+        
+        case "getPeakExpiratoryFlowRate":
+            getQuantity(quantityType: HealthkitReader.sharedInstance.peakExpiratoryFlowRateQuantityType,
+                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.literPerMin.hkUnit()),
+                        call: call,
+                        result: result)
             
         case "isAnyPermissionAuthorized":
             // Not supposed to be invoked on iOS. Returns a fake result.
@@ -251,7 +303,19 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "isWorkoutsAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.workoutType], result: result)
-            
+        
+        case "isBloodGlucoseAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.bloodGlucoseQuantityType], result: result)
+        
+        case "isForcedVitalCapacityAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.forcedVitalCapacityQuantityType], result: result)
+        
+        case "isPeakExpiratoryFlowRateAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.peakExpiratoryFlowRateQuantityType], result: result)
+
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -354,14 +418,24 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
     }
     
-    private func getQuantityBySegmentWithUnit(quantityType: HKQuantityType,
-                                              call: FlutterMethodCall,
-                                              result: @escaping FlutterResult) {
+    private func hkUnit(from call: FlutterMethodCall, defalutUnit: HKUnit) -> HKUnit {
+        guard let args = call.arguments as? [String: Any],
+              let unit = args["unit"] as? String,
+              let hkUnitStr = HKUnitStr(rawValue: unit) else {
+                  return defalutUnit;
+              }
+        
+        return hkUnitStr.hkUnit()
+    }
+    
+    private func getQuantity(quantityType: HKQuantityType,
+                             unitType: HKUnit,
+                             call: FlutterMethodCall,
+                             result: @escaping FlutterResult) {
         
         guard let args = call.arguments as? [String: Any],
               let startMillis = args["start"] as? Int,
-              let endMillis = args["end"] as? Int,
-              let unit = args["unit"] as? String else {
+              let endMillis = args["end"] as? Int else {
                   result(FlutterError(code: "2666", message: "Missing args", details: call.method))
                   return
               }
@@ -369,7 +443,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getQuantity(quantityType: quantityType,
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval,
-                                                   unit: unit) { value, error in
+                                                   unitType: unitType) { value, error in
             if let error = error as NSError? {
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
