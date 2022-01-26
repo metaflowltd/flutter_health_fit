@@ -176,6 +176,18 @@ class HealthkitReader: NSObject {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
     }
 
+    var bloodGlucoseQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodGlucose)!
+    }
+
+    var forcedVitalCapacityQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.forcedVitalCapacity)!
+    }
+
+    var peakExpiratoryFlowRateQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.peakExpiratoryFlowRate)!
+    }
+
     var hrvQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
     }
@@ -209,6 +221,9 @@ class HealthkitReader: NSObject {
             heartRateVariabilityQuantityType,
             waistSizeQuantityType,
             hrvQuantityType,
+            bloodGlucoseQuantityType,
+            forcedVitalCapacityQuantityType,
+            peakExpiratoryFlowRateQuantityType,
         ]
     }
     
