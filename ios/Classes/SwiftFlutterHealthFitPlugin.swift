@@ -100,12 +100,14 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
                         unitType: hkUnit(from: call, defalutUnit: HKUnitStr.cm.hkUnit()),
                         call: call,
+                        maxResults: 1,
                         result: result)
         
         case "getBodyFatPercentageBySegment":
             getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
                         unitType: hkUnit(from: call, defalutUnit: HKUnitStr.percent.hkUnit()),
                         call: call,
+                        maxResults: 1,
                         result: result)
             
         case "getMenstrualDataBySegment":
@@ -235,18 +237,21 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantity(quantityType: HealthkitReader.sharedInstance.bloodGlucoseQuantityType,
                         unitType: hkUnit(from: call, defalutUnit: HKUnitStr.glucoseMillimolesPerLiter.hkUnit()),
                         call: call,
+                        maxResults: nil,
                         result: result)
         
         case "getForcedVitalCapacity":
             getQuantity(quantityType: HealthkitReader.sharedInstance.forcedVitalCapacityQuantityType,
                         unitType: hkUnit(from: call, defalutUnit: HKUnitStr.liter.hkUnit()),
                         call: call,
+                        maxResults: nil,
                         result: result)
         
         case "getPeakExpiratoryFlowRate":
             getQuantity(quantityType: HealthkitReader.sharedInstance.peakExpiratoryFlowRateQuantityType,
                         unitType: hkUnit(from: call, defalutUnit: HKUnitStr.literPerMin.hkUnit()),
                         call: call,
+                        maxResults: nil,
                         result: result)
             
         case "isAnyPermissionAuthorized":
@@ -431,6 +436,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     private func getQuantity(quantityType: HKQuantityType,
                              unitType: HKUnit,
                              call: FlutterMethodCall,
+                             maxResults: Int?,
                              result: @escaping FlutterResult) {
         
         guard let args = call.arguments as? [String: Any],
@@ -443,7 +449,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getQuantity(quantityType: quantityType,
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval,
-                                                   unitType: unitType) { value, error in
+                                                   unitType: unitType,
+                                                   maxResults: maxResults) { value, error in
             if let error = error as NSError? {
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }

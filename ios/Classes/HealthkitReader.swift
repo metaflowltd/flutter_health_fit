@@ -422,6 +422,7 @@ class HealthkitReader: NSObject {
                      start: TimeInterval,
                      end: TimeInterval,
                      unitType: HKUnit,
+                     maxResults: Int?,
                      completion: @escaping ([Int: Double]?, Error?) -> Void) {        
         
         let startDate = Date(timeIntervalSince1970: start)
@@ -434,7 +435,7 @@ class HealthkitReader: NSObject {
         
         let query = HKSampleQuery(sampleType:quantityType,
                                   predicate:predicate,
-                                  limit:1,
+                                  limit: maxResults ?? HKObjectQueryNoLimit,
                                   sortDescriptors:[sortByTime],
                                   resultsHandler:{(query, results, error) in
             
