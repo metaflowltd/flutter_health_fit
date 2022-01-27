@@ -288,7 +288,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
                     if (samples != null) {
                         if (samples.isEmpty()) {
-                            result.success(emptyList<Map<String, Any?>>())
+                            result.success(null)
                         } else {
                             val valueSum =
                                     samples.map { it.getValue(heartRateDataType.fields[0]).asFloat() }
@@ -297,9 +297,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                             val sampleMap = createHeartRateSampleMap(
                                     samples.last().getTimestamp(TimeUnit.MILLISECONDS),
                                     valueSum / samples.size,
-                                    samples.last().dataSource.appPackageName
+                                    samples.last().originalDataSource.appPackageName
+                                            ?: samples.last().dataSource.appPackageName
                             )
-                            result.success(listOf(sampleMap))
+                            result.success(sampleMap)
                         }
                     } else {
                         result.error("failed", e?.message, null)
@@ -392,14 +393,16 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return GoogleSignIn.hasPermissions(account, fitnessOptions)
     }
 
-    private fun hasSensorPermissionCompat() =
-            (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH
-                    || activity?.let {
-                ContextCompat.checkSelfPermission(
-                        it,
-                        Manifest.permission.BODY_SENSORS
-                )
-            } == PackageManager.PERMISSION_GRANTED)
+    private fun hasSensorPermissionCompat(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH) return true
+
+        return activity?.let {
+            return@let ContextCompat.checkSelfPermission(
+                    it,
+                    Manifest.permission.BODY_SENSORS
+            ) == PackageManager.PERMISSION_GRANTED
+        } ?: false
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         return when (requestCode) {
