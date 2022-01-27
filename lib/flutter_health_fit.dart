@@ -566,6 +566,28 @@ class FlutterHealthFit {
     return status;
   }
 
+  /// Checks if iBloodGlucose permission has been authorized
+  Future<bool> isBloodGlucoseAuthorized() async {
+    final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
+    return status;
+  }
+
+  /// Checks if ForcedVitalCapacity permission has been authorized
+  Future<bool> isForcedVitalCapacityAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    final status = await _channel.invokeMethod("isForcedVitalCapacityAuthorized");
+    return status;
+  }
+
+  /// Checks if PeakExpiratoryFlowRate permission has been authorized
+  Future<bool> isPeakExpiratoryFlowRateAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    final status = await _channel.invokeMethod("isPeakExpiratoryFlowRateAuthorized");
+    return status;
+  }
+
   /// Checks if menstrual data permission has been authorized
   Future<bool> isMenstrualDataAuthorized() async {
     final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
@@ -690,7 +712,6 @@ class FlutterHealthFit {
 
   /// This method is for iOS only, no heart rate variability available on Android.
   Future<HeartRateSample?> getAverageHeartRateVariability(int start, int end) async {
-
     if (!Platform.isIOS) return null;
 
     final sample =
@@ -698,6 +719,33 @@ class FlutterHealthFit {
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
+  Future<Map<DateTime, double>?> getBloodGlucose(int start, int end) async {
+    Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
+    return samples?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
+  }
+  /// This method is for iOS only, no forced vital capacity available on Android.
+  Future<Map<DateTime, double>?> getForcedVitalCapacity(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
+    Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
+    return samples?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
+  }
+  /// This method is for iOS only, no peak expiratory flow rate available on Android.
+  Future<Map<DateTime, double>?> getPeakExpiratoryFlowRate(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
+    Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});
+    return samples?.cast<int, double>().map((int key, double value) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+      return MapEntry(dateTime, value);
+    });
+  }
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
     Map stepsByTimestamp = await _channel
         .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});

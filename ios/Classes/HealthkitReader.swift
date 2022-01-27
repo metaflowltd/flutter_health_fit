@@ -176,6 +176,18 @@ class HealthkitReader: NSObject {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
     }
 
+    var bloodGlucoseQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodGlucose)!
+    }
+
+    var forcedVitalCapacityQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.forcedVitalCapacity)!
+    }
+
+    var peakExpiratoryFlowRateQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.peakExpiratoryFlowRate)!
+    }
+
     var hrvQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
     }
@@ -209,6 +221,9 @@ class HealthkitReader: NSObject {
             heartRateVariabilityQuantityType,
             waistSizeQuantityType,
             hrvQuantityType,
+            bloodGlucoseQuantityType,
+            forcedVitalCapacityQuantityType,
+            peakExpiratoryFlowRateQuantityType,
         ]
     }
     
@@ -406,10 +421,9 @@ class HealthkitReader: NSObject {
     func getQuantity(quantityType: HKQuantityType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     unit: String,
-                     completion: @escaping ([Int: Double]?, Error?) -> Void) {
-        
-        let unitType = HKUnit(from: unit)
+                     unitType: HKUnit,
+                     maxResults: Int?,
+                     completion: @escaping ([Int: Double]?, Error?) -> Void) {        
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
@@ -421,7 +435,7 @@ class HealthkitReader: NSObject {
         
         let query = HKSampleQuery(sampleType:quantityType,
                                   predicate:predicate,
-                                  limit:1,
+                                  limit: maxResults ?? HKObjectQueryNoLimit,
                                   sortDescriptors:[sortByTime],
                                   resultsHandler:{(query, results, error) in
             
@@ -430,13 +444,23 @@ class HealthkitReader: NSObject {
                 return
             }
             
-            guard let quantitySample = results.first as? HKQuantitySample else {
-                completion(nil, nil)
-                return
+            var out: [Int:Double] = [:]
+            
+            results.forEach { result in
+                guard let quantitySample = result as? HKQuantitySample else {
+                    return
+                }
+                let quantity = quantitySample.quantity.doubleValue(for: unitType)
+                let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
+                out[timestamp] = quantity
             }
-            let quantity = quantitySample.quantity.doubleValue(for: unitType)
-            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
-            completion([timestamp : quantity], nil)
+            
+            if out.isEmpty == true {
+                completion(nil, nil)
+            }
+            else {
+                completion(out, nil)
+            }
         })
         healthStore.execute(query)
     }
