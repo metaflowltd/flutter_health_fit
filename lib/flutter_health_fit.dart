@@ -755,7 +755,6 @@ class FlutterHealthFit {
   }
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
-    if (!Platform.isIOS) return null;
     List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
     return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }
