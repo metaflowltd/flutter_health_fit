@@ -14,6 +14,10 @@ enum TimeUnit: Int {
     case days
 }
 
+/**
+ A generic data point output.
+ Crrently only used by lab resoults
+ */
 struct DetailedOutput {
     var value: Double
     var sourceApp: String
