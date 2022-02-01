@@ -721,7 +721,7 @@ class FlutterHealthFit {
   }
 
   /// This method is for iOS only, Blood Glucose not authorized on Android.
-  Future<List<HFDataPointValue>?> getBloodGlucose(int start, int end) async {
+  Future<List<HealthFitDataPointValue>?> getBloodGlucose(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
@@ -729,7 +729,7 @@ class FlutterHealthFit {
   }
 
   /// This method is for iOS only, no forced vital capacity available on Android.
-  Future<List<HFDataPointValue>?> getForcedVitalCapacity(int start, int end) async {
+  Future<List<HealthFitDataPointValue>?> getForcedVitalCapacity(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
@@ -737,7 +737,7 @@ class FlutterHealthFit {
   }
 
   /// This method is for iOS only, no peak expiratory flow rate available on Android.
-  Future<List<HFDataPointValue>?> getPeakExpiratoryFlowRate(int start, int end) async {
+  Future<List<HealthFitDataPointValue>?> getPeakExpiratoryFlowRate(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});

@@ -1,19 +1,19 @@
-class HFDataPointValue {
+class HealthFitDataPointValue {
   final DateTime date;
   final double value;
   final String? sourceApp;
   final String? units;
 
-  HFDataPointValue({required this.date, required this.value, this.sourceApp, this.units});
+  HealthFitDataPointValue({required this.date, required this.value, this.sourceApp, this.units});
 }
 
 class HFDataPointOutput {
-  final List<HFDataPointValue>? values;
+  final List<HealthFitDataPointValue>? values;
 
   HFDataPointOutput.fromMap(Map? map) : values = _valuesFromMap(map);
 
-  static List<HFDataPointValue>? _valuesFromMap(Map? map) {
-    List<HFDataPointValue>? values = [];
+  static List<HealthFitDataPointValue>? _valuesFromMap(Map? map) {
+    List<HealthFitDataPointValue>? values = [];
 
     map?.entries.forEach((element) {
       if (element.key is int == false) {
@@ -24,7 +24,7 @@ class HFDataPointOutput {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(element.key);
 
       if (elementValue is double) {
-        final dataPointValue = HFDataPointValue(date: dateTime, value: elementValue);
+        final dataPointValue = HealthFitDataPointValue(date: dateTime, value: elementValue);
         values.add(dataPointValue);
         return;
       }
@@ -37,7 +37,7 @@ class HFDataPointOutput {
         final unitsAppToUse = (units is String) ? units : null;
 
         if (value is double) {
-          final dataPointValue = HFDataPointValue(
+          final dataPointValue = HealthFitDataPointValue(
             date: dateTime,
             value: value,
             sourceApp: sourceAppToUse,
