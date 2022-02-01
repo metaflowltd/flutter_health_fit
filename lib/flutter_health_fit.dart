@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_health_fit/data_pointd_output.dart';
 
 enum TimeUnit { minutes, days }
 enum QuantityUnit {
@@ -719,33 +720,30 @@ class FlutterHealthFit {
     return sample == null ? null : HeartRateSample.fromMap(sample);
   }
 
-  Future<Map<DateTime, double>?> getBloodGlucose(int start, int end) async {
+  /// This method is for iOS only, Blood Glucose not authorized on Android.
+  Future<List<HealthFitDataPointValue>?> getBloodGlucose(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
     Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
-    return samples?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+    return HFDataPointOutput.fromMap(samples).values;
   }
+
   /// This method is for iOS only, no forced vital capacity available on Android.
-  Future<Map<DateTime, double>?> getForcedVitalCapacity(int start, int end) async {
+  Future<List<HealthFitDataPointValue>?> getForcedVitalCapacity(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
-    return samples?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+    return HFDataPointOutput.fromMap(samples).values;
   }
+
   /// This method is for iOS only, no peak expiratory flow rate available on Android.
-  Future<Map<DateTime, double>?> getPeakExpiratoryFlowRate(int start, int end) async {
+  Future<List<HealthFitDataPointValue>?> getPeakExpiratoryFlowRate(int start, int end) async {
     if (!Platform.isIOS) return null;
 
     Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});
-    return samples?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+    return HFDataPointOutput.fromMap(samples).values;
   }
+
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
     Map stepsByTimestamp = await _channel
         .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});

@@ -5,31 +5,30 @@ import HealthKit
 
 @available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
-    private enum HKUnitStr: String {
-        case second = "s"
-        case percent = "%"
-        case cm = "cm"
-        case glucoseMillimolesPerLiter = "glucose_mmol/L"
-        case count = "count"
-        case liter = "liter"
-        case literPerMin = "liter/Min"
+    private enum OutputType{
+        case oneValue
+        case valueMap
+        case detailedMap
         
-        func hkUnit() -> HKUnit {
+        func detailedOutput() -> Bool {
             switch self {
-            case .second:
-                return HKUnit.second()
-            case .percent:
-                return HKUnit.percent()
-            case .cm:
-                return HKUnit.meterUnit(with: .centi)
-            case .glucoseMillimolesPerLiter:
-                return HKUnit.moleUnit(with: .milli, molarMass: HKUnitMolarMassBloodGlucose).unitDivided(by: HKUnit.liter())
-            case .count:
-                return HKUnit.count()
-            case .liter:
-                return HKUnit.liter()
-            case .literPerMin:
-                return HKUnit.liter().unitDivided(by: HKUnit.minute())
+            case .oneValue:
+                return false
+            case .valueMap:
+                return false
+            case .detailedMap:
+                return true
+            }
+        }
+
+        func outputLimit() -> Int {
+            switch self {
+            case .oneValue:
+                return 1
+            case .valueMap:
+                return HKObjectQueryNoLimit
+            case .detailedMap:
+                return HKObjectQueryNoLimit
             }
         }
     }
@@ -98,16 +97,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
         case "getWaistSizeBySegment":
             getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
-                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.cm.hkUnit()),
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
                         call: call,
-                        maxResults: 1,
+                        outputType: .oneValue,
                         result: result)
         
         case "getBodyFatPercentageBySegment":
             getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
-                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.percent.hkUnit()),
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
                         call: call,
-                        maxResults: 1,
+                        outputType: .oneValue,
                         result: result)
             
         case "getMenstrualDataBySegment":
@@ -235,23 +234,23 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         case "getBloodGlucose":
             getQuantity(quantityType: HealthkitReader.sharedInstance.bloodGlucoseQuantityType,
-                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.glucoseMillimolesPerLiter.hkUnit()),
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.glucoseMillimolesPerLiter),
                         call: call,
-                        maxResults: nil,
+                        outputType: .detailedMap,
                         result: result)
         
         case "getForcedVitalCapacity":
             getQuantity(quantityType: HealthkitReader.sharedInstance.forcedVitalCapacityQuantityType,
-                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.liter.hkUnit()),
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.liter),
                         call: call,
-                        maxResults: nil,
+                        outputType: .detailedMap,
                         result: result)
         
         case "getPeakExpiratoryFlowRate":
             getQuantity(quantityType: HealthkitReader.sharedInstance.peakExpiratoryFlowRateQuantityType,
-                        unitType: hkUnit(from: call, defalutUnit: HKUnitStr.literPerMin.hkUnit()),
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.literPerMin),
                         call: call,
-                        maxResults: nil,
+                        outputType: .detailedMap,
                         result: result)
             
         case "isAnyPermissionAuthorized":
@@ -423,20 +422,20 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
     }
     
-    private func hkUnit(from call: FlutterMethodCall, defalutUnit: HKUnit) -> HKUnit {
+    private func lmnUnit(from call: FlutterMethodCall, defalutUnit: LMNUnit) -> LMNUnit {
         guard let args = call.arguments as? [String: Any],
               let unit = args["unit"] as? String,
-              let hkUnitStr = HKUnitStr(rawValue: unit) else {
+              let lmnUnit = LMNUnit(rawValue: unit) else {
                   return defalutUnit;
               }
         
-        return hkUnitStr.hkUnit()
+        return lmnUnit
     }
     
     private func getQuantity(quantityType: HKQuantityType,
-                             unitType: HKUnit,
+                             lmnUnit: LMNUnit,
                              call: FlutterMethodCall,
-                             maxResults: Int?,
+                             outputType: OutputType,
                              result: @escaping FlutterResult) {
         
         guard let args = call.arguments as? [String: Any],
@@ -449,16 +448,38 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getQuantity(quantityType: quantityType,
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval,
-                                                   unitType: unitType,
-                                                   maxResults: maxResults) { value, error in
+                                                   lmnUnit: lmnUnit,
+                                                   maxResults: outputType.outputLimit()) { [weak self] dataMap, error in
+            guard let strongSelf = self else {return}
+                
             if let error = error as NSError? {
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
             else {
-                result(value)
+                let resultData = strongSelf.createResultData(outputType: outputType, dataMap: dataMap)
+                result(resultData)
             }
         }
     }
+    
+    private func createResultData(outputType: OutputType, dataMap: [Int: DetailedOutput]?) -> Any? {
+        switch outputType {
+        case .oneValue,.valueMap:
+            return dataMap?.mapValues({ detailedOutput in
+                return detailedOutput.value
+            })
+        case .detailedMap:
+            return dataMap?.mapValues({ detailedOutput -> [String:Any] in
+                var outputDict: [String:Any] = ["value": detailedOutput.value,
+                                                "sourceApp": detailedOutput.sourceApp]
+                if let units = detailedOutput.units {
+                    outputDict["units"] = units
+                }
+                return outputDict
+            })
+        }
+    }
+    
     
     private func getAverageQuantity(quantityType: HKQuantityType,
                                     call: FlutterMethodCall,

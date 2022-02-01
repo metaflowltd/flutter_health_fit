@@ -14,8 +14,46 @@ enum TimeUnit: Int {
     case days
 }
 
-class HealthkitReader: NSObject {
+/**
+ A generic data point output.
+ Crrently only used by lab resoults
+ */
+struct DetailedOutput {
+    var value: Double
+    var sourceApp: String
+    var units: String?
+}
+
+enum LMNUnit: String {
+    case second = "s"
+    case percent = "%"
+    case cm = "cm"
+    case glucoseMillimolesPerLiter = "glucose_mmol/L"
+    case count = "count"
+    case liter = "liter"
+    case literPerMin = "liter/Min"
     
+    func hkUnit() -> HKUnit {
+        switch self {
+        case .second:
+            return HKUnit.second()
+        case .percent:
+            return HKUnit.percent()
+        case .cm:
+            return HKUnit.meterUnit(with: .centi)
+        case .glucoseMillimolesPerLiter:
+            return HKUnit.moleUnit(with: .milli, molarMass: HKUnitMolarMassBloodGlucose).unitDivided(by: HKUnit.liter())
+        case .count:
+            return HKUnit.count()
+        case .liter:
+            return HKUnit.liter()
+        case .literPerMin:
+            return HKUnit.liter().unitDivided(by: HKUnit.minute())
+        }
+    }
+}
+
+class HealthkitReader: NSObject {
     var workoutPredicate =  [
         HKQuery.predicateForWorkouts(with: .americanFootball),
         HKQuery.predicateForWorkouts(with: .archery),
@@ -421,9 +459,9 @@ class HealthkitReader: NSObject {
     func getQuantity(quantityType: HKQuantityType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     unitType: HKUnit,
-                     maxResults: Int?,
-                     completion: @escaping ([Int: Double]?, Error?) -> Void) {        
+                     lmnUnit: LMNUnit,
+                     maxResults: Int,
+                     completion: @escaping ([Int: DetailedOutput]?, Error?) -> Void) {
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
@@ -435,7 +473,7 @@ class HealthkitReader: NSObject {
         
         let query = HKSampleQuery(sampleType:quantityType,
                                   predicate:predicate,
-                                  limit: maxResults ?? HKObjectQueryNoLimit,
+                                  limit: maxResults,
                                   sortDescriptors:[sortByTime],
                                   resultsHandler:{(query, results, error) in
             
@@ -444,15 +482,18 @@ class HealthkitReader: NSObject {
                 return
             }
             
-            var out: [Int:Double] = [:]
+            var out: [Int:DetailedOutput] = [:]
             
             results.forEach { result in
                 guard let quantitySample = result as? HKQuantitySample else {
                     return
                 }
-                let quantity = quantitySample.quantity.doubleValue(for: unitType)
+                let quantity = quantitySample.quantity.doubleValue(for: lmnUnit.hkUnit())
                 let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
-                out[timestamp] = quantity
+                out[timestamp] = DetailedOutput(value: quantity,
+                                                sourceApp: quantitySample.sourceRevision.source.bundleIdentifier,
+                                                units: lmnUnit.rawValue)
+                
             }
             
             if out.isEmpty == true {
