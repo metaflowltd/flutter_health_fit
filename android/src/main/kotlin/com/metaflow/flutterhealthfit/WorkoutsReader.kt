@@ -88,7 +88,7 @@ class WorkoutsReader {
             "end" to end,
         )
         if (energy != null) {
-            map["energy"] = energy.toInt()
+            map["energy"] = energy
         }
         if (source != null) {
             map["source"] = source
