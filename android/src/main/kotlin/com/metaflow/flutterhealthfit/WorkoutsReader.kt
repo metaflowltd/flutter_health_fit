@@ -11,6 +11,10 @@ import java.util.concurrent.TimeUnit
 
 class WorkoutsReader {
     private val workoutDataType: DataType = DataType.TYPE_WORKOUT_EXERCISE
+    private val caloriesDataType: DataType = DataType.TYPE_CALORIES_EXPENDED
+    private val activityDataType: DataType = DataType.TYPE_ACTIVITY_SEGMENT
+    private val activitySummaryDataType: DataType = DataType.AGGREGATE_ACTIVITY_SUMMARY
+    private val unknownWorkoutType: Int = 4
 
     fun authorizedFitnessOptions(): FitnessOptions {
         return FitnessOptions.builder().addDataType(workoutDataType).build()
@@ -27,8 +31,10 @@ class WorkoutsReader {
         val activity = currentActivity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, workoutOptions)
 
+
         val request = DataReadRequest.Builder().read(workoutDataType)
-            .aggregate(DataType.TYPE_CALORIES_EXPENDED)
+            .aggregate(caloriesDataType)
+            .aggregate(activityDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .bucketByActivitySegment(1, TimeUnit.MINUTES)
             .build()
@@ -38,20 +44,21 @@ class WorkoutsReader {
        val outputList = mutableListOf<Map<String, Any>>()
         Thread {
             try {
-                val caloriesDataType = DataType.TYPE_CALORIES_EXPENDED
                 val caloriesExpendedField = caloriesDataType.fields[0]
-
+                val activityField = activitySummaryDataType.fields.first {
+                    it.name == "activity"
+                }
                 val readDataResult = Tasks.await(response)
                 readDataResult.buckets.forEach{
-                    val dataPoint = it.getDataSet(caloriesDataType)?.dataPoints?.lastOrNull()
-                    val workoutType = it.zzd()
+                    val caloriesDataPoint = it.getDataSet(caloriesDataType)?.dataPoints?.lastOrNull()
+                    val activityDataPoint = it.getDataSet(activitySummaryDataType)?.dataPoints?.lastOrNull()
+                    val workoutType = activityDataPoint?.getValue(activityField)?.asInt() ?: unknownWorkoutType
                     val workoutActivity = it.activity
                     val workoutStart = it.getStartTime(TimeUnit.MILLISECONDS)
                     val workoutEnd = it.getEndTime(TimeUnit.MILLISECONDS)
-                    val workoutEnergy = dataPoint?.getValue(caloriesExpendedField)?.asFloat()
-                    val workoutSource = dataPoint?.originalDataSource?.appPackageName ?: dataPoint?.dataSource?.appPackageName
-
-                    if (workoutType != 4) {
+                    val workoutEnergy = caloriesDataPoint?.getValue(caloriesExpendedField)?.asFloat()
+                    val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName ?: caloriesDataPoint?.dataSource?.appPackageName
+                    if (workoutType != unknownWorkoutType) {
                         // we don't want unknown activities. Those are just fillers with calories
                         val map = createWorkoutMap(
                             workoutType,
