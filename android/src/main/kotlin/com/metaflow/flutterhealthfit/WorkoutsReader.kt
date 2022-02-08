@@ -30,7 +30,7 @@ class WorkoutsReader {
         val request = DataReadRequest.Builder().read(workoutDataType)
             .aggregate(DataType.TYPE_CALORIES_EXPENDED)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByActivityType(1, TimeUnit.MINUTES)
+            .bucketByActivitySegment(1, TimeUnit.MINUTES)
             .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
@@ -51,8 +51,18 @@ class WorkoutsReader {
                     val workoutEnergy = dataPoint?.getValue(caloriesExpendedField)?.asFloat()
                     val workoutSource = dataPoint?.originalDataSource?.appPackageName ?: dataPoint?.dataSource?.appPackageName
 
-                    val map = createWorkoutMap( workoutType, workoutActivity, workoutStart, workoutEnd, workoutEnergy, workoutSource)
-                    outputList.add(map)
+                    if (workoutType != 4) {
+                        // we don't want unknown activities. Those are just fillers with calories
+                        val map = createWorkoutMap(
+                            workoutType,
+                            workoutActivity,
+                            workoutStart,
+                            workoutEnd,
+                            workoutEnergy,
+                            workoutSource
+                        )
+                        outputList.add(map)
+                    }
                 }
 
                 activity.runOnUiThread {
