@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
+import 'package:flutter_health_fit/workout_sample.dart';
 
 enum TimeUnit { minutes, days }
 enum QuantityUnit {
@@ -199,211 +200,37 @@ enum WorkoutSampleType {
   socialDance,
   pickleball,
   cooldown,
+  aerobics,
+  biathlon,
+  mountainCycling,
+  roadCycling,
+  spinning,
+  stationaryCycling,
+  utilityCycling,
+  calisthenics,
+  circuitTraining,
+  diving,
+  elevator,
+  ergometer,
+  escalator,
+  frisbee,
+  gardening,
+  guidedBreathing,
+  horsebackRiding,
+  housework,
+  iceSkating,
+  intervalTraining,
+  jumpingRope,
+  kayaking,
+  kettlebellTraining,
+  kitesurfing,
+  meditation,
+  paragliding,
+  polo,
+  skiing,
+  weightlifting,
+  zumba,
   other,
-}
-
-class WorkoutSample {
-  final String id;
-  final WorkoutSampleType type;
-  final DateTime start;
-  final DateTime end;
-  final double? energy; // kilo-Calories
-  final double? distance; // meters
-  final String source;
-
-  WorkoutSample({
-    required this.id,
-    required this.type,
-    required this.start,
-    required this.end,
-    required this.energy,
-    required this.distance,
-    required this.source,
-  });
-
-  @override
-  String toString() {
-    return 'WorkoutSample{id: $id, type: $type, start: $start, end: $end, energy: $energy, distance: $distance, source: $source}';
-  }
-
-  WorkoutSample.fromMap(Map<String, dynamic> map)
-      : id = map["id"].toString(),
-        type = _typeFromInt(map["type"].toInt()),
-        start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
-        end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
-        energy = map["energy"],
-        distance = map["distance"],
-        source = map["source"];
-
-  static WorkoutSampleType _typeFromInt(int input) {
-    switch (input) {
-      case 1:
-        return WorkoutSampleType.americanFootball;
-      case 2:
-        return WorkoutSampleType.archery;
-      case 3:
-        return WorkoutSampleType.australianFootball;
-      case 4:
-        return WorkoutSampleType.badminton;
-      case 5:
-        return WorkoutSampleType.baseball;
-      case 6:
-        return WorkoutSampleType.basketball;
-      case 7:
-        return WorkoutSampleType.bowling;
-      case 8:
-        return WorkoutSampleType.boxing;
-      case 9:
-        return WorkoutSampleType.climbing;
-      case 10:
-        return WorkoutSampleType.cricket;
-      case 11:
-        return WorkoutSampleType.crossTraining;
-      case 12:
-        return WorkoutSampleType.curling;
-      case 13:
-        return WorkoutSampleType.cycling;
-      case 14:
-        return WorkoutSampleType.dance;
-      case 15:
-        return WorkoutSampleType.danceInspiredTraining;
-      case 16:
-        return WorkoutSampleType.elliptical;
-      case 17:
-        return WorkoutSampleType.equestrianSports;
-      case 18:
-        return WorkoutSampleType.fencing;
-      case 19:
-        return WorkoutSampleType.fishing;
-      case 20:
-        return WorkoutSampleType.functionalStrengthTraining;
-      case 21:
-        return WorkoutSampleType.golf;
-      case 22:
-        return WorkoutSampleType.gymnastics;
-      case 23:
-        return WorkoutSampleType.handball;
-      case 24:
-        return WorkoutSampleType.hiking;
-      case 25:
-        return WorkoutSampleType.hockey;
-      case 26:
-        return WorkoutSampleType.hunting;
-      case 27:
-        return WorkoutSampleType.lacrosse;
-      case 28:
-        return WorkoutSampleType.martialArts;
-      case 29:
-        return WorkoutSampleType.mindAndBody;
-      case 30:
-        return WorkoutSampleType.mixedMetabolicCardioTraining;
-      case 31:
-        return WorkoutSampleType.paddleSports;
-      case 32:
-        return WorkoutSampleType.play;
-      case 33:
-        return WorkoutSampleType.preparationAndRecovery;
-      case 34:
-        return WorkoutSampleType.racquetball;
-      case 35:
-        return WorkoutSampleType.rowing;
-      case 36:
-        return WorkoutSampleType.rugby;
-      case 37:
-        return WorkoutSampleType.running;
-      case 38:
-        return WorkoutSampleType.sailing;
-      case 39:
-        return WorkoutSampleType.skatingSports;
-      case 40:
-        return WorkoutSampleType.snowSports;
-      case 41:
-        return WorkoutSampleType.soccer;
-      case 42:
-        return WorkoutSampleType.softball;
-      case 43:
-        return WorkoutSampleType.squash;
-      case 44:
-        return WorkoutSampleType.stairClimbing;
-      case 45:
-        return WorkoutSampleType.surfingSports;
-      case 46:
-        return WorkoutSampleType.swimming;
-      case 47:
-        return WorkoutSampleType.tableTennis;
-      case 48:
-        return WorkoutSampleType.tennis;
-      case 49:
-        return WorkoutSampleType.trackAndField;
-      case 50:
-        return WorkoutSampleType.traditionalStrengthTraining;
-      case 51:
-        return WorkoutSampleType.volleyball;
-      case 52:
-        return WorkoutSampleType.walking;
-      case 53:
-        return WorkoutSampleType.waterFitness;
-      case 54:
-        return WorkoutSampleType.waterPolo;
-      case 55:
-        return WorkoutSampleType.waterSports;
-      case 56:
-        return WorkoutSampleType.wrestling;
-      case 57:
-        return WorkoutSampleType.yoga;
-      case 58:
-        return WorkoutSampleType.barre;
-      case 59:
-        return WorkoutSampleType.coreTraining;
-      case 60:
-        return WorkoutSampleType.crossCountrySkiing;
-      case 61:
-        return WorkoutSampleType.downhillSkiing;
-      case 62:
-        return WorkoutSampleType.flexibility;
-      case 63:
-        return WorkoutSampleType.highIntensityIntervalTraining;
-      case 64:
-        return WorkoutSampleType.jumpRope;
-      case 65:
-        return WorkoutSampleType.kickboxing;
-      case 66:
-        return WorkoutSampleType.pilates;
-      case 67:
-        return WorkoutSampleType.snowboarding;
-      case 68:
-        return WorkoutSampleType.stairs;
-      case 69:
-        return WorkoutSampleType.stepTraining;
-      case 70:
-        return WorkoutSampleType.wheelchairWalkPace;
-      case 71:
-        return WorkoutSampleType.wheelchairRunPace;
-      case 72:
-        return WorkoutSampleType.taiChi;
-      case 73:
-        return WorkoutSampleType.mixedCardio;
-      case 74:
-        return WorkoutSampleType.handCycling;
-      case 75:
-        return WorkoutSampleType.discSports;
-      case 76:
-        return WorkoutSampleType.fitnessGaming;
-      case 77:
-        return WorkoutSampleType.cardioDance;
-      case 78:
-        return WorkoutSampleType.socialDance;
-      case 79:
-        return WorkoutSampleType.pickleball;
-      case 80:
-        return WorkoutSampleType.cooldown;
-      case 3000:
-        return WorkoutSampleType.other;
-      default:
-        print("ERROR unable to detect workout type");
-        return WorkoutSampleType.other;
-    }
-  }
 }
 
 class GFSleepSample {
@@ -755,7 +582,6 @@ class FlutterHealthFit {
   }
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
-    if (!Platform.isIOS) return null;
     List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
     return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
   }

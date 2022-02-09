@@ -231,8 +231,19 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
             }
-            "getWorkoutsBySegment" -> { // only implemented on iOS
-                result.success(emptyMap<String, Any?>())
+            "getWorkoutsBySegment" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                WorkoutsReader().getWorkouts(activity, start, end) { list: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(list)
+                    }
+                }
             }
 
             "getCyclingDistanceBySegment" -> { // only implemented on iOS
@@ -331,8 +342,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isCarbsAuthorized" -> // only implemented on iOS
                 result.success(false)
 
-            "isWorkoutsAuthorized" -> // only implemented on iOS
-                result.success(false)
+            "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
@@ -378,6 +388,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isBodyFatAuthorized(): Boolean {
         return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
+    }
+
+    private fun isWorkoutsAuthorized(): Boolean {
+        return isAuthorized(WorkoutsReader().authorizedFitnessOptions())
     }
 
     private fun isMenstrualCycleAuthorized(): Boolean {
