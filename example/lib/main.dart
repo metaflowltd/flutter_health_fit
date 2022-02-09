@@ -17,6 +17,7 @@ class _MyAppState extends State<MyApp> {
   String _heartData = "";
   List<String> _menstrualData = [];
   List<String> _bodyFatData = [];
+  Iterable<String> _workoutData = [];
   bool _isAllAuth = false;
   bool _isAnyAuth = false;
   bool _isSleep = false;
@@ -29,6 +30,7 @@ class _MyAppState extends State<MyApp> {
 
   TextEditingController _menstrualDaysController = TextEditingController(text: '7');
   TextEditingController _bodyFatPercentageDaysController = TextEditingController(text: '7');
+  TextEditingController _workoutsDaysController = TextEditingController(text: '7');
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -138,6 +140,18 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  _getWorkouts() async {
+    final now = DateTime.now();
+    final daysBack = now.subtract(Duration(days: int.tryParse(_workoutsDaysController.value.text) ?? 7));
+    final workoutsData = await FlutterHealthFit().getWorkoutsBySegment(
+      daysBack.millisecondsSinceEpoch,
+      now.millisecondsSinceEpoch,
+    );
+    setState(() {
+      _workoutData = workoutsData?.map((element) => element.toString()) ?? [];
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -158,15 +172,15 @@ class _MyAppState extends State<MyApp> {
               children: <Widget>[
                 Text('Health/Fit Authorized: $_isAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Health"), onPressed: _authorizeHealthOrFit),
-                Text("isAllAuth: $_isAllAuth,"
-                    " isAnyAuth: $_isAnyAuth,"
-                    " isSleep: $_isSleep,"
-                    " isHeart: $_isHeart,"
-                    " isWeight: $_isWeight,"
-                    " isSteps: $_isSteps,"
-                    " isWorkouts: $_isWorkouts,"
-                    " isMenstrualData: $_isMenstrualData,"
-                    " isBodyFatPercentage: $_isBodyFatPercentage,"),
+                Text("isAllAuth: $_isAllAuth,\n"
+                    " isAnyAuth: $_isAnyAuth,\n"
+                    " isSleep: $_isSleep,\n"
+                    " isHeart: $_isHeart,\n"
+                    " isWeight: $_isWeight,\n"
+                    " isSteps: $_isSteps,\n"
+                    " isWorkouts: $_isWorkouts,\n"
+                    " isMenstrualData: $_isMenstrualData,\n"
+                    " isBodyFatPercentage: $_isBodyFatPercentage,\n"),
                 Text('Body sensors Authorized: $_isBodyAuthorized\n'),
                 ElevatedButton(child: Text("Authorize Body Sensors (Google)"), onPressed: _authorizeBodySensors),
                 ElevatedButton(child: Text("Get basic data"), onPressed: _getUserBasicHealthData),
@@ -222,6 +236,28 @@ class _MyAppState extends State<MyApp> {
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
                   itemBuilder: (context, index) => Text('\n${_bodyFatData[index]}\n'),
+                ),                Divider(height: 1),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(child: Text("Get workouts for fays"), onPressed: _getWorkouts),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Container(
+                      width: 30,
+                      child: TextField(
+                        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
+                        controller: _workoutsDaysController,
+                      ),
+                    ),
+                  ],
+                ),
+                ListView.builder(
+                  itemCount: _workoutData.length,
+                  shrinkWrap: true,
+                  physics: ScrollPhysics(),
+                  itemBuilder: (context, index) => Text('\n${_workoutData.elementAt(index)}\n'),
                 ),
               ],
             ),

@@ -236,7 +236,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")!!
                 WorkoutsReader().getWorkouts(activity, start, end) { list: List<Map<String, Any>>?, e: Throwable? ->
                     if (e != null) {
-                        sendNativeLog("${FlutterHealthFitPlugin.TAG} | failed: ${e.message}")
+                        sendNativeLog("$TAG | failed: ${e.message}")
                         activity?.let { handleGoogleDisconnection(e, it) }
 
                         result.error("failed", e.message, null)
