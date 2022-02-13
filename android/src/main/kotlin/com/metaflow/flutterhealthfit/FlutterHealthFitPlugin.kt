@@ -58,11 +58,9 @@ class DataPointValue(
     fun resultMap(): HashMap<String, Any> {
         var map: HashMap<String, Any> = hashMapOf(
             "dateInMillis" to dateInMillis,
-            "value" to value
+            "value" to value,
+            "units" to units.value,
         )
-        units?.let {
-            map["units"] = it.value
-        }
         sourceApp?.let {
             map["sourceApp"] = it
         }
