@@ -49,6 +49,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            result(FlutterError(code: "not available", message: "healthkit not available on this device", details:""))
+            return
+        }
+        
+        guard UIApplication.shared.applicationState == .active else {
+            result(FlutterError(code: "background", message: "cannot read from healthkit on background", details:""))
+            return
+        }
+        
     switch call.method {
         case "requestAuthorization":
             HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
@@ -113,17 +123,20 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
         
         case "getWeightInInterval":
-            let myArgs = call.arguments as! [String: Int]
-            let startMillis = myArgs["start"]!
-            let endMillis = myArgs["end"]!
+            guard let myArgs = call.arguments as? [String: Int],
+                  let startMillis = myArgs["start"],
+                  let endMillis = myArgs["end"] else {
+                      result(FlutterError(code: "failed", message: "missing start and end params", details:""))
+                      return
+                  }
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: [Int:Double]?, error: Error?) in
+            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: DataPointValue?, error: Error?) in
                 if let error = error as NSError?{
                     print("[getWeight] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 } else {
-                    result(weight)
+                    result(weight?.resultMap())
                 }
             }
             
