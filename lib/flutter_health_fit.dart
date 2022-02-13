@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_health_fit/data_point_unit.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
+
+import 'body_composition_data.dart';
 
 enum TimeUnit { minutes, days }
 enum QuantityUnit {
@@ -499,12 +502,14 @@ class FlutterHealthFit {
     });
   }
 
-  Future<Map<DateTime, double>?> getWeight(int start, int end) async {
-    Map? lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
-    return lastWeight?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+  Future<BodyCompositionData?> getWeight(int start, int end) async {
+    try {
+      final lastWeight = await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
+      return BodyCompositionData.fromMap(lastWeight);
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
   }
 
   /// Get latest heart rate sample in the period (for both Platforms).
