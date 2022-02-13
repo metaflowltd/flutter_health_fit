@@ -8,7 +8,7 @@
 import Foundation
 
 /**
- new DataPoints sould retun DataPointValue
+ new items should use this class to collect data
  */
 struct DataPointValue {
     enum LumenUnit: String {
