@@ -50,15 +50,15 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard HKHealthStore.isHealthDataAvailable() else {
-            result(FlutterError(code: "not available", message: "healthkit not available on this device", details:""))
+            result(FlutterError(code: "healthkit not available", message: "healthkit not available on this device", details:""))
             return
         }
         
         guard UIApplication.shared.applicationState == .active else {
-            result(FlutterError(code: "background", message: "cannot read from healthkit on background", details:""))
+            result(FlutterError(code: "background call", message: "cannot read from healthkit on background", details:""))
             return
         }
-        
+
     switch call.method {
         case "requestAuthorization":
             HealthkitReader.sharedInstance.requestHealthAuthorization() { success in

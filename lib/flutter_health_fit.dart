@@ -8,6 +8,12 @@ import 'package:flutter_health_fit/workout_sample.dart';
 
 import 'body_composition_data.dart';
 
+abstract class HealthFitAbstractLog {
+  void info(Object? message, [Object? error, StackTrace? stackTrace]);
+  void warning(Object? message, [Object? error, StackTrace? stackTrace]);
+  void severe(Object? message, [Object? error, StackTrace? stackTrace]);
+}
+
 enum TimeUnit { minutes, days }
 enum QuantityUnit {
   percent,
@@ -317,12 +323,15 @@ class HeartRateSample {
 class FlutterHealthFit {
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
   static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
+  static HealthFitAbstractLog? logger;
 
   factory FlutterHealthFit() => _singleton;
 
   FlutterHealthFit.internal();
 
   static final _singleton = FlutterHealthFit.internal();
+
+
 
   /// NOTE: On iOS this only tells whether [authorize] has been called on the requested data types.
   /// There is no getter for the user's actual response.
@@ -336,6 +345,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isAuthorized", e);
       return false;
     }
   }
@@ -351,6 +361,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isAnyPermissionAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isAnyPermissionAuthorized", e);
       return false;
     }
   }
@@ -361,6 +372,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isStepsAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isStepsAuthorized", e);
       return false;
     }
   }
@@ -371,6 +383,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isCyclingAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isCyclingAuthorized", e);
       return false;
     }
   }
@@ -381,6 +394,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isFlightsAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isFlightsAuthorized", e);
       return false;
     }
   }
@@ -391,6 +405,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isSleepAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isSleepAuthorized", e);
       return false;
     }
   }
@@ -401,6 +416,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isWorkoutsAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isWorkoutsAuthorized", e);
       return false;
     }
   }
@@ -411,6 +427,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isWaistSizeAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isWaistSizeAuthorized", e);
       return false;
     }
   }
@@ -421,6 +438,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isBodyFatPercentageAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isBodyFatPercentageAuthorized", e);
       return false;
     }
   }
@@ -433,6 +451,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isHeartRateVariabilityAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isHeartRateVariabilityAuthorized", e);
       return false;
     }
   }
@@ -443,6 +462,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isBloodGlucoseAuthorized", e);
       return false;
     }
   }
@@ -455,6 +475,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isForcedVitalCapacityAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isForcedVitalCapacityAuthorized", e);
       return false;
     }
   }
@@ -467,6 +488,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isPeakExpiratoryFlowRateAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isPeakExpiratoryFlowRateAuthorized", e);
       return false;
     }
   }
@@ -477,6 +499,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isMenstrualDataAuthorized", e);
       return false;
     }
   }
@@ -487,6 +510,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isWeightAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isWeightAuthorized", e);
       return false;
     }
   }
@@ -497,6 +521,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isHeartRateAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isHeartRateAuthorized", e);
       return false;
     }
   }
@@ -507,6 +532,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isCarbsAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isCarbsAuthorized", e);
       return false;
     }
   }
@@ -519,6 +545,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isBodySensorsAuthorized");
       return status;
     } catch (e) {
+      _logDeviceError("isBodySensorsAuthorized", e);
       return false;
     }
   }
@@ -528,6 +555,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMethod('requestAuthorization');
     } catch (e) {
+      _logDeviceError("requestAuthorization", e);
       return false;
     }
   }
@@ -541,6 +569,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
     } catch (e) {
+      _logDeviceError("requestBodySensorsPermission", e);
       return false;
     }
   }
@@ -549,6 +578,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMethod('getBasicHealthData');
     } catch (e) {
+      _logDeviceError("getBasicHealthData", e);
       return {};
     }
   }
@@ -562,6 +592,7 @@ class FlutterHealthFit {
         return MapEntry(dateTime, value);
       });
     } catch (e) {
+      _logDeviceError("getBodyFatPercentageBySegment", e);
       return null;
     }
   }
@@ -582,6 +613,7 @@ class FlutterHealthFit {
 
       return result;
     } catch (e) {
+      _logDeviceError("getMenstrualDataBySegment", e);
       return [];
     }
   }
@@ -595,6 +627,7 @@ class FlutterHealthFit {
         return MapEntry(dateTime, value);
       });
     } catch (e) {
+      _logDeviceError("getWaistSizeBySegment", e);
       return null;
     }
   }
@@ -604,6 +637,7 @@ class FlutterHealthFit {
       final lastWeight = await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
       return BodyCompositionData.fromMap(lastWeight);
     } catch (e) {
+      _logDeviceError("getWeightInInterval", e);
       return null;
     }
   }
@@ -614,6 +648,7 @@ class FlutterHealthFit {
       final sample = await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
+      _logDeviceError("getLatestHeartRate", e);
       return null;
     }
   }
@@ -628,6 +663,7 @@ class FlutterHealthFit {
       await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
+      _logDeviceError("getAverageWalkingHeartRate", e);
       return null;
     }
   }
@@ -642,6 +678,7 @@ class FlutterHealthFit {
       await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
+      _logDeviceError("getAverageRestingHeartRate", e);
       return null;
     }
   }
@@ -651,6 +688,7 @@ class FlutterHealthFit {
       final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
+      _logDeviceError("getAverageHeartRate", e);
       return null;
     }
   }
@@ -664,6 +702,7 @@ class FlutterHealthFit {
       await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
+      _logDeviceError("getAverageHeartRateVariability", e);
       return null;
     }
   }
@@ -676,6 +715,7 @@ class FlutterHealthFit {
       Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
       return HFDataPointOutput.fromMap(samples).values;
     } catch (e) {
+      _logDeviceError("getBloodGlucose", e);
       return null;
     }
   }
@@ -688,6 +728,7 @@ class FlutterHealthFit {
       Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
       return HFDataPointOutput.fromMap(samples).values;
     } catch (e) {
+      _logDeviceError("getForcedVitalCapacity", e);
       return null;
     }
   }
@@ -700,6 +741,7 @@ class FlutterHealthFit {
       Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});
       return HFDataPointOutput.fromMap(samples).values;
     } catch (e) {
+      _logDeviceError("getPeakExpiratoryFlowRate", e);
       return null;
     }
   }
@@ -714,6 +756,7 @@ class FlutterHealthFit {
         return MapEntry(dateTime, value);
       });
     } catch (e) {
+      _logDeviceError("getStepsBySegment", e);
       return {};
     }
   }
@@ -723,6 +766,7 @@ class FlutterHealthFit {
       List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
       return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
+      _logDeviceError("getWorkoutsBySegment", e);
       return null;
     }
   }
@@ -737,6 +781,7 @@ class FlutterHealthFit {
         return MapEntry(dateTime, value);
       });
     } catch (e) {
+      _logDeviceError("getFlightsBySegment", e);
       return {};
     }
   }
@@ -751,6 +796,7 @@ class FlutterHealthFit {
         return MapEntry(dateTime, value);
       });
     } catch (e) {
+      _logDeviceError("getCyclingDistanceBySegment", e);
       return {};
     }
   }
@@ -760,6 +806,7 @@ class FlutterHealthFit {
       final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
       return steps;
     } catch (e) {
+      _logDeviceError("getTotalStepsInInterval", e);
       return null;
     }
   }
@@ -771,6 +818,7 @@ class FlutterHealthFit {
     try {
       return _channel.invokeMethod("signOut");
     } catch (e) {
+      _logDeviceError("signOut", e);
       return;
     }
   }
@@ -785,6 +833,7 @@ class FlutterHealthFit {
       List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
       return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
+      _logDeviceError("getSleepBySegment", e);
       return null;
     }
   }
@@ -799,6 +848,7 @@ class FlutterHealthFit {
       List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
       return rawSamples?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
+      _logDeviceError("getSleepBySegment", e);
       return null;
     }
   }
@@ -811,6 +861,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getEnergyConsumed", e);
       return null;
     }
   }
@@ -823,6 +874,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getFiberConsumed", e);
       return null;
     }
   }
@@ -835,6 +887,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getCarbsConsumed", e);
       return null;
     }
 
@@ -848,6 +901,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getSugarConsumed", e);
       return null;
     }
   }
@@ -860,6 +914,7 @@ class FlutterHealthFit {
     try {
       return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getFatConsumed", e);
       return null;
     }
   }
@@ -872,6 +927,7 @@ class FlutterHealthFit {
     try {
       return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
     } catch (e) {
+      _logDeviceError("getProteinConsumed", e);
       return null;
     }
   }
@@ -887,7 +943,7 @@ class FlutterHealthFit {
       result =
           await _channel.invokeMethod('getActivity', {"name": activityType.toString().split(".").last, "units": units});
     } catch (e) {
-      print(e.toString());
+      _logDeviceError("getActivity", e);
       return null;
     }
 
@@ -905,10 +961,28 @@ class FlutterHealthFit {
       try {
         return List<String>.from(await _channel.invokeMethod('getStepsSources'));
       } catch (e) {
+        _logDeviceError("getStepsSources", e);
         return null;
       }
     } else {
       return null;
+    }
+  }
+
+  void _logDeviceError(String method, Object e) {
+    if (e is PlatformException) {
+      if (e.code == "healthkit not available") {
+        logger?.info("healthkit not available");
+      }
+      else if (e.code == "background call") {
+        logger?.info("$method was called in background");
+      }
+      else {
+        logger?.severe("Error when calleing $method. ${e.code}: ${e.message}");
+      }
+    }
+    else {
+      logger?.severe("Error when calleing $method. ${e.toString()}");
     }
   }
 }
