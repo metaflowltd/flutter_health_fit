@@ -35,6 +35,7 @@ enum class LumenTimeUnit(val value: Int) {
 enum class LumenUnit(val value: String) {
     COUNT("count"),
     KG("kg"),
+    PERCENT("percent"),
 }
 
 /**
@@ -213,11 +214,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "getBodyFatPercentageBySegment" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getBodyFat(start, end) { map: Map<Long, Float>?, e: Throwable? ->
+                getBodyFat(start, end) { value: DataPointValue?, e: Throwable? ->
                     if (e != null) {
                         result.error("failed", e.message, null)
                     } else {
-                        result.success(map)
+                        result.success(value?.resultMap())
                     }
                 }
             }
@@ -790,16 +791,15 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun getBodyFat(
         startTime: Long,
         endTime: Long,
-        result: (Map<Long, Float>?, Throwable?) -> Unit,
+        result: (DataPointValue?, Throwable?) -> Unit,
     ) {
         val fitnessOptions = FitnessOptions.builder().addDataType(bodyFatDataType).build()
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(DataType.TYPE_BODY_FAT_PERCENTAGE)
+        val request = DataReadRequest.Builder().read(bodyFatDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByTime(1, TimeUnit.DAYS)
             .setLimit(1)
             .build()
 
@@ -810,17 +810,24 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                    readDataResult.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastBodyFat = dp?.getValue(bodyFatDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 
-                if (dateInMillis != null) {
-                    map = HashMap<Long, Float>()
-                    map!![dateInMillis] = lastBodyFat!!
-                    sendNativeLog("$TAG | lastBodyFat: $lastBodyFat")
-                }
-                activity.runOnUiThread {
-                    result(map, null)
+                if (lastBodyFat != null && dateInMillis != null) {
+                    val value = DataPointValue(
+                        dateInMillis = dateInMillis,
+                        value = lastBodyFat,
+                        units = LumenUnit.PERCENT,
+                        sourceApp = dp.originalDataSource.appPackageName,
+                    )
+                    activity.runOnUiThread {
+                        result(value, null)
+                    }
+                } else {
+                    activity.runOnUiThread {
+                        result(null, null)
+                    }
                 }
             } catch (e: Throwable) {
                 sendNativeLog("$TAG | failed: ${e.message}")
@@ -886,7 +893,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
         val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByTime(1, TimeUnit.DAYS)
             .setLimit(1)
             .build()
 
@@ -897,7 +903,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.buckets.lastOrNull()?.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                    readDataResult.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastWeight = dp?.getValue(weightDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 

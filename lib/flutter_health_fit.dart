@@ -583,14 +583,10 @@ class FlutterHealthFit {
     }
   }
 
-  Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
+  Future<BodyCompositionData?> getBodyFatPercentage(int start, int end) async {
     try {
-      Map? last = await _channel.invokeMethod(
-          'getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
-      return last?.cast<int, double>().map((int key, double value) {
-        final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-        return MapEntry(dateTime, value);
-      });
+      final lastFatPercentage = await _channel.invokeMapMethod<String, Object>("getBodyFatPercentageBySegment", {"start": start, "end": end});
+      return BodyCompositionData.fromMap(lastFatPercentage);
     } catch (e) {
       _logDeviceError("getBodyFatPercentageBySegment", e);
       return null;
