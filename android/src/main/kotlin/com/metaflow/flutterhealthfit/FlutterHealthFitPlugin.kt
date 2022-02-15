@@ -40,7 +40,7 @@ enum class LumenUnit(val value: String) {
 /**
  * new items should use this class to collect data
  */
-class DataPointValue(
+data class DataPointValue(
     private val dateInMillis: Long,
     private val value: Float,
     private val units: LumenUnit,
