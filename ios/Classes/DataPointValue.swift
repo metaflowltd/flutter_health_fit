@@ -14,6 +14,7 @@ struct DataPointValue {
     enum LumenUnit: String {
         case count = "count"
         case kg = "kg"
+        case percent = "percent"
     }
     
     let dateInMillis: Int

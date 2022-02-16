@@ -113,12 +113,36 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                         result: result)
         
         case "getBodyFatPercentageBySegment":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
-                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
-                        call: call,
-                        outputType: .oneValue,
-                        result: result)
-            
+            guard let args = call.arguments as? [String: Any],
+                  let startMillis = args["start"] as? Int,
+                  let endMillis = args["end"] as? Int else {
+                      result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                      return
+                  }
+            HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
+                                                       start: startMillis.toTimeInterval,
+                                                       end: endMillis.toTimeInterval,
+                                                       lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
+                                                       maxResults: 1) { dataMap, error in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+                else {
+                    if let date = dataMap?.keys.first,
+                       let detailedOutput = dataMap?[date]  {
+                        let value = DataPointValue(dateInMillis: date,
+                                                   value: detailedOutput.value * 100,
+                                                   units: .percent,
+                                                   sourceApp: detailedOutput.sourceApp,
+                                                   additionalInfo: nil)
+                        result(value.resultMap())
+                    }
+                    else {
+                        result(nil)
+                    }
+                }
+            }
+        
         case "getMenstrualDataBySegment":
             getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
         
@@ -126,7 +150,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             guard let myArgs = call.arguments as? [String: Int],
                   let startMillis = myArgs["start"],
                   let endMillis = myArgs["end"] else {
-                      result(FlutterError(code: "failed", message: "missing start and end params", details:""))
+                      result(FlutterError(code: "Missing args", message: "missing start and end params", details:""))
                       return
                   }
             let start = startMillis.toTimeInterval

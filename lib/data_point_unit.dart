@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 enum DataPointUnit {
   count,
   kg,
+  percent,
 }
 
 extension DataPointUnitExtension on DataPointUnit {
@@ -12,6 +13,8 @@ extension DataPointUnitExtension on DataPointUnit {
         return "count";
       case DataPointUnit.kg:
         return "kg";
+      case DataPointUnit.percent:
+        return "percent";
     }
   }
 }
