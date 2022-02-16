@@ -106,11 +106,35 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.cyclingDistanceQuantityType, call: call, result: result)
             
         case "getWaistSizeBySegment":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
-                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
-                        call: call,
-                        outputType: .oneValue,
-                        result: result)
+            guard let args = call.arguments as? [String: Any],
+                  let startMillis = args["start"] as? Int,
+                  let endMillis = args["end"] as? Int else {
+                      result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                      return
+                  }
+            HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
+                                                       start: startMillis.toTimeInterval,
+                                                       end: endMillis.toTimeInterval,
+                                                       lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
+                                                       maxResults: 1) { dataMap, error in
+                if let error = error as NSError? {
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+                else {
+                    if let date = dataMap?.keys.first,
+                       let detailedOutput = dataMap?[date]  {
+                        let value = DataPointValue(dateInMillis: date,
+                                                   value: detailedOutput.value,
+                                                   units: .cm,
+                                                   sourceApp: detailedOutput.sourceApp,
+                                                   additionalInfo: nil)
+                        result(value.resultMap())
+                    }
+                    else {
+                        result(nil)
+                    }
+                }
+            }
         
         case "getBodyFatPercentageBySegment":
             guard let args = call.arguments as? [String: Any],
