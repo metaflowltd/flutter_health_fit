@@ -82,7 +82,7 @@ class _MyAppState extends State<MyApp> {
     final last3Days = DateTime.now().subtract(Duration(days: 4)).millisecondsSinceEpoch;
     final lastWeight = await FlutterHealthFit().getWeight(last3Days, now);
     setState(() {
-      _lastWeightString = lastWeight.toString();
+      _lastWeightString = "${lastWeight?.value}";
     });
   }
 

@@ -2,8 +2,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_health_fit/data_point_unit.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
+
+import 'body_composition_data.dart';
+
+abstract class HealthFitLog {
+  void info(Object? message, [Object? error, StackTrace? stackTrace]);
+  void warning(Object? message, [Object? error, StackTrace? stackTrace]);
+  void severe(Object? message, [Object? error, StackTrace? stackTrace]);
+}
 
 enum TimeUnit { minutes, days }
 enum QuantityUnit {
@@ -314,12 +323,15 @@ class HeartRateSample {
 class FlutterHealthFit {
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
   static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
+  static HealthFitLog? logger;
 
   factory FlutterHealthFit() => _singleton;
 
   FlutterHealthFit.internal();
 
   static final _singleton = FlutterHealthFit.internal();
+
+
 
   /// NOTE: On iOS this only tells whether [authorize] has been called on the requested data types.
   /// There is no getter for the user's actual response.
@@ -329,8 +341,13 @@ class FlutterHealthFit {
   ///
   /// On Android this method works as expected.
   Future<bool> isAuthorized() async {
-    final status = await _channel.invokeMethod("isAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isAuthorized", e);
+      return false;
+    }
   }
 
   /// This stream exposes native logs coming from the plugin, in order to be able
@@ -340,117 +357,207 @@ class FlutterHealthFit {
 
   /// Checks if any health permission has been authorized
   Future<bool> isAnyPermissionAuthorized() async {
-    final status = await _channel.invokeMethod("isAnyPermissionAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isAnyPermissionAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isAnyPermissionAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if steps permission has been authorized
   Future<bool> isStepsAuthorized() async {
-    final status = await _channel.invokeMethod("isStepsAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isStepsAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isStepsAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if cycling permission has been authorized
   Future<bool> isCyclingAuthorized() async {
-    final status = await _channel.invokeMethod("isCyclingAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isCyclingAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isCyclingAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if flights climbed permission has been authorized
   Future<bool> isFlightsAuthorized() async {
-    final status = await _channel.invokeMethod("isFlightsAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isFlightsAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isFlightsAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if sleep permission has been authorized
   Future<bool> isSleepAuthorized() async {
-    final status = await _channel.invokeMethod("isSleepAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isSleepAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isSleepAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if workouts permission has been authorized
   Future<bool> isWorkoutsAuthorized() async {
-    final status = await _channel.invokeMethod("isWorkoutsAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isWorkoutsAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isWorkoutsAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if Waist Size permission has been authorized
   Future<bool> isWaistSizeAuthorized() async {
-    final status = await _channel.invokeMethod("isWaistSizeAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isWaistSizeAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isWaistSizeAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if Body Fat permission has been authorized
   Future<bool> isBodyFatPercentageAuthorized() async {
-    final status = await _channel.invokeMethod("isBodyFatPercentageAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isBodyFatPercentageAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isBodyFatPercentageAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if HeartRateVariability permission has been authorized
   Future<bool> isHeartRateVariabilityAuthorized() async {
     if (!Platform.isIOS) return false;
 
-    final status = await _channel.invokeMethod("isHeartRateVariabilityAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isHeartRateVariabilityAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isHeartRateVariabilityAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if iBloodGlucose permission has been authorized
   Future<bool> isBloodGlucoseAuthorized() async {
-    final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isBloodGlucoseAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if ForcedVitalCapacity permission has been authorized
   Future<bool> isForcedVitalCapacityAuthorized() async {
     if (!Platform.isIOS) return false;
 
-    final status = await _channel.invokeMethod("isForcedVitalCapacityAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isForcedVitalCapacityAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isForcedVitalCapacityAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if PeakExpiratoryFlowRate permission has been authorized
   Future<bool> isPeakExpiratoryFlowRateAuthorized() async {
     if (!Platform.isIOS) return false;
 
-    final status = await _channel.invokeMethod("isPeakExpiratoryFlowRateAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isPeakExpiratoryFlowRateAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isPeakExpiratoryFlowRateAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if menstrual data permission has been authorized
   Future<bool> isMenstrualDataAuthorized() async {
-    final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isMenstrualDataAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isMenstrualDataAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if weight permission has been authorized
   Future<bool> isWeightAuthorized() async {
-    final status = await _channel.invokeMethod("isWeightAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isWeightAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isWeightAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if heart rate permission has been authorized
   Future<bool> isHeartRateAuthorized() async {
-    final status = await _channel.invokeMethod("isHeartRateAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isHeartRateAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isHeartRateAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if all permissions needed for calculating carb servings have been authorized
   Future<bool> isCarbsAuthorized() async {
-    final status = await _channel.invokeMethod("isCarbsAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isCarbsAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isCarbsAuthorized", e);
+      return false;
+    }
   }
 
   /// Checks if android.permission.BODY_SENSORS is granted.
   /// on iOS returns always true.
   Future<bool> isBodySensorsAuthorized() async {
     if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
-    final status = await _channel.invokeMethod("isBodySensorsAuthorized");
-    return status;
+    try {
+      final status = await _channel.invokeMethod("isBodySensorsAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isBodySensorsAuthorized", e);
+      return false;
+    }
   }
 
   /// Will ask to authorize, prompting the user if necessary.
   Future<bool> authorize() async {
-    return await _channel.invokeMethod('requestAuthorization');
+    try {
+      return await _channel.invokeMethod('requestAuthorization');
+    } catch (e) {
+      _logDeviceError("requestAuthorization", e);
+      return false;
+    }
   }
 
   /// Will ask to authorize android.permission.BODY_SENSORS permission on Android.
@@ -458,20 +565,36 @@ class FlutterHealthFit {
   /// on iOS, returns true immediately and does nothing.
   Future<bool> authorizeBodySensors() async {
     if (Platform.isIOS) return true; // irrelevant for iOS. Assume authorized.
-    return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
+
+    try {
+      return await _channel.invokeMethod<bool>('requestBodySensorsPermission') ?? false;
+    } catch (e) {
+      _logDeviceError("requestBodySensorsPermission", e);
+      return false;
+    }
   }
 
   Future<Map<dynamic, dynamic>> get getBasicHealthData async {
-    return await _channel.invokeMethod('getBasicHealthData');
+    try {
+      return await _channel.invokeMethod('getBasicHealthData');
+    } catch (e) {
+      _logDeviceError("getBasicHealthData", e);
+      return {};
+    }
   }
 
   Future<Map<DateTime, double>?> getBodyFatPercentage(int start, int end) async {
-    Map? last = await _channel.invokeMethod(
-        'getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
-    return last?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+    try {
+      Map? last = await _channel.invokeMethod(
+          'getBodyFatPercentageBySegment', {"start": start, "end": end, "unit": QuantityUnit.percent.stringValue});
+      return last?.cast<int, double>().map((int key, double value) {
+        final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        return MapEntry(dateTime, value);
+      });
+    } catch (e) {
+      _logDeviceError("getBodyFatPercentageBySegment", e);
+      return null;
+    }
   }
 
   Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
@@ -480,37 +603,54 @@ class FlutterHealthFit {
     // TODO remove after approval of reproductive_health scope
     if (!Platform.isIOS) return result;
 
-    Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
+    try {
+      Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
 
-    monthlyCycle?.cast<int, int>().forEach((int key, int value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      result.add(MenstrualData.fromRawData(dateTime, value));
-    });
+      monthlyCycle?.cast<int, int>().forEach((int key, int value) {
+        final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        result.add(MenstrualData.fromRawData(dateTime, value));
+      });
 
-    return result;
+      return result;
+    } catch (e) {
+      _logDeviceError("getMenstrualDataBySegment", e);
+      return [];
+    }
   }
 
   Future<Map<DateTime, double>?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
-    Map? last =
-        await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
-    return last?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+    try {
+      Map? last =
+      await _channel.invokeMethod('getWaistSizeBySegment', {"start": start, "end": end, "unit": unit.stringValue});
+      return last?.cast<int, double>().map((int key, double value) {
+        final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        return MapEntry(dateTime, value);
+      });
+    } catch (e) {
+      _logDeviceError("getWaistSizeBySegment", e);
+      return null;
+    }
   }
 
-  Future<Map<DateTime, double>?> getWeight(int start, int end) async {
-    Map? lastWeight = await _channel.invokeMethod('getWeightInInterval', {"start": start, "end": end});
-    return lastWeight?.cast<int, double>().map((int key, double value) {
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      return MapEntry(dateTime, value);
-    });
+  Future<BodyCompositionData?> getWeight(int start, int end) async {
+    try {
+      final lastWeight = await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
+      return BodyCompositionData.fromMap(lastWeight);
+    } catch (e) {
+      _logDeviceError("getWeightInInterval", e);
+      return null;
+    }
   }
 
   /// Get latest heart rate sample in the period (for both Platforms).
   Future<HeartRateSample?> getLatestHeartRate(int start, int end) async {
-    final sample = await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
-    return sample == null ? null : HeartRateSample.fromMap(sample);
+    try {
+      final sample = await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
+      return sample == null ? null : HeartRateSample.fromMap(sample);
+    } catch (e) {
+      _logDeviceError("getLatestHeartRate", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, on Android we only have [HeartRateSample.getAverageHeartRate]
@@ -518,9 +658,14 @@ class FlutterHealthFit {
   Future<HeartRateSample?> getAverageWalkingHeartRate(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    final sample =
-        await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
-    return sample == null ? null : HeartRateSample.fromMap(sample);
+    try {
+      final sample =
+      await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
+      return sample == null ? null : HeartRateSample.fromMap(sample);
+    } catch (e) {
+      _logDeviceError("getAverageWalkingHeartRate", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, on Android we only have [HeartRateSample.getAverageHeartRate].
@@ -528,93 +673,154 @@ class FlutterHealthFit {
   Future<HeartRateSample?> getAverageRestingHeartRate(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    final sample =
-        await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
-    return sample == null ? null : HeartRateSample.fromMap(sample);
+    try {
+      final sample =
+      await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
+      return sample == null ? null : HeartRateSample.fromMap(sample);
+    } catch (e) {
+      _logDeviceError("getAverageRestingHeartRate", e);
+      return null;
+    }
   }
 
   Future<HeartRateSample?> getAverageHeartRate(int start, int end) async {
-    final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
-    return sample == null ? null : HeartRateSample.fromMap(sample);
+    try {
+      final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
+      return sample == null ? null : HeartRateSample.fromMap(sample);
+    } catch (e) {
+      _logDeviceError("getAverageHeartRate", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, no heart rate variability available on Android.
   Future<HeartRateSample?> getAverageHeartRateVariability(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    final sample =
-        await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
-    return sample == null ? null : HeartRateSample.fromMap(sample);
+    try {
+      final sample =
+      await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
+      return sample == null ? null : HeartRateSample.fromMap(sample);
+    } catch (e) {
+      _logDeviceError("getAverageHeartRateVariability", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, Blood Glucose not authorized on Android.
   Future<List<HealthFitDataPointValue>?> getBloodGlucose(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
-    return HFDataPointOutput.fromMap(samples).values;
+    try {
+      Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
+      return HFDataPointOutput.fromMap(samples).values;
+    } catch (e) {
+      _logDeviceError("getBloodGlucose", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, no forced vital capacity available on Android.
   Future<List<HealthFitDataPointValue>?> getForcedVitalCapacity(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
-    return HFDataPointOutput.fromMap(samples).values;
+    try {
+      Map? samples = await _channel.invokeMethod('getForcedVitalCapacity', {"start": start, "end": end});
+      return HFDataPointOutput.fromMap(samples).values;
+    } catch (e) {
+      _logDeviceError("getForcedVitalCapacity", e);
+      return null;
+    }
   }
 
   /// This method is for iOS only, no peak expiratory flow rate available on Android.
   Future<List<HealthFitDataPointValue>?> getPeakExpiratoryFlowRate(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});
-    return HFDataPointOutput.fromMap(samples).values;
+    try {
+      Map? samples = await _channel.invokeMethod('getPeakExpiratoryFlowRate', {"start": start, "end": end});
+      return HFDataPointOutput.fromMap(samples).values;
+    } catch (e) {
+      _logDeviceError("getPeakExpiratoryFlowRate", e);
+      return null;
+    }
   }
 
   Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map stepsByTimestamp = await _channel
-        .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-    return stepsByTimestamp.cast<int, int>().map((int key, int value) {
-      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-      return MapEntry(dateTime, value);
-    });
+    try {
+      Map stepsByTimestamp = await _channel
+          .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+      return stepsByTimestamp.cast<int, int>().map((int key, int value) {
+        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+        return MapEntry(dateTime, value);
+      });
+    } catch (e) {
+      _logDeviceError("getStepsBySegment", e);
+      return {};
+    }
   }
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    try {
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
+      return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      _logDeviceError("getWorkoutsBySegment", e);
+      return null;
+    }
   }
 
   Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map flightsByTimestamp = await _channel
-        .invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-    return flightsByTimestamp.cast<int, int>().map((int key, int value) {
-      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-      return MapEntry(dateTime, value);
-    });
+    try {
+      Map flightsByTimestamp = await _channel
+          .invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+      return flightsByTimestamp.cast<int, int>().map((int key, int value) {
+        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+        return MapEntry(dateTime, value);
+      });
+    } catch (e) {
+      _logDeviceError("getFlightsBySegment", e);
+      return {};
+    }
   }
 
   Future<Map<DateTime, double>> getCyclingBySegment(int start, int end, int duration, TimeUnit unit) async {
-    Map cyclingByTimestamp = await _channel.invokeMethod(
-        "getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-    return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
-      var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-      return MapEntry(dateTime, value);
-    });
+    try {
+      Map cyclingByTimestamp = await _channel.invokeMethod(
+          "getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
+      return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
+        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
+        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
+        return MapEntry(dateTime, value);
+      });
+    } catch (e) {
+      _logDeviceError("getCyclingDistanceBySegment", e);
+      return {};
+    }
   }
 
   Future<int?> getTotalStepsInInterval(int start, int end) async {
-    final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
-    return steps;
+    try {
+      final steps = await _channel.invokeMethod("getTotalStepsInInterval", {"start": start, "end": end});
+      return steps;
+    } catch (e) {
+      _logDeviceError("getTotalStepsInInterval", e);
+      return null;
+    }
   }
 
   /// On Android we want to sign out from Google Fit on the logout
   Future<void> signOut() async {
     if (!Platform.isAndroid) return;
-    return _channel.invokeMethod("signOut");
+
+    try {
+      return _channel.invokeMethod("signOut");
+    } catch (e) {
+      _logDeviceError("signOut", e);
+      return;
+    }
   }
 
   /// Returns the sleep data from HealthKit.
@@ -622,8 +828,14 @@ class FlutterHealthFit {
   /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<SleepSample>?> getSleepIOS(int start, int end) async {
     if (!Platform.isIOS) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+
+    try {
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
+      return rawSamples?.map((e) => SleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      _logDeviceError("getSleepBySegment", e);
+      return null;
+    }
   }
 
   /// Returns the sleep data from GoogleFit.
@@ -631,8 +843,14 @@ class FlutterHealthFit {
   /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<GFSleepSample>?> getSleepAndroid(int start, int end) async {
     if (!Platform.isAndroid) return null;
-    List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
-    return rawSamples?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+
+    try {
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getSleepBySegment", {"start": start, "end": end});
+      return rawSamples?.map((e) => GFSleepSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      _logDeviceError("getSleepBySegment", e);
+      return null;
+    }
   }
 
   /// Calories returned in kCal for a given dated range, separated by sources.
@@ -640,7 +858,12 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getEnergyConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
+    try {
+      return await _channel.invokeMapMethod<String, int>("getEnergyConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getEnergyConsumed", e);
+      return null;
+    }
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -648,7 +871,12 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getFiberConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
+    try {
+      return await _channel.invokeMapMethod<String, int>("getFiberConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getFiberConsumed", e);
+      return null;
+    }
   }
 
   /// Fiber returned in grams for a given dated range, separated by sources.
@@ -656,7 +884,13 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getCarbsConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
+    try {
+      return await _channel.invokeMapMethod<String, int>("getCarbsConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getCarbsConsumed", e);
+      return null;
+    }
+
   }
 
   /// Sugar returned in grams for a given dated range, separated by sources.
@@ -664,7 +898,12 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getSugarConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
+    try {
+      return await _channel.invokeMapMethod<String, int>("getSugarConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getSugarConsumed", e);
+      return null;
+    }
   }
 
   /// Fat returned in grams for a given dated range, separated by sources.
@@ -672,7 +911,12 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getFatConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
+    try {
+      return await _channel.invokeMapMethod<String, int>("getFatConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getFatConsumed", e);
+      return null;
+    }
   }
 
   /// Protein returned in grams for a given dated range, separated by sources.
@@ -680,7 +924,12 @@ class FlutterHealthFit {
   Future<Map<String, int>?> getProteinConsumed(int start, int end) async {
     if (!Platform.isIOS) return null;
 
-    return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
+    try {
+      return _channel.invokeMapMethod<String, int>("getProteinConsumed", {"start": start, "end": end});
+    } catch (e) {
+      _logDeviceError("getProteinConsumed", e);
+      return null;
+    }
   }
 
   Future<double?> get getWalkingAndRunningDistance async {
@@ -694,7 +943,7 @@ class FlutterHealthFit {
       result =
           await _channel.invokeMethod('getActivity', {"name": activityType.toString().split(".").last, "units": units});
     } catch (e) {
-      print(e.toString());
+      _logDeviceError("getActivity", e);
       return null;
     }
 
@@ -712,10 +961,28 @@ class FlutterHealthFit {
       try {
         return List<String>.from(await _channel.invokeMethod('getStepsSources'));
       } catch (e) {
+        _logDeviceError("getStepsSources", e);
         return null;
       }
     } else {
       return null;
+    }
+  }
+
+  void _logDeviceError(String method, Object e) {
+    if (e is PlatformException) {
+      if (e.code == "healthkit not available") {
+        logger?.info("healthkit not available");
+      }
+      else if (e.code == "background call") {
+        logger?.info("$method was called in background");
+      }
+      else {
+        logger?.severe("Error when calleing $method. ${e.code}: ${e.message}");
+      }
+    }
+    else {
+      logger?.severe("Error when calleing $method. ${e.toString()}");
     }
   }
 }

@@ -560,7 +560,7 @@ class HealthkitReader: NSObject {
     }
     
     
-    func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping ([Int: Double]?, Error?) -> Void) {
+    func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping (DataPointValue?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
@@ -571,17 +571,18 @@ class HealthkitReader: NSObject {
         let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
             query, results, error in
             
-            guard let results = results, results.count > 0 else {
+            guard let results = results,
+                  let quantitySample = results.first as? HKQuantitySample else {
                 completion(nil, error);
                 return;
             }
             
-            let quantitySample = results.first as! HKQuantitySample
-            var dic = [Int: Double]()
-            let weightInKilograms = quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo))
-            let timestamp = Int(quantitySample.startDate.timeIntervalSince1970 * 1000)
-            dic[timestamp]=weightInKilograms
-            completion(dic, error)
+            let value = DataPointValue(dateInMillis: Int(quantitySample.startDate.timeIntervalSince1970 * 1000),
+                                       value: quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo)),
+                                       units: .kg,
+                                       sourceApp: quantitySample.sourceRevision.source.bundleIdentifier,
+                                       additionalInfo: nil)
+            completion(value, error)
         }
         
         healthStore.execute(query)
