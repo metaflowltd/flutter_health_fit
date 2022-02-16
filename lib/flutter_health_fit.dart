@@ -8,7 +8,7 @@ import 'package:flutter_health_fit/workout_sample.dart';
 
 import 'body_composition_data.dart';
 
-abstract class HealthFitAbstractLog {
+abstract class HealthFitLog {
   void info(Object? message, [Object? error, StackTrace? stackTrace]);
   void warning(Object? message, [Object? error, StackTrace? stackTrace]);
   void severe(Object? message, [Object? error, StackTrace? stackTrace]);
@@ -323,7 +323,7 @@ class HeartRateSample {
 class FlutterHealthFit {
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
   static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
-  static HealthFitAbstractLog? logger;
+  static HealthFitLog? logger;
 
   factory FlutterHealthFit() => _singleton;
 
