@@ -36,6 +36,7 @@ enum class LumenUnit(val value: String) {
     COUNT("count"),
     KG("kg"),
     PERCENT("percent"),
+    CM("cm"),
 }
 
 /**

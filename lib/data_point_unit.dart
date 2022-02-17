@@ -4,6 +4,7 @@ enum DataPointUnit {
   count,
   kg,
   percent,
+  cm,
 }
 
 extension DataPointUnitExtension on DataPointUnit {
@@ -15,6 +16,8 @@ extension DataPointUnitExtension on DataPointUnit {
         return "kg";
       case DataPointUnit.percent:
         return "percent";
+      case DataPointUnit.cm:
+        return "cm";
     }
   }
 }
