@@ -275,15 +275,15 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
             
         case "getEnergyConsumed":
-            fallthrough
+            getNutritionSampleInInterval(call: call, result: result)
         case "getFiberConsumed":
-            fallthrough
+            getNutritionSampleInInterval(call: call, result: result)
         case "getSugarConsumed":
-            fallthrough
+            getNutritionSampleInInterval(call: call, result: result)
         case "getCarbsConsumed":
-            fallthrough
+            getNutritionSampleInInterval(call: call, result: result)
         case "getFatConsumed":
-            fallthrough
+            getNutritionSampleInInterval(call: call, result: result)
         case "getProteinConsumed":
             getNutritionSampleInInterval(call: call, result: result)
             
@@ -633,16 +633,24 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     
     private func getNutritionSampleInInterval(call: FlutterMethodCall,
                                               result: @escaping FlutterResult) {
-        let myArgs = call.arguments as! [String: Int]
-        let startMillis = myArgs["start"]!
-        let endMillis = myArgs["end"]!
+        let methodName = call.method
+        
+        guard let myArgs = call.arguments as? [String: Int],
+              let startMillis = myArgs["start"],
+              let endMillis = myArgs["end"],
+              let sampleType = methodNamesToQuantityTypes[methodName] else {
+                  result(FlutterError(code: "Missing args", message: "missing start and end params", details:""))
+                  return
+              }
         let start = startMillis.toTimeInterval
         let end = endMillis.toTimeInterval
-        let methodName = call.method
-        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: methodNamesToQuantityTypes[methodName]!,
-                                                                   unit: getUnitsBy(methodName: call.method),
+        
+        let units = getNutritionUnitsBy(methodName: methodName)
+        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: sampleType,
+                                                                   searchUnit: units.searchUnit,
+                                                                   reportUnit: units.reportUnit,
                                                                    start: start,
-                                                                   end: end) { (value: [String : Int]?, error: Error?) in
+                                                                   end: end) { (list: [DataPointValue]?, error: Error?) in
             if let error = error {
                 let error = error as NSError
                 if error.code == 11 {
@@ -653,16 +661,19 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
             } else {
-                result(value)
+                let resultList = list?.compactMap({ dataPointValue in
+                    return dataPointValue.resultMap()
+                })
+                result(resultList)
             }
         }
     }
     
-    private func getUnitsBy(methodName: String) -> HKUnit {
+    private func getNutritionUnitsBy(methodName: String) -> (searchUnit: HKUnit, reportUnit: DataPointValue.LumenUnit) {
         if methodName == "getEnergyConsumed" {
-            return HKUnit.kilocalorie()
+            return (HKUnit.kilocalorie(), .kCal)
         } else {
-            return HKUnit.gram()
+            return (HKUnit.gram(), .g)
         }
     }
 }

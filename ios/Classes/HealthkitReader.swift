@@ -718,12 +718,15 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
-    func getSampleConsumedInInterval(sampleType: HKQuantityType, unit: HKUnit, start: TimeInterval, end: TimeInterval, completion: @escaping ([String: Int]?, Error?) -> Void) {
+    func getSampleConsumedInInterval(sampleType: HKQuantityType,
+                                     searchUnit: HKUnit,
+                                     reportUnit: DataPointValue.LumenUnit,
+                                     start: TimeInterval,
+                                     end: TimeInterval,
+                                     completion: @escaping ([DataPointValue]?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
-        
-        var results = [String: Int]()
         
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
@@ -736,24 +739,34 @@ class HealthkitReader: NSObject {
                 return
             }
             
+            var dataPointValues: [DataPointValue] = []
             if let sources = queryResult.sources {
                 for source in sources {
                     guard let quantityBySource = queryResult.sumQuantity(for: source) else {
                         continue
                     }
-                    let value = quantityBySource.doubleValue(for: unit)
-                    print("[getSampleConsumedInInterval] value: \(value), sourceApp: \(source.bundleIdentifier)")
-                    results["\(source.name):\(source.bundleIdentifier)"] = Int(value)
+                    
+                    let value = quantityBySource.doubleValue(for: searchUnit)
+                    let dataPointValue = DataPointValue(dateInMillis: Int(queryResult.startDate.timeIntervalSince1970 * 1000),
+                                                        value: value,
+                                                        units: reportUnit,
+                                                        sourceApp: source.bundleIdentifier,
+                                                        additionalInfo: nil)
+                    dataPointValues.append(dataPointValue)
                 }
             }
             
             if let aggregatedQuantity = queryResult.sumQuantity() {
-                let value = aggregatedQuantity.doubleValue(for: unit)
-                print("[getSampleConsumedInInterval] aggregated value: \(value)")
-                results["Aggregated"] = Int(value)
+                let value = aggregatedQuantity.doubleValue(for: searchUnit)
+                let dataPointValue = DataPointValue(dateInMillis: Int(queryResult.startDate.timeIntervalSince1970 * 1000),
+                                                    value: value,
+                                                    units: reportUnit,
+                                                    sourceApp: "Aggregated",
+                                                    additionalInfo: nil)
+                dataPointValues.append(dataPointValue)
             }
             
-            completion(results, nil)
+            completion(dataPointValues, nil)
         }
         
         healthStore.execute(query)
