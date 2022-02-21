@@ -32,6 +32,7 @@ enum LMNUnit: String {
     case count = "count"
     case liter = "liter"
     case literPerMin = "liter/Min"
+    case kCal = "kCal"
     
     func hkUnit() -> HKUnit {
         switch self {
@@ -49,6 +50,8 @@ enum LMNUnit: String {
             return HKUnit.liter()
         case .literPerMin:
             return HKUnit.liter().unitDivided(by: HKUnit.minute())
+        case .kCal:
+            return .kilocalorie()
         }
     }
 }
@@ -237,7 +240,15 @@ class HealthkitReader: NSObject {
     var workoutType: HKObjectType{
         return HKObjectType.workoutType()
     }
-    
+
+    var activeEnergyQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.activeEnergyBurned)!
+    }
+
+    var restingEnergyQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.basalEnergyBurned)!
+    }
+
     func quantityTypesToRead() -> [HKQuantityType]{
         return [
             stepsQuantityType,
@@ -332,6 +343,8 @@ class HealthkitReader: NSObject {
             HealthkitReader.weightQuantityType(),
             HealthkitReader.heightQuantityType(),
             sleepCategoryType,
+            activeEnergyQuantityType,
+            restingEnergyQuantityType
         ] + quantityTypesToRead())
     }
     

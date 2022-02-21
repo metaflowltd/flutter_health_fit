@@ -2,20 +2,20 @@
 
 import 'package:flutter_health_fit/data_point_unit.dart';
 
-class BodyCompositionData {
+class DataPointValue {
   final DateTime date;
   final double value;
   final DataPointUnit units;
   final String? sourceApp;
 
-  BodyCompositionData({
+  DataPointValue({
     required this.value,
     required this.date,
     required this.units,
     this.sourceApp,
   });
 
-  static BodyCompositionData? fromMap(Map<String, Object>? map) {
+  static DataPointValue? fromMap(Map<String, Object>? map) {
     if (map == null) {
       return null;
     }
@@ -33,7 +33,7 @@ class BodyCompositionData {
       return null;
     }
 
-    return BodyCompositionData(
+    return DataPointValue(
         value: value, date: date, units: units, sourceApp: sourceApp);
   }
 }
