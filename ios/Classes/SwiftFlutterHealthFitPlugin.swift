@@ -345,10 +345,26 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
             getRequestStatus(types: types, result: result)
             
-        case "isCarbsAuthorized":
+        case "isCarbsConsumedAuthorized":
             let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryCarbohydrates, reader.dietaryFiber], result: result)
-            
+            getRequestStatus(types: [reader.dietaryCarbohydrates], result: result)
+        case "isFiberConsumedAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryFiber], result: result)
+        case "isFatConsumedAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryFatTotal], result: result)
+        case "isSugarConsumedAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietarySugar], result: result)
+        case "isProteinConsumedAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryProtein], result: result)
+        case "isEnergyConsumedAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryEnergyConsumed], result: result)
+
+        
         case "isWaistSizeAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.waistSizeQuantityType], result: result)
@@ -668,7 +684,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         }
     }
-    
+
     private func getNutritionUnitsBy(methodName: String) -> (searchUnit: HKUnit, reportUnit: DataPointValue.LumenUnit) {
         if methodName == "getEnergyConsumed" {
             return (HKUnit.kilocalorie(), .kCal)
