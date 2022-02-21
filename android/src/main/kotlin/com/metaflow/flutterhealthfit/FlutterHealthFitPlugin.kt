@@ -35,43 +35,10 @@ enum class LumenTimeUnit(val value: Int) {
 enum class LumenUnit(val value: String) {
     COUNT("count"),
     KG("kg"),
+    G("g"),
+    KCAL("kCal"),
     PERCENT("percent"),
     CM("cm"),
-}
-
-/**
- * new items should use this class to collect data
- */
-data class DataPointValue(
-    private val dateInMillis: Long,
-    private val value: Float,
-    private val units: LumenUnit,
-    private val sourceApp: String?,
-    private val additionalInfo: HashMap<String, Any>?,
-) {
-    constructor(dateInMillis: Long, value: Float, units: LumenUnit, sourceApp: String?) : this(
-        dateInMillis = dateInMillis,
-        value = value,
-        units = units,
-        sourceApp = sourceApp,
-        additionalInfo = null
-    )
-
-    fun resultMap(): HashMap<String, Any> {
-        var map: HashMap<String, Any> = hashMapOf(
-            "dateInMillis" to dateInMillis,
-            "value" to value,
-            "units" to units.value,
-        )
-        sourceApp?.let {
-            map["sourceApp"] = it
-        }
-        additionalInfo?.let {
-            map.putAll(it)
-        }
-
-        return map
-    }
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
@@ -91,7 +58,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val sleepDataType: DataType = DataType.TYPE_SLEEP_SEGMENT
         val bodyFatDataType: DataType = DataType.TYPE_BODY_FAT_PERCENTAGE
         val menstruationDataType: DataType = HealthDataTypes.TYPE_MENSTRUATION
-
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
         @JvmStatic
@@ -220,6 +186,27 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         result.error("failed", e.message, null)
                     } else {
                         result.success(value?.resultMap())
+                    }
+                }
+            }
+
+            "getEnergyConsumed" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                NutritionReader().getEnergyConsumed(
+                    activity,
+                    start,
+                    end) { list: List<DataPointValue>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        val outList = list?.map { dataPointValue ->
+                            dataPointValue.resultMap()
+                        }
+                        result.success(outList)
                     }
                 }
             }
@@ -388,8 +375,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
 
-            "isCarbsAuthorized" -> // only implemented on iOS
-                result.success(false)
+            "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
+
+            "isEnergyConsumedAuthorized" ->  result.success(isEnergyConsumedAuthorized())
 
             "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
 
@@ -439,6 +427,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
     }
 
+    private fun isEnergyConsumedAuthorized(): Boolean {
+        return isAuthorized(NutritionReader.authorizedNutritionOptions())
+    }
+
     private fun isWorkoutsAuthorized(): Boolean {
         return isAuthorized(WorkoutsReader().authorizedFitnessOptions())
     }
@@ -475,8 +467,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         stepsDataType,
                         weightDataType,
                         bodyFatDataType,
-                        // TODO remove after approval of reproductive_health scope
-//                        menstruationDataType,
+                        NutritionReader.getNutritionType(),
+                        menstruationDataType,
                         if (hasSensorPermissionCompat()) heartRateDataType else null
                     ),
                     deferredResult
@@ -953,8 +945,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
         .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
-        // TODO remove after approval of reproductive_health scope
-//        .addDataType(menstruationDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(NutritionReader.getNutritionType(), FitnessOptions.ACCESS_READ)
+        .addDataType(menstruationDataType, FitnessOptions.ACCESS_READ)
         .build()
 
     override fun onRequestPermissionsResult(

@@ -526,13 +526,78 @@ class FlutterHealthFit {
     }
   }
 
-  /// Checks if all permissions needed for calculating carb servings have been authorized
-  Future<bool> isCarbsAuthorized() async {
+  /// Checks if permissions needed for calculating carb servings have been authorized
+  Future<bool> isCarbsConsumedAuthorized() async {
+    if (!Platform.isIOS) return false;
+
     try {
-      final status = await _channel.invokeMethod("isCarbsAuthorized");
+      final status = await _channel.invokeMethod("isCarbsConsumedAuthorized");
       return status;
     } catch (e) {
       _logDeviceError("isCarbsAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if permissions needed for calculating fiber servings have been authorized
+  Future<bool> isFiberConsumedAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    try {
+      final status = await _channel.invokeMethod("isFiberConsumedAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isFiberConsumedAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if permissions needed for calculating fat servings have been authorized
+  Future<bool> isFatConsumedAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    try {
+      final status = await _channel.invokeMethod("isFatConsumedAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isFatConsumedAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if permissions needed for calculating sugar servings have been authorized
+  Future<bool> isSugarConsumedAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    try {
+      final status = await _channel.invokeMethod("isSugarConsumedAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isSugarConsumedAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if permissions needed for calculating protein servings have been authorized
+  Future<bool> isProteinConsumedAuthorized() async {
+    if (!Platform.isIOS) return false;
+
+    try {
+      final status = await _channel.invokeMethod("isProteinConsumedAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isProteinConsumedAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if permissions needed for calculating energy servings have been authorized
+  Future<bool> isEnergyConsumedAuthorized() async {
+    try {
+      final status = await _channel.invokeMethod("isEnergyConsumedAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isEnergyConsumedAuthorized", e);
       return false;
     }
   }
@@ -848,8 +913,6 @@ class FlutterHealthFit {
   /// Calories returned in kCal for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<BodyCompositionData>?> getEnergyConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getEnergyConsumed",
           {"start": start, "end": end});
