@@ -30,6 +30,10 @@ class WorkoutsReader {
         endTime: Long,
         result: (List<Map<String, Any>>?, Throwable?) -> Unit
     ) {
+        if (currentActivity == null) {
+            result(null, null)
+            return
+        }
 
         // Build a session read request
         val readRequest = SessionReadRequest.Builder()
@@ -43,7 +47,7 @@ class WorkoutsReader {
 
         val account = GoogleSignIn.getLastSignedInAccount(currentActivity) ?: return
 
-        Fitness.getSessionsClient(currentActivity!!, account)
+        Fitness.getSessionsClient(currentActivity, account)
             .readSession(readRequest)
             .addOnSuccessListener { response ->
 

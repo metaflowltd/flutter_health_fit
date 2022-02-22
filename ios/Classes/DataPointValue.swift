@@ -14,6 +14,8 @@ struct DataPointValue {
     enum LumenUnit: String {
         case count = "count"
         case kg = "kg"
+        case g = "g"
+        case kCal = "kCal"
         case percent = "percent"
         case cm = "cm"
     }
