@@ -534,7 +534,7 @@ class FlutterHealthFit {
       final status = await _channel.invokeMethod("isCarbsConsumedAuthorized");
       return status;
     } catch (e) {
-      _logDeviceError("isCarbsAuthorized", e);
+      _logDeviceError("isCarbsConsumedAuthorized", e);
       return false;
     }
   }
