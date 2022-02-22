@@ -6,6 +6,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataType
+import com.google.android.gms.fitness.data.Field.NUTRIENT_CALORIES
 import com.google.android.gms.fitness.request.DataReadRequest
 import java.util.concurrent.TimeUnit
 
@@ -13,13 +14,9 @@ class NutritionReader {
     private val logTag = NutritionReader::class.java.simpleName
 
     companion object {
-        fun getNutritionType(): DataType {
-            return DataType.TYPE_NUTRITION
-        }
-
-        fun authorizedNutritionOptions(): FitnessOptions {
-            return FitnessOptions.builder().addDataType(getNutritionType()).build()
-        }
+        val nutritionType: DataType = DataType.TYPE_NUTRITION
+        val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(nutritionType).build()
+        val aggregatedData = "Aggregated"
     }
 
     fun getEnergyConsumed(
@@ -33,22 +30,22 @@ class NutritionReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedNutritionOptions())
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedNutritionOptions)
 
         val request = DataReadRequest.Builder()
-            .read(getNutritionType())
+            .read(nutritionType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
         Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
-                val nutritionField = getNutritionType().fields[0]
+                val nutritionField = nutritionType.fields[0]
 
                 val outputList = mutableListOf<DataPointValue>()
-                val caloriesDataSet = response.getDataSet(getNutritionType())
-                var aggregatedCalories: Float = 0.0F
+                val caloriesDataSet = response.getDataSet(nutritionType)
+                var aggregatedCalories = 0.0F
                 caloriesDataSet.dataPoints.forEach { dataPoint ->
-                    val value = dataPoint.getValue(nutritionField)?.getKeyValue("calories")
+                    val value = dataPoint.getValue(nutritionField).getKeyValue(NUTRIENT_CALORIES)
                     if (value != null && value > 0) {
                         aggregatedCalories += value
                         val dataPointValue = DataPointValue(
@@ -69,7 +66,7 @@ class NutritionReader {
                         dateInMillis = outputList.first().dateInMillis,
                         value = aggregatedCalories,
                         units = LumenUnit.KCAL,
-                        sourceApp = "Aggregated",
+                        sourceApp = aggregatedData,
                     )
                     outputList.add(dataPointValue)
                     result(outputList, null)
