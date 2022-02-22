@@ -727,6 +727,7 @@ class HealthkitReader: NSObject {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
+        let aggregatedData = "Aggregated"
         
         let query = HKStatisticsQuery(quantityType: sampleType,
                                       quantitySamplePredicate: predicate,
@@ -761,7 +762,7 @@ class HealthkitReader: NSObject {
                 let dataPointValue = DataPointValue(dateInMillis: Int(queryResult.startDate.timeIntervalSince1970 * 1000),
                                                     value: value,
                                                     units: reportUnit,
-                                                    sourceApp: "Aggregated",
+                                                    sourceApp: aggregatedData,
                                                     additionalInfo: nil)
                 dataPointValues.append(dataPointValue)
             }

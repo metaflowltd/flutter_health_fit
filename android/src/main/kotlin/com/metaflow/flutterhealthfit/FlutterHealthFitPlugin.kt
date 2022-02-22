@@ -428,7 +428,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun isEnergyConsumedAuthorized(): Boolean {
-        return isAuthorized(NutritionReader.authorizedNutritionOptions())
+        return isAuthorized(NutritionReader.authorizedNutritionOptions)
     }
 
     private fun isWorkoutsAuthorized(): Boolean {
@@ -467,7 +467,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         stepsDataType,
                         weightDataType,
                         bodyFatDataType,
-                        NutritionReader.getNutritionType(),
+                        NutritionReader.nutritionType,
                         menstruationDataType,
                         if (hasSensorPermissionCompat()) heartRateDataType else null
                     ),
@@ -945,7 +945,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
         .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(NutritionReader.getNutritionType(), FitnessOptions.ACCESS_READ)
+        .addDataType(NutritionReader.nutritionType, FitnessOptions.ACCESS_READ)
         .addDataType(menstruationDataType, FitnessOptions.ACCESS_READ)
         .build()
 
