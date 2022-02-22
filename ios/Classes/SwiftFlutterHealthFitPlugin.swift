@@ -303,6 +303,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                         outputType: .detailedMap,
                         result: result)
             
+        case "getRestingEnergy":
+            getRestingEnergy(call: call, result: result)
+
+        case "getActiveEnergy":
+            getActiveEnergy(call: call, result: result)
+        
         case "isAnyPermissionAuthorized":
             // Not supposed to be invoked on iOS. Returns a fake result.
             result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
@@ -386,8 +392,79 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.peakExpiratoryFlowRateQuantityType], result: result)
 
+        case "isRestingEnergyAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.restingEnergyQuantityType], result: result)
+
+        case "isActiveEnergyAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.activeEnergyQuantityType], result: result)
+
         default:
             result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    private func getRestingEnergy(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let startMillis = args["start"] as? Int,
+              let endMillis = args["end"] as? Int else {
+                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                  return
+              }
+        HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.restingEnergyQuantityType,
+                                                   start: startMillis.toTimeInterval,
+                                                   end: endMillis.toTimeInterval,
+                                                   lmnUnit: .kCal,
+                                                   maxResults: 1) { dataMap, error in
+            if let error = error as NSError? {
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            }
+            else {
+                if let date = dataMap?.keys.first,
+                   let detailedOutput = dataMap?[date]  {
+                    let value = DataPointValue(dateInMillis: date,
+                                               value: detailedOutput.value,
+                                               units: .kCal,
+                                               sourceApp: detailedOutput.sourceApp,
+                                               additionalInfo: nil)
+                    result(value.resultMap())
+                }
+                else {
+                    result(nil)
+                }
+            }
+        }
+    }
+   
+    private func getActiveEnergy(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let startMillis = args["start"] as? Int,
+              let endMillis = args["end"] as? Int else {
+                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                  return
+              }
+        
+        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.activeEnergyQuantityType,
+                                                                   searchUnit: .kilocalorie(),
+                                                                   reportUnit: .kCal,
+                                                                   start: startMillis.toTimeInterval,
+                                                                   end: endMillis.toTimeInterval) {list, error in
+            if let error = error {
+                let error = error as NSError
+                if error.code == 11 {
+                    print("no data was found for a given dates range: \(error)")
+                    result(nil)
+                } else {
+                    print("got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+            } else {
+                let resultList = list?.compactMap({ dataPointValue in
+                    return dataPointValue.resultMap()
+                })
+                result(resultList)
+            }
         }
     }
     
