@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/data_point_unit.dart';
+import 'package:flutter_health_fit/data_point_value.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
-
-import 'body_composition_data.dart';
 
 abstract class HealthFitLog {
   void info(Object? message, [Object? error, StackTrace? stackTrace]);
@@ -528,8 +527,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for calculating carb servings have been authorized
   Future<bool> isCarbsConsumedAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isCarbsConsumedAuthorized");
       return status;
@@ -541,8 +538,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for calculating fiber servings have been authorized
   Future<bool> isFiberConsumedAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isFiberConsumedAuthorized");
       return status;
@@ -554,8 +549,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for calculating fat servings have been authorized
   Future<bool> isFatConsumedAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isFatConsumedAuthorized");
       return status;
@@ -567,8 +560,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for calculating sugar servings have been authorized
   Future<bool> isSugarConsumedAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isSugarConsumedAuthorized");
       return status;
@@ -580,8 +571,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for calculating protein servings have been authorized
   Future<bool> isProteinConsumedAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isProteinConsumedAuthorized");
       return status;
@@ -985,8 +974,6 @@ class FlutterHealthFit {
   /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getFiberConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getFiberConsumed",
           {"start": start, "end": end});
@@ -1003,8 +990,6 @@ class FlutterHealthFit {
   /// Fiber returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getCarbsConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getCarbsConsumed",
           {"start": start, "end": end});
@@ -1022,8 +1007,6 @@ class FlutterHealthFit {
   /// Sugar returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getSugarConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getSugarConsumed",
           {"start": start, "end": end});
@@ -1040,8 +1023,6 @@ class FlutterHealthFit {
   /// Fat returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getFatConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getFatConsumed",
           {"start": start, "end": end});
@@ -1058,8 +1039,6 @@ class FlutterHealthFit {
   /// Protein returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getProteinConsumed(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getProteinConsumed",
           {"start": start, "end": end});

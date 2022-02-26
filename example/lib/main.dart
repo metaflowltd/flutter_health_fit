@@ -136,7 +136,7 @@ class _MyAppState extends State<MyApp> {
       now.millisecondsSinceEpoch,
     );
     setState(() {
-      _bodyFatData = bodyFatData?.entries.map((element) => "${element.key} : ${element.value}").toList() ?? [];
+      _bodyFatData = [bodyFatData?.value?.toString() ?? ""];
     });
   }
 
