@@ -274,7 +274,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
             
-        case "getEnergyConsumed", "getFiberConsumed", "getSugarConsumed", "getCarbsConsumed", "getFatConsumed", "getProteinConsumed":
+        case "getEnergyConsumed", "getFiberConsumed", "getSugarConsumed",
+            "getCarbsConsumed", "getFatConsumed", "getProteinConsumed":
             getNutritionSampleInInterval(call: call, result: result)
                        
         case "getStepsSources":

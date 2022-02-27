@@ -20,6 +20,18 @@ data class DataPointValue(
         additionalInfo = null
     )
 
+    fun add(value: Float, dateInMillis: Long): DataPointValue {
+       val newValue = this.value + value;
+       val newDate = if (this.dateInMillis < dateInMillis) this.dateInMillis else dateInMillis
+
+        return (DataPointValue(
+            dateInMillis = newDate,
+            value = newValue,
+            units = this.units,
+            sourceApp = this.sourceApp,
+            additionalInfo = this.additionalInfo))
+    }
+
     fun resultMap(): HashMap<String, Any> {
         val map: HashMap<String, Any> = hashMapOf(
             "dateInMillis" to dateInMillis,

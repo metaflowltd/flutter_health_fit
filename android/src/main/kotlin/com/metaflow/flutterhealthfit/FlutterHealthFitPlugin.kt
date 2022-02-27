@@ -191,22 +191,97 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             }
 
             "getEnergyConsumed" -> {
-                val start = call.argument<Long>("start")!!
-                val end = call.argument<Long>("end")!!
-                NutritionReader().getEnergyConsumed(
-                    activity,
-                    start,
-                    end) { list: List<DataPointValue>?, e: Throwable? ->
-                    if (e != null) {
-                        sendNativeLog("$TAG | failed: ${e.message}")
-                        activity?.let { handleGoogleDisconnection(e, it) }
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getEnergyConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
 
-                        result.error("failed", e.message, null)
-                    } else {
-                        val outList = list?.map { dataPointValue ->
-                            dataPointValue.resultMap()
-                        }
-                        result.success(outList)
+            "getFiberConsumed" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getFiberConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
+
+            "getCarbsConsumed" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getCarbsConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
+
+            "getSugarConsumed" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getSugarConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
+
+            "getFatConsumed" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getFatConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
+
+            "getProteinConsumed" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                }
+                else {
+                    NutritionReader().getProteinConsumed(
+                        activity,
+                        start,
+                        end) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleNutritionResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -377,13 +452,32 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
 
-            "isEnergyConsumedAuthorized" ->  result.success(isEnergyConsumedAuthorized())
+            "isEnergyConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isProteinConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isSugarConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isFatConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isFiberConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isCarbsConsumedAuthorized" ->  result.success(isNutritionAuthorized())
 
             "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
             else -> result.notImplemented()
+        }
+    }
+
+    private fun handleNutritionResponse(result: Result, list: List<DataPointValue>?, e: Throwable?) {
+        if (e != null) {
+            sendNativeLog("$TAG | failed: ${e.message}")
+            activity?.let { handleGoogleDisconnection(e, it) }
+
+            result.error("failed", e.message, null)
+        } else {
+            val outList = list?.map { dataPointValue ->
+                dataPointValue.resultMap()
+            }
+            result.success(outList)
         }
     }
 
@@ -427,7 +521,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
     }
 
-    private fun isEnergyConsumedAuthorized(): Boolean {
+    private fun isNutritionAuthorized(): Boolean {
         return isAuthorized(NutritionReader.authorizedNutritionOptions)
     }
 

@@ -1,5 +1,3 @@
-
-
 import 'package:flutter_health_fit/data_point_unit.dart';
 
 class DataPointValue {
