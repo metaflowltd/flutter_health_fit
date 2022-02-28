@@ -607,8 +607,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for resting energy have been authorized
   Future<bool> isRestingEnergyAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isRestingEnergyAuthorized");
       return status;
@@ -620,6 +618,8 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for active energy have been authorized
   Future<bool> isActiveEnergyAuthorized() async {
+    if (!Platform.isIOS) return false;
+    
     try {
       final status = await _channel.invokeMethod("isActiveEnergyAuthorized");
       return status;

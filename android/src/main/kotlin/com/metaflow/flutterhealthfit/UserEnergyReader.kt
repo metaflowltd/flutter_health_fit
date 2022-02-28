@@ -17,7 +17,7 @@ class UserEnergyReader {
         val activeEnergySummaryType: DataType = DataType.TYPE_BASAL_METABOLIC_RATE
     }
 
-    fun getActiveEnergy(
+    fun getRestingEnergy(
         currentActivity: Activity?,
         startTime: Long,
         endTime: Long,

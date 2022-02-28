@@ -431,14 +431,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
-            "getActiveEnergy" -> {
+            "getRestingEnergy" -> {
             val start = call.argument<Long>("start")
             val end = call.argument<Long>("end")
             if (start == null || end == null) {
                 result.error("Missing mandatory fields", "start, end", null)
             }
             else {
-                UserEnergyReader().getActiveEnergy(
+                UserEnergyReader().getRestingEnergy(
                     activity,
                     start,
                     end) { list: List<DataPointValue>?, e: Throwable? ->
@@ -480,7 +480,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
-            "isActiveEnergyAuthorized" -> result.success(isActiveEnergyAuthorized())
+            "isRestingEnergyAuthorized" -> result.success(isActiveEnergyAuthorized())
 
             else -> result.notImplemented()
         }
