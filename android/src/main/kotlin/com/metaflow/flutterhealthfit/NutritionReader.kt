@@ -163,7 +163,7 @@ class NutritionReader {
                         dateInMillis = outputList.first().dateInMillis,
                         value = aggregatedCalories,
                         units =units,
-                        sourceApp = FlutterHealthFitPlugin.aggregatedSourceApp,
+                        sourceApp = FlutterHealthFitPlugin.AGGREGATED_SOURCE_APP,
                     )
                     outputList.add(dataPointValue)
                     result(outputList, null)

@@ -33,12 +33,10 @@ enum class LumenTimeUnit(val value: Int) {
 }
 
 enum class LumenUnit(val value: String) {
-    COUNT("count"),
     KG("kg"),
     G("g"),
     KCAL("kCal"),
     PERCENT("percent"),
-    CM("cm"),
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
@@ -48,7 +46,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     ActivityAware, EventChannel.StreamHandler {
 
     companion object {
-        const val aggregatedSourceApp = "Aggregated"
+        const val AGGREGATED_SOURCE_APP = "Aggregated"
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
@@ -196,8 +194,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getEnergyConsumed(
                         activity,
                         start,
@@ -212,8 +209,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getFiberConsumed(
                         activity,
                         start,
@@ -228,8 +224,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getCarbsConsumed(
                         activity,
                         start,
@@ -244,8 +239,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getSugarConsumed(
                         activity,
                         start,
@@ -260,8 +254,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getFatConsumed(
                         activity,
                         start,
@@ -276,8 +269,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
                     result.error("Missing mandatory fields", "start, end", null)
-                }
-                else {
+                } else {
                     NutritionReader().getProteinConsumed(
                         activity,
                         start,
@@ -432,20 +424,23 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             }
 
             "getRestingEnergy" -> {
-            val start = call.argument<Long>("start")
-            val end = call.argument<Long>("end")
-            if (start == null || end == null) {
-                result.error("Missing mandatory fields", "start, end", null)
-            }
-            else {
-                UserEnergyReader().getRestingEnergy(
-                    activity,
-                    start,
-                    end) { list: List<DataPointValue>?, e: Throwable? ->
-                    handleDataPointValueListResponse(result = result, list = list, e = e)
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                } else {
+                    UserEnergyReader().getRestingEnergy(
+                        activity,
+                        start,
+                        end) { dataPointValue: DataPointValue?, e: Throwable? ->
+                        if (e == null) {
+                            result.success(dataPointValue?.resultMap())
+                        } else {
+                            result.error("failed", e.message, null)
+                        }
+                    }
                 }
             }
-        }
 
             "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 
@@ -467,26 +462,28 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
 
-            "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
-
-            "isEnergyConsumedAuthorized" ->  result.success(isNutritionAuthorized())
-            "isProteinConsumedAuthorized" ->  result.success(isNutritionAuthorized())
-            "isSugarConsumedAuthorized" ->  result.success(isNutritionAuthorized())
-            "isFatConsumedAuthorized" ->  result.success(isNutritionAuthorized())
-            "isFiberConsumedAuthorized" ->  result.success(isNutritionAuthorized())
-            "isCarbsConsumedAuthorized" ->  result.success(isNutritionAuthorized())
+            "isEnergyConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isProteinConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isSugarConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isFatConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isFiberConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isCarbsConsumedAuthorized" -> result.success(isNutritionAuthorized())
 
             "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
-            "isRestingEnergyAuthorized" -> result.success(isActiveEnergyAuthorized())
+            "isRestingEnergyAuthorized" -> result.success(isRestingEnergyAuthorized())
 
             else -> result.notImplemented()
         }
     }
 
-    private fun handleDataPointValueListResponse(result: Result, list: List<DataPointValue>?, e: Throwable?) {
+    private fun handleDataPointValueListResponse(
+        result: Result,
+        list: List<DataPointValue>?,
+        e: Throwable?,
+    ) {
         if (e != null) {
             sendNativeLog("$TAG | failed: ${e.message}")
             activity?.let { handleGoogleDisconnection(e, it) }
@@ -556,8 +553,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
     }
 
-    private fun isActiveEnergyAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(UserEnergyReader.activeEnergyType).build())
+    private fun isRestingEnergyAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(UserEnergyReader.restingEnergyType)
+            .build())
     }
 
     private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {
@@ -764,7 +762,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
-        val SLEEP_STAGE_NAMES = arrayOf(
+        val sleepStageNames = arrayOf(
             "Unused",
             "Awake (during sleep)",
             "Sleep",
@@ -802,7 +800,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                             try {
                                 val sleepStageVal =
                                     point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
-                                val sleepStage = SLEEP_STAGE_NAMES[sleepStageVal]
+                                val sleepStage = sleepStageNames[sleepStageVal]
                                 val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
                                 val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
                                 sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
@@ -915,12 +913,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
-        var map: HashMap<Long, Float>? = null
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                    readDataResult.dataSets.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastBodyFat = dp?.getValue(bodyFatDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 
@@ -1008,12 +1005,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
-        var map: HashMap<Long, Float>? = null
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
                 val dp =
-                    readDataResult.dataSets?.lastOrNull()?.dataPoints?.lastOrNull()
+                    readDataResult.dataSets.lastOrNull()?.dataPoints?.lastOrNull()
                 val lastWeight = dp?.getValue(weightDataType.fields[0])?.asFloat()
                 val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
 
