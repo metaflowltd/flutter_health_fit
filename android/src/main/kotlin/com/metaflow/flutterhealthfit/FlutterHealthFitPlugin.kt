@@ -464,12 +464,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
 
-            "isEnergyConsumedAuthorized" -> result.success(isNutritionAuthorized())
-            "isProteinConsumedAuthorized" -> result.success(isNutritionAuthorized())
-            "isSugarConsumedAuthorized" -> result.success(isNutritionAuthorized())
-            "isFatConsumedAuthorized" -> result.success(isNutritionAuthorized())
-            "isFiberConsumedAuthorized" -> result.success(isNutritionAuthorized())
-            "isCarbsConsumedAuthorized" -> result.success(isNutritionAuthorized())
+            "isEnergyConsumedAuthorized",
+            "isProteinConsumedAuthorized",
+            "isSugarConsumedAuthorized",
+            "isFatConsumedAuthorized",
+            "isFiberConsumedAuthorized",
+            "isCarbsConsumedAuthorized",
+            -> result.success(isNutritionAuthorized())
 
             "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
 
