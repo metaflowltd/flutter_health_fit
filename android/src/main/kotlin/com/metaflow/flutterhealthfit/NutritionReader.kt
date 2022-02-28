@@ -17,7 +17,6 @@ class NutritionReader {
     companion object {
         val nutritionType: DataType = DataType.TYPE_NUTRITION
         val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(nutritionType).build()
-        const val aggregatedData = "Aggregated"
     }
 
     fun getEnergyConsumed(
@@ -164,7 +163,7 @@ class NutritionReader {
                         dateInMillis = outputList.first().dateInMillis,
                         value = aggregatedCalories,
                         units =units,
-                        sourceApp = aggregatedData,
+                        sourceApp = FlutterHealthFitPlugin.AGGREGATED_SOURCE_APP,
                     )
                     outputList.add(dataPointValue)
                     result(outputList, null)
