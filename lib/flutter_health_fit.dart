@@ -883,6 +883,8 @@ class FlutterHealthFit {
   }
 
   Future<List<DataPointValue>?> getActiveEnergy(int start, int end) async {
+    if (!Platform.isIOS) return null;
+
     try {
       final dataList = await _channel.invokeListMethod<Map>("getActiveEnergy",
           {"start": start, "end": end});
@@ -897,8 +899,6 @@ class FlutterHealthFit {
   }
 
   Future<DataPointValue?> getRestingEnergy(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataPointMap = await _channel.invokeMapMethod<String, Object>("getRestingEnergy",
           {"start": start, "end": end});
