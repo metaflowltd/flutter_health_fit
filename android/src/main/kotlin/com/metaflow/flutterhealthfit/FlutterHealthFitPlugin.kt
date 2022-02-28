@@ -427,16 +427,18 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val start = call.argument<Long>("start")
                 val end = call.argument<Long>("end")
                 if (start == null || end == null) {
+                    sendNativeLog("${UserEnergyReader::class.java.simpleName} | Missing mandatory fields")
                     result.error("Missing mandatory fields", "start, end", null)
                 } else {
                     UserEnergyReader().getRestingEnergy(
                         activity,
                         start,
                         end) { dataPointValue: DataPointValue?, e: Throwable? ->
-                        if (e == null) {
-                            result.success(dataPointValue?.resultMap())
-                        } else {
+                        e?.let { error ->
+                            sendNativeLog("${UserEnergyReader::class.java.simpleName} | failed: ${error.message}")
                             result.error("failed", e.message, null)
+                        } ?: run {
+                            result.success(dataPointValue?.resultMap())
                         }
                     }
                 }
