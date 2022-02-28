@@ -48,6 +48,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     ActivityAware, EventChannel.StreamHandler {
 
     companion object {
+        const val aggregatedSourceApp = "Aggregated"
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
@@ -201,7 +202,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -217,7 +218,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -233,7 +234,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -249,7 +250,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -265,7 +266,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -281,7 +282,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         activity,
                         start,
                         end) { list: List<DataPointValue>?, e: Throwable? ->
-                        handleNutritionResponse(result = result, list = list, e = e)
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
                     }
                 }
             }
@@ -430,6 +431,22 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
+            "getActiveEnergy" -> {
+            val start = call.argument<Long>("start")
+            val end = call.argument<Long>("end")
+            if (start == null || end == null) {
+                result.error("Missing mandatory fields", "start, end", null)
+            }
+            else {
+                UserEnergyReader().getActiveEnergy(
+                    activity,
+                    start,
+                    end) { list: List<DataPointValue>?, e: Throwable? ->
+                    handleDataPointValueListResponse(result = result, list = list, e = e)
+                }
+            }
+        }
+
             "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 
             "isStepsAuthorized" -> result.success(isStepsAuthorized())
@@ -463,11 +480,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
+            "isActiveEnergyAuthorized" -> result.success(isActiveEnergyAuthorized())
+
             else -> result.notImplemented()
         }
     }
 
-    private fun handleNutritionResponse(result: Result, list: List<DataPointValue>?, e: Throwable?) {
+    private fun handleDataPointValueListResponse(result: Result, list: List<DataPointValue>?, e: Throwable?) {
         if (e != null) {
             sendNativeLog("$TAG | failed: ${e.message}")
             activity?.let { handleGoogleDisconnection(e, it) }
@@ -535,6 +554,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isHeartRateSampleAuthorized(): Boolean {
         return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
+    }
+
+    private fun isActiveEnergyAuthorized(): Boolean {
+        return isAuthorized(FitnessOptions.builder().addDataType(UserEnergyReader.activeEnergyType).build())
     }
 
     private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {

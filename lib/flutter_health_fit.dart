@@ -320,6 +320,7 @@ class HeartRateSample {
 }
 
 class FlutterHealthFit {
+  static const aggregatedSourceProvider = "Aggregated";
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
   static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
   static HealthFitLog? logger;
@@ -619,8 +620,6 @@ class FlutterHealthFit {
 
   /// Checks if permissions needed for active energy have been authorized
   Future<bool> isActiveEnergyAuthorized() async {
-    if (!Platform.isIOS) return false;
-
     try {
       final status = await _channel.invokeMethod("isActiveEnergyAuthorized");
       return status;
@@ -884,8 +883,6 @@ class FlutterHealthFit {
   }
 
   Future<List<DataPointValue>?> getActiveEnergy(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
     try {
       final dataList = await _channel.invokeListMethod<Map>("getActiveEnergy",
           {"start": start, "end": end});
