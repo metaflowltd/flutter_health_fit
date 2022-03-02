@@ -45,7 +45,7 @@ class WorkoutsReader {
             .aggregate(caloriesDataType)
             .aggregate(activityDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByActivitySegment(10, TimeUnit.MINUTES)
+            .bucketByActivitySegment(29, TimeUnit.MINUTES) // It's not a workout if it's less than 29 minutes
             .build()
 
         val outputList = mutableListOf<Map<String, Any>>()
@@ -79,6 +79,7 @@ class WorkoutsReader {
                             caloriesDataPoint?.getValue(caloriesExpendedField)?.asFloat()
                         val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
                             ?: caloriesDataPoint?.dataSource?.appPackageName
+                        val workoutUID = "$workoutActivity-$workoutStart-$workoutEnd"
 
                         Log.i(
                             logTag, "555 - Workout data data:" +
@@ -86,14 +87,14 @@ class WorkoutsReader {
                                     "\n Activity type: $workoutType" +
                                     "\n Session start: ${Date(workoutStart)}" +
                                     "\n Session end: ${Date(workoutEnd)}" +
-                                    "\n Session id: " +
+                                    "\n Session id: $workoutUID" +
                                     "\n Calories spent: $workoutEnergy" +
                                     "\n Reported from: $workoutSource"
                         )
 
                         createWorkoutMap(
                             type = workoutType,
-                            id = "$workoutActivity-$workoutStart-$workoutEnd",
+                            id = workoutUID,
                             start = workoutStart,
                             end = workoutEnd,
                             energy = workoutEnergy,
