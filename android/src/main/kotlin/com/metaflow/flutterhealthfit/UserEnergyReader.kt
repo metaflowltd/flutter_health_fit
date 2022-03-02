@@ -3,6 +3,7 @@ package com.metaflow.flutterhealthfit
 import android.app.Activity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
+import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.request.DataReadRequest
 import java.util.concurrent.TimeUnit
@@ -10,6 +11,8 @@ import java.util.concurrent.TimeUnit
 class UserEnergyReader {
     companion object {
         val restingEnergyType: DataType = DataType.TYPE_BASAL_METABOLIC_RATE
+        val authorizedEnergyOptions: FitnessOptions = FitnessOptions.builder().addDataType(
+            restingEnergyType).build()
     }
 
     fun getRestingEnergy(
@@ -23,8 +26,7 @@ class UserEnergyReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity,
-            NutritionReader.authorizedNutritionOptions)
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedEnergyOptions)
 
         val request = DataReadRequest.Builder()
             .read(restingEnergyType)
