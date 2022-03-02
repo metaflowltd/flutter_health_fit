@@ -240,7 +240,7 @@ class _MyAppState extends State<MyApp> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ElevatedButton(child: Text("Get workouts for fays"), onPressed: _getWorkouts),
+                    ElevatedButton(child: Text("Get workouts for days"), onPressed: _getWorkouts),
                     SizedBox(
                       width: 10,
                     ),
