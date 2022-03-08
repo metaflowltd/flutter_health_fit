@@ -92,19 +92,17 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
             
         case "getStepsBySegment":
-            getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.stepsQuantityType, call: call, convertToInt: true, result: result)
-            
+            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.stepsQuantityType, result: result)
+        
         case "getSleepBySegment":
             getSleepSamples(call: call, result: result)
             
-            
         case "getFlightsBySegment":
-            getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.flightsClimbedQuantityType, call: call, convertToInt: true, result: result)
-            
+            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.flightsClimbedQuantityType, result: result)
             
         case "getCyclingDistanceBySegment":
-            getQuantityBySegment(quantityType: HealthkitReader.sharedInstance.cyclingDistanceQuantityType, call: call, result: result)
-            
+            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.cyclingDistanceQuantityType, result: result)
+
         case "getWaistSizeBySegment":
             guard let args = call.arguments as? [String: Any],
                   let startMillis = args["start"] as? Int,
@@ -646,6 +644,52 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result( nil, error)
             } else {
                 result(rates, nil)
+            }
+        }
+    }
+
+    private func getUserActivity(call: FlutterMethodCall,
+                                 quantityType: HKQuantityType,
+                                 result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let startTime = args["start"] as? TimeInterval,
+              let endTime = args["end"] as? TimeInterval else {
+                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                  return
+              }
+
+        let startMillis = startTime / 1000
+        let endMillis = endTime / 1000
+        HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType,
+                                                            start: startMillis,
+                                                            end: endMillis,
+                                                            duration: 1,
+                                                            unit: .days,
+                                                            options: [.cumulativeSum, .separateBySource]) { _, results, error in
+            if let error = error as NSError? {
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                return
+            }
+
+            guard let results = results else {
+                result(nil)
+                return
+            }
+
+            let startDate = Date(timeIntervalSince1970: startMillis)
+            let endDate = Date(timeIntervalSince1970: endMillis)
+            results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
+                if let sum = statistics.sumQuantity() {
+                    let dataPointValue = DataPointValue(dateInMillis: Int(statistics.startDate.timeIntervalSince1970),
+                                                        value: sum.doubleValue(for: .count()),
+                                                        units: .count,
+                                                        sourceApp: statistics.sources?.first?.bundleIdentifier,
+                                                        additionalInfo: ["endDateInMillis" : Int(statistics.endDate.timeIntervalSince1970)])
+                    result(dataPointValue.resultMap())
+                }
+                else {
+                    result(nil)
+                }
             }
         }
     }
