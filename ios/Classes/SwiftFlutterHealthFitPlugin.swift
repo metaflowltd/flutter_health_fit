@@ -680,11 +680,11 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endDate = Date(timeIntervalSince1970: endMillis)
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
-                    let dataPointValue = DataPointValue(dateInMillis: Int(statistics.startDate.timeIntervalSince1970),
+                    let dataPointValue = DataPointValue(dateInMillis: Int(statistics.startDate.timeIntervalSince1970 * 1000),
                                                         value: sum.doubleValue(for: .count()),
                                                         units: .count,
                                                         sourceApp: statistics.sources?.first?.bundleIdentifier,
-                                                        additionalInfo: ["endDateInMillis" : Int(statistics.endDate.timeIntervalSince1970)])
+                                                        additionalInfo: ["endDateInMillis" : Int(statistics.endDate.timeIntervalSince1970 * 1000)])
                     result(dataPointValue.resultMap())
                 }
                 else {

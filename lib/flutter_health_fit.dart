@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/data_point_value.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
-import 'package:flutter_health_fit/user_acrivity_data_point_value.dart';
+import 'package:flutter_health_fit/user_activity_data_point_value.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
 
 abstract class HealthFitLog {
