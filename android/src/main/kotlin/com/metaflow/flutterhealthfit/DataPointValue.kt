@@ -38,12 +38,8 @@ data class DataPointValue(
             "value" to value,
             "units" to units.value,
         )
-        sourceApp?.let {
-            map["sourceApp"] = it
-        }
-        additionalInfo?.let {
-            map.putAll(it)
-        }
+        sourceApp?.let { map["sourceApp"] = it }
+        additionalInfo?.let { map.putAll(it) }
 
         return map
     }
