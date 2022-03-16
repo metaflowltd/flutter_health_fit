@@ -5,7 +5,6 @@ import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
-import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.data.Field.*
 import com.google.android.gms.fitness.request.DataReadRequest
@@ -15,8 +14,7 @@ class NutritionReader {
     private val logTag = NutritionReader::class.java.simpleName
 
     companion object {
-        val nutritionType: DataType = DataType.TYPE_NUTRITION
-        val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(nutritionType).build()
+        val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(DataType.TYPE_NUTRITION).build()
     }
 
     fun getEnergyConsumed(
@@ -116,19 +114,19 @@ class NutritionReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedNutritionOptions)
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FitnessOptions.builder().addDataType(DataType.TYPE_NUTRITION).build())
 
         val request = DataReadRequest.Builder()
-            .read(nutritionType)
+            .read(DataType.TYPE_NUTRITION)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
 
         Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
-                val nutritionField = nutritionType.fields[0]
+                val nutritionField = DataType.TYPE_NUTRITION.fields[0]
                 val valueMap = mutableMapOf<String,DataPointValue>()
-                val caloriesDataSet = response.getDataSet(nutritionType)
+                val caloriesDataSet = response.getDataSet(DataType.TYPE_NUTRITION)
                 var aggregatedCalories = 0.0F
                 caloriesDataSet.dataPoints.forEach { dataPoint ->
                     val value = dataPoint.getValue(nutritionField).getKeyValue(type)

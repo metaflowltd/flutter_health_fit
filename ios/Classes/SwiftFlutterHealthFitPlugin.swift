@@ -58,16 +58,18 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             result(FlutterError(code: "background call", message: "cannot read from healthkit on background", details:""))
             return
         }
+        
+        HealthkitReader.initializeTypes()
 
     switch call.method {
         case "requestAuthorization":
-            HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
+            HealthkitReader.sharedInstance.requestHealthAuthorization(call: call) { success in
                 result(success)
             }
             
         case "isAuthorized":  // only checks if requested! no telling if authorized!
             if #available(iOS 12.0, *) {
-                HealthkitReader.sharedInstance.getRequestStatusForAuthorization { (status: HKAuthorizationRequestStatus, error: Error?) in
+                HealthkitReader.sharedInstance.getRequestStatusForAuthorization(call: call) { (status: HKAuthorizationRequestStatus, error: Error?) in
                     switch status {
                     case .shouldRequest:
                         result(false)

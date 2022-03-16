@@ -133,147 +133,35 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .other),
     ]
     
-    
-    
     static let sharedInstance = HealthkitReader()
     let healthStore = HKHealthStore()
     
+    var dataTypesDict: [String: Set<HKSampleType>] = [:]
+
+    // Health Data Type Keys
+    let AGGREGATE_STEP_COUNT = "AGGREGATE_STEP_COUNT"
+    let BASIC_HEALTH = "BASIC_HEALTH"
+    let BLOOD_GLUCOSE = "BLOOD_GLUCOSE"
+    let BODY_FAT_PERCENTAGE = "BODY_FAT_PERCENTAGE"
+    let CYCLING = "CYCLING"
+    let FLIGHTS = "FLIGHTS"
+    let HEART_RATE = "HEART_RATE"
+    let HEIGHT = "HEIGHT"
+    let MENSTRUATION = "MENSTRUATION"
+    let NUTRITION = "NUTRITION"
+    let RESTING_ENERGY = "RESTING_ENERGY"
+    let SLEEP = "SLEEP"
+    let STEPS = "STEPS"
+    let WEIGHT = "WEIGHT"
+    let WORKOUT = "WORKOUT"
+
     var hasRequestedHealthKitInThisRun = false
     
     var yesterdayHKData  = [String: String]()
     
     func canWriteWeight()-> Bool{
-        let authStatus = self.healthStore.authorizationStatus(for: HealthkitReader.weightQuantityType())
-        
-        
+        let authStatus = self.healthStore.authorizationStatus(for: HKObjectType.quantityType(forIdentifier: .bodyMass)!)
         return authStatus == .sharingAuthorized
-    }
-    
-    var stepsQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .stepCount)!
-    }
-    
-    var sleepCategoryType: HKCategoryType {
-        return HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
-    }
-    
-    var cyclingDistanceQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .distanceCycling)!
-        
-    }
-    
-    var flightsClimbedQuantityType : HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!
-    }
-    
-    var heartRateQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .heartRate)!
-    }
-    
-    var dietaryEnergyConsumed: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!
-    }
-    
-    var dietaryFiber: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietaryFiber)!
-    }
-    
-    var dietarySugar: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietarySugar)!
-    }
-    
-    var dietaryCarbohydrates: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!
-    }
-    
-    var dietaryFatTotal: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!
-    }
-    
-    var dietaryProtein: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!
-    }
-    
-    @available(iOS 11.0, *)
-    var restingHeartRateQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
-    }
-    
-    @available(iOS 11.0, *)
-    var walkingHeartRateAverageQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .walkingHeartRateAverage)!
-    }
-    
-    @available(iOS 11.0, *)
-    var heartRateVariabilityQuantityType: HKQuantityType {
-        return HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
-    }
-    
-    var waistSizeQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!
-    }
-    
-    var bodyFatPercentageQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
-    }
-
-    var bloodGlucoseQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodGlucose)!
-    }
-
-    var forcedVitalCapacityQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.forcedVitalCapacity)!
-    }
-
-    var peakExpiratoryFlowRateQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.peakExpiratoryFlowRate)!
-    }
-
-    var hrvQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
-    }
-
-    var menstrualFlowCategoryType: HKCategoryType {
-        return HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.menstrualFlow)!
-    }
-
-    var workoutType: HKObjectType{
-        return HKObjectType.workoutType()
-    }
-
-    var activeEnergyQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.activeEnergyBurned)!
-    }
-
-    var restingEnergyQuantityType: HKQuantityType {
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.basalEnergyBurned)!
-    }
-
-    func quantityTypesToRead() -> [HKQuantityType]{
-        return [
-            stepsQuantityType,
-            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-            cyclingDistanceQuantityType,
-            HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!,
-            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            flightsClimbedQuantityType,
-            heartRateQuantityType,
-            dietaryEnergyConsumed,
-            dietaryFiber,
-            dietarySugar,
-            dietaryFatTotal,
-            dietaryProtein,
-            dietaryCarbohydrates,
-            bodyFatPercentageQuantityType,
-            restingHeartRateQuantityType,
-            walkingHeartRateAverageQuantityType,
-            heartRateVariabilityQuantityType,
-            waistSizeQuantityType,
-            hrvQuantityType,
-            bloodGlucoseQuantityType,
-            forcedVitalCapacityQuantityType,
-            peakExpiratoryFlowRateQuantityType,
-        ]
     }
     
     func getHealthDataValue ( type : HKQuantityTypeIdentifier , strUnitType : String , complition: @escaping (((([[String:Any]])?) -> Void)) )
@@ -334,36 +222,97 @@ class HealthkitReader: NSObject {
         }
     }
     
-    var healthKitTypesToRead : Set<HKObjectType> {
-        return Set([
-            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
-            HKCharacteristicType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
-            workoutType,
-            menstrualFlowCategoryType,
-            HealthkitReader.weightQuantityType(),
-            HealthkitReader.heightQuantityType(),
-            sleepCategoryType,
-            activeEnergyQuantityType,
-            restingEnergyQuantityType
-        ] + quantityTypesToRead())
-    }
-    
-    func requestHealthAuthorization(_ completion: @escaping ((Bool) -> ())){
+    func requestHealthAuthorization(call: FlutterMethodCall, completion: @escaping ((Bool) -> ())){
+        guard let arguments = call.arguments as? NSDictionary,
+              let types = arguments["types"] as? Array<String>
+        else {
+           throw PluginError(message: "Invalid Arguments!")
+        }
         self.hasRequestedHealthKitInThisRun = true
         
-        self.healthStore.requestAuthorization(toShare: nil, read: healthKitTypesToRead, completion: { success, error in
-            completion(success)
-        })
+        var typesToRead = Set<HKSampleType>()
+        for key in types {
+            typesToRead.formUnion(dataTypeLookUp(key: key))
+        }
+        
+        if #available(iOS 11.0, *) {
+            self.healthStore.requestAuthorization(toShare: nil, read: typesToRead, completion: { success, error in
+                completion(success)
+            })
+        }
+        else {
+            result(false)// Handle the error here.
+        }
     }
     
     @available(iOS 12.0, *)
-    func getRequestStatusForAuthorization(completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
-        getRequestStatus(for: healthKitTypesToRead, completion: completion)
+    func getRequestStatusForAuthorization(call: FlutterMethodCall, completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
+        guard let arguments = call.arguments as? NSDictionary,
+              let types = arguments["types"] as? Array<String>
+        else {
+           throw PluginError(message: "Invalid Arguments!")
+        }
+        var typesToRead = Set<HKSampleType>()
+        for key in types {
+            typesToRead.insert(dataTypeLookUp(key: key))
+        }
+        getRequestStatus(for: typesToRead, completion: completion)
     }
     
     @available(iOS 12.0, *)
     func getRequestStatus(for types: Set<HKObjectType>, completion: @escaping (HKAuthorizationRequestStatus, Error?) -> Void) {
         healthStore.getRequestStatusForAuthorization(toShare: Set(), read: types, completion: completion)
+    }
+    
+    func dataTypeLookUp(key: String) -> Set<HKSampleType> {
+        guard let dataType_ = dataTypesDict[key] else {
+            return Set(HKSampleType.quantityType(forIdentifier: .bodyMass)!)
+        }
+        return dataType_
+    }
+
+    func initializeTypes() {
+        // Set up iOS 11 specific types (ordinary health data types)
+        if #available(iOS 11.0, *) {
+            dataTypesDict[BASIC_HEALTH] = [
+                HKCharacteristicType.characteristicType(forIdentifier: .biologicalSex)!,
+                HKCharacteristicType.characteristicType(forIdentifier: .dateOfBirth)!,
+                HKSampleType.quantityType(forIdentifier: .bodyMass)!,
+                HKObjectType.quantityType(forIdentifier: .height)!
+            ]
+            dataTypesDict[BLOOD_GLUCOSE] = [HKSampleType.quantityType(forIdentifier: .bloodGlucose)!]
+            dataTypesDict[BODY_FAT_PERCENTAGE] = [HKSampleType.quantityType(forIdentifier: .bodyFatPercentage)!]
+            dataTypesDict[CYCLING] = [HKQuantityType.quantityType(forIdentifier: .distanceCycling)!]
+            dataTypesDict[FLIGHTS] = [HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!]
+            dataTypesDict[HEART_RATE] = [
+                HKSampleType.quantityType(forIdentifier: .heartRate)!,
+                HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!,
+                HKQuantityType.quantityType(forIdentifier: .walkingHeartRateAverage)!,
+                HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+                HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!,
+                HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+                HKObjectType.quantityType(forIdentifier: .peakExpiratoryFlowRate)!
+            ]
+            dataTypesDict[HEIGHT] = [HKObjectType.quantityType(forIdentifier: .height)!]
+            dataTypesDict[MENSTRUATION] = [HKObjectType.categoryType(forIdentifier: .menstrualFlow)!]
+            dataTypesDict[NUTRITION] = [
+                HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!,
+                HKQuantityType.quantityType(forIdentifier: .dietaryFiber)!,
+                HKQuantityType.quantityType(forIdentifier: .dietarySugar)!,
+                HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!,
+                HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!,
+                HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!
+            ]
+            dataTypesDict[RESTING_ENERGY] = [HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!]
+            dataTypesDict[SLEEP] = [HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!]
+            dataTypesDict[STEPS] = [HKSampleType.quantityType(forIdentifier: .stepCount)!]
+            dataTypesDict[WEIGHT] = [HKSampleType.quantityType(forIdentifier: .bodyMass)!]
+            dataTypesDict[WORKOUT] = [
+                HKSampleType.workoutType(),
+                HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
+                HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!
+            ]
+        }
     }
     
     func getSleepSamplesForRange(start: TimeInterval,
@@ -378,7 +327,7 @@ class HealthkitReader: NSObject {
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictEndDate])
         
         let query = HKSampleQuery(
-            sampleType: sleepCategoryType,
+            sampleType: HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
             predicate: predicate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]) {
@@ -581,7 +530,7 @@ class HealthkitReader: NSObject {
         // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
         let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
-        let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
+        let query = HKSampleQuery(sampleType: HKObjectType.quantityType(forIdentifier: .bodyMass)!, predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
             query, results, error in
             
             guard let results = results,
@@ -609,7 +558,7 @@ class HealthkitReader: NSObject {
         // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
         let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
-        let query = HKSampleQuery(sampleType: heartRateQuantityType, predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
+        let query = HKSampleQuery(sampleType: HKSampleType.quantityType(forIdentifier: .heartRate)!, predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
             query, results, error in
             
             guard let results = results, results.count > 0 else {
@@ -703,7 +652,7 @@ class HealthkitReader: NSObject {
     func getTotalStepsInInterval(start: TimeInterval, end: TimeInterval, completion: @escaping (Int?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
-        let sampleType = stepsQuantityType
+        let sampleType = dataTypesDict[STEPS]
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
         
         let query = HKStatisticsQuery(quantityType: sampleType,
@@ -787,7 +736,7 @@ class HealthkitReader: NSObject {
     }
     
     func getStepsSources(completion: @escaping ((Array<String>) -> Void)) {
-        let query = HKSourceQuery.init(sampleType: stepsQuantityType, samplePredicate: nil) { (query, sourcesOrNil, error) in
+        let query = HKSourceQuery.init(sampleType: dataTypesDict[STEPS], samplePredicate: nil) { (query, sourcesOrNil, error) in
             guard let sources = sourcesOrNil else {
                 completion([])
                 return
@@ -861,20 +810,10 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
-    //MARK: - Type Makers
-    
-    class func weightQuantityType() -> HKQuantityType{
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)!
-    }
-    
-    class func heightQuantityType() -> HKQuantityType{
-        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.height)!
-    }
-    
     //MARK: - For Profile
     
     func getLastWeightReading(_ completion:@escaping ( (_ weight:Double?) -> ())){
-        self.mostRecentQuantitySampleOfType(HealthkitReader.weightQuantityType()){
+        self.mostRecentQuantitySampleOfType(HKObjectType.quantityType(forIdentifier: .bodyMass)!){
             (result:HKQuantity?, error:NSError?) in
             if result == nil{
                 completion(nil)
@@ -886,7 +825,7 @@ class HealthkitReader: NSObject {
     }
     
     func getLastHeightReading(_ completion:@escaping ( (_ height:Double?) -> ())){
-        self.mostRecentQuantitySampleOfType(HealthkitReader.heightQuantityType()){
+        self.mostRecentQuantitySampleOfType(HKObjectType.quantityType(forIdentifier: .height)!){
             (result:HKQuantity?, error:NSError?) in
             if result == nil{
                 completion(nil)

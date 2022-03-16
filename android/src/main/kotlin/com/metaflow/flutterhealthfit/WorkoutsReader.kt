@@ -20,10 +20,6 @@ class WorkoutsReader {
     private val stillActivityType: Int = 3
     private val carActivityType: Int = 0
 
-    fun authorizedFitnessOptions(): FitnessOptions {
-        return FitnessOptions.builder().addDataType(workoutDataType).build()
-    }
-
     fun getWorkouts(
         currentActivity: Activity?,
         startTime: Long,

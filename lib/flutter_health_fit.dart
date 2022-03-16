@@ -4,8 +4,11 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_health_fit/data_point_value.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
+import 'package:flutter_health_fit/data_types.dart';
 import 'package:flutter_health_fit/user_activity_data_point_value.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
+
+export 'package:flutter_health_fit/data_types.dart';
 
 abstract class HealthFitLog {
   void info(Object? message, [Object? error, StackTrace? stackTrace]);
@@ -340,9 +343,11 @@ class FlutterHealthFit {
   /// (for example, in an app update).
   ///
   /// On Android this method works as expected.
-  Future<bool> isAuthorized() async {
+  Future<bool> isAuthorized({List<HealthDataType>? types}) async {
     try {
-      final status = await _channel.invokeMethod("isAuthorized");
+      final status = await _channel.invokeMethod("isAuthorized", {
+        "types": types?.map((e) => e.name).toList(),
+      });
       return status;
     } catch (e) {
       _logDeviceError("isAuthorized", e);
@@ -630,9 +635,12 @@ class FlutterHealthFit {
   }
 
   /// Will ask to authorize, prompting the user if necessary.
-  Future<bool> authorize() async {
+  /// Optionally, specify which data types should be authorized. Falls back to requesting all.
+  Future<bool> authorize({List<HealthDataType>? types}) async {
     try {
-      return await _channel.invokeMethod('requestAuthorization');
+      return await _channel.invokeMethod('requestAuthorization', {
+        "types": (types ?? HealthDataType.values).map((e) => e.name).toList(),
+      });
     } catch (e) {
       _logDeviceError("requestAuthorization", e);
       return false;
