@@ -78,6 +78,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             return builder.build()
         }
 
+        @Suppress("unused")
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             if (registrar.activity() == null) return
