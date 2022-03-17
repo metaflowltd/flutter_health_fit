@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit
 class WorkoutsReader {
 
     private val logTag = WorkoutsReader::class.java.simpleName
-    private val workoutDataType: DataType = DataType.TYPE_WORKOUT_EXERCISE
-    private val caloriesDataType: DataType = DataType.TYPE_CALORIES_EXPENDED
     private val unknownActivityType: Int = 4
     private val stillActivityType: Int = 3
     private val carActivityType: Int = 0
@@ -34,7 +32,7 @@ class WorkoutsReader {
         // Build a session read request
         val readRequest = SessionReadRequest.Builder()
             .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-            .read(caloriesDataType)
+            .read(DataType.TYPE_CALORIES_EXPENDED)
             .read(DataType.AGGREGATE_ACTIVITY_SUMMARY)
             .includeActivitySessions()
             .enableServerQueries()
@@ -60,9 +58,9 @@ class WorkoutsReader {
                 for (session in sessions) {
 
                     val caloriesInTotal =
-                        response.getDataSet(session, caloriesDataType)
+                        response.getDataSet(session, DataType.TYPE_CALORIES_EXPENDED)
                             .firstOrNull()?.dataPoints?.map { dataPoint ->
-                                dataPoint.getValue(caloriesDataType.fields[0]).asFloat()
+                                dataPoint.getValue(DataType.TYPE_CALORIES_EXPENDED.fields[0]).asFloat()
                             }?.reduce { acc, value ->
                                 acc + value
                             }
