@@ -554,7 +554,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             CallDataType.SLEEP -> setOf(DataType.TYPE_SLEEP_SEGMENT)
             CallDataType.STEPS -> setOf(DataType.TYPE_STEP_COUNT_DELTA)
             CallDataType.WEIGHT -> setOf(DataType.TYPE_WEIGHT)
-            CallDataType.WORKOUT -> setOf(DataType.TYPE_WORKOUT_EXERCISE)
+            CallDataType.WORKOUT -> setOf(
+                DataType.AGGREGATE_ACTIVITY_SUMMARY,
+                DataType.TYPE_CALORIES_EXPENDED,
+                DataType.TYPE_DISTANCE_DELTA
+            )
         }
     }
 

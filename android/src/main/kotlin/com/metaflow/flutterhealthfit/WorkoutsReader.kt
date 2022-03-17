@@ -4,11 +4,9 @@ import android.app.Activity
 import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
-import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.data.Session
 import com.google.android.gms.fitness.request.SessionReadRequest
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 class WorkoutsReader {
@@ -32,8 +30,9 @@ class WorkoutsReader {
         // Build a session read request
         val readRequest = SessionReadRequest.Builder()
             .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-            .read(DataType.TYPE_CALORIES_EXPENDED)
             .read(DataType.AGGREGATE_ACTIVITY_SUMMARY)
+            .read(DataType.TYPE_CALORIES_EXPENDED)
+            .read(DataType.TYPE_DISTANCE_DELTA)
             .includeActivitySessions()
             .enableServerQueries()
             .readSessionsFromAllApps()
@@ -61,9 +60,13 @@ class WorkoutsReader {
                         response.getDataSet(session, DataType.TYPE_CALORIES_EXPENDED)
                             .firstOrNull()?.dataPoints?.map { dataPoint ->
                                 dataPoint.getValue(DataType.TYPE_CALORIES_EXPENDED.fields[0]).asFloat()
-                            }?.reduce { acc, value ->
-                                acc + value
-                            }
+                            }?.sum()
+
+                    val distanceInTotal =
+                        response.getDataSet(session, DataType.TYPE_DISTANCE_DELTA)
+                            .firstOrNull()?.dataPoints?.map { dataPoint ->
+                                dataPoint.getValue(DataType.TYPE_DISTANCE_DELTA.fields[0]).asFloat()
+                            }?.sum()
 
                     val activityType = session.getActivityTypeByReflection()
 
@@ -74,6 +77,7 @@ class WorkoutsReader {
                                 "\n Session start: $startTime" +
                                 "\n Session end: $endTime" +
                                 "\n Session id: ${session.identifier}" +
+                                "\n Distance: $distanceInTotal" +
                                 "\n Calories spent: $caloriesInTotal" +
                                 "\n Reported from: ${session.appPackageName}"
                     )
@@ -83,6 +87,7 @@ class WorkoutsReader {
                         id = session.identifier,
                         start = session.getStartTime(TimeUnit.MILLISECONDS),
                         end = session.getEndTime(TimeUnit.MILLISECONDS),
+                        distance = distanceInTotal,
                         energy = caloriesInTotal,
                         source = session.appPackageName,
                     ).also { outputList.add(it) }
@@ -112,6 +117,7 @@ class WorkoutsReader {
         id: String,
         start: Long,
         end: Long,
+        distance: Float?,
         energy: Float?,
         source: String?
     ): Map<String, Any> {
@@ -122,6 +128,10 @@ class WorkoutsReader {
             "start" to start,
             "end" to end,
         )
+
+        distance?.let {
+            map["distance"] = it
+        }
 
         energy?.let {
             map["energy"] = it
