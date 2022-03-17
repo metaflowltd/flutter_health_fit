@@ -98,6 +98,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private var logsChannel: EventChannel? = null
     private var deferredResult: Result? = null
     private var activity: Activity? = null
+    // Keep track of which data types are requested to then start recording once permissions are returned
+    private var requestedDataTypes: Set<DataType> = setOf()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         onAttachedToEngine(binding.binaryMessenger)
@@ -612,14 +614,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return when (requestCode) {
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
                 recordDataPointsIfGranted(
-                    resultCode == Activity.RESULT_OK, listOfNotNull(
-                        DataType.TYPE_STEP_COUNT_DELTA,
-                        DataType.TYPE_WEIGHT,
-                        DataType.TYPE_BODY_FAT_PERCENTAGE,
-                        DataType.TYPE_NUTRITION,
-                        HealthDataTypes.TYPE_MENSTRUATION,
-                        if (hasSensorPermissionCompat()) DataType.TYPE_HEART_RATE_BPM else null
-                    ),
+                    resultCode == Activity.RESULT_OK,
+                    requestedDataTypes,
                     deferredResult
                 )
                 deferredResult = null
@@ -631,9 +627,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun recordDataPointsIfGranted(
         isGranted: Boolean,
-        dataPoints: List<DataType>,
+        dataPoints: Set<DataType>,
         result: Result?,
     ) {
+        sendNativeLog(" $TAG | Recording for ${dataPoints.map { it.name }}!")
         if (isGranted) {
             val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
@@ -675,6 +672,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         if (!isAuthorized(types)) {
             sendNativeLog("User has no permissions")
             deferredResult = result
+            requestedDataTypes = types
             activity?.let { activity ->
                 val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
                 sendNativeLog("Calling for google client sign out")
