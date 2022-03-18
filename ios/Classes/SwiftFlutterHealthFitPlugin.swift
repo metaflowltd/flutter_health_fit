@@ -193,9 +193,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let startMillis = args["start"]!.toTimeInterval
             let endMillis = args["end"]!.toTimeInterval
             
-            HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
+            HealthkitReader.sharedInstance.getWorkoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
                 if let error = error as NSError? {
-                    print("[getWokoutsBySegment] got error: \(error)")
+                    print("[getWorkoutsBySegment] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
                 if let workouts = workouts {
@@ -284,21 +284,21 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         
         case "getBloodGlucose":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.bloodGlucoseQuantityType,
+            getQuantity(quantityType: HKSampleType.quantityType(forIdentifier: .bloodGlucose)!,
                         lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.glucoseMillimolesPerLiter),
                         call: call,
                         outputType: .detailedMap,
                         result: result)
         
         case "getForcedVitalCapacity":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.forcedVitalCapacityQuantityType,
+            getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!,
                         lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.liter),
                         call: call,
                         outputType: .detailedMap,
                         result: result)
         
         case "getPeakExpiratoryFlowRate":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.peakExpiratoryFlowRateQuantityType,
+            getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .peakExpiratoryFlowRate)!,
                         lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.literPerMin),
                         call: call,
                         outputType: .detailedMap,

@@ -750,7 +750,7 @@ class HealthkitReader: NSObject {
     }
     
     
-    func getWokoutsBySegment(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
+    func getWorkoutsBySegment(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         
@@ -778,7 +778,7 @@ class HealthkitReader: NSObject {
             (query, samples, error) in
             
             if let error = error {
-                print("Failed to get sleep data, the reason: \(String(describing: error))")
+                print("Failed to get workout data, the reason: \(String(describing: error))")
                 handler(nil, error)
                 return
             }

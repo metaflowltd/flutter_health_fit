@@ -8,6 +8,8 @@ import 'package:flutter_health_fit/data_types.dart';
 import 'package:flutter_health_fit/user_activity_data_point_value.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
 
+import 'blood_glucose_sample.dart';
+
 export 'package:flutter_health_fit/data_types.dart';
 
 abstract class HealthFitLog {
@@ -624,7 +626,7 @@ class FlutterHealthFit {
   /// Checks if permissions needed for active energy have been authorized
   Future<bool> isActiveEnergyAuthorized() async {
     if (!Platform.isIOS) return false;
-    
+
     try {
       final status = await _channel.invokeMethod("isActiveEnergyAuthorized");
       return status;
@@ -786,13 +788,10 @@ class FlutterHealthFit {
     }
   }
 
-  /// This method is for iOS only, Blood Glucose not authorized on Android.
-  Future<List<HealthFitDataPointValue>?> getBloodGlucose(int start, int end) async {
-    if (!Platform.isIOS) return null;
-
+  Future<List<BloodGlucoseSample>?> getBloodGlucose(int start, int end) async {
     try {
-      Map? samples = await _channel.invokeMethod('getBloodGlucose', {"start": start, "end": end});
-      return HFDataPointOutput.fromMap(samples).values;
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>('getBloodGlucose', {"start": start, "end": end});
+      return rawSamples?.map((s) => BloodGlucoseSample.fromMap(Map<String, dynamic>.from(s))).toList();
     } catch (e) {
       _logDeviceError("getBloodGlucose", e);
       return null;
@@ -1098,7 +1097,7 @@ class FlutterHealthFit {
       }
     }
     else {
-      logger?.severe("Error when calleing $method. ${e.toString()}");
+      logger?.severe("Error when calling $method. ${e.toString()}");
     }
   }
 }

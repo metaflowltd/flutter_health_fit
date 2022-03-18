@@ -225,6 +225,21 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
+            "getBloodGlucose" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                VitalsReader().getBloodGlucose(activity, start, end) { values: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(values)
+                    }
+                }
+            }
+
             "getEnergyConsumed" -> {
                 val start = call.argument<Long>("start")
                 val end = call.argument<Long>("end")
@@ -499,6 +514,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isWeightAuthorized" -> result.success(isAuthorized(CallDataType.WEIGHT))
 
+            "isBloodGlucoseAuthorized" -> result.success(isAuthorized(CallDataType.BLOOD_GLUCOSE))
+
             "isHeartRateAuthorized" -> result.success(isAuthorized(CallDataType.HEART_RATE))
 
             "isBodyFatPercentageAuthorized" -> result.success(isAuthorized(CallDataType.BODY_FAT_PERCENTAGE))
@@ -588,6 +605,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isAnyPermissionAuthorized(): Boolean =
         isAuthorized(CallDataType.WEIGHT) ||
+                isAuthorized(CallDataType.BLOOD_GLUCOSE) ||
                 isAuthorized(CallDataType.STEPS) ||
                 isAuthorized(CallDataType.HEART_RATE) ||
                 isAuthorized(CallDataType.SLEEP)
