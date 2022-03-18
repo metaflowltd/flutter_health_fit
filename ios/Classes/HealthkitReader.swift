@@ -142,6 +142,7 @@ class HealthkitReader: NSObject {
     let AGGREGATE_STEP_COUNT = "AGGREGATE_STEP_COUNT"
     let BASIC_HEALTH = "BASIC_HEALTH"
     let BLOOD_GLUCOSE = "BLOOD_GLUCOSE"
+    let BLOOD_PRESSURE = "BLOOD_PRESSURE"
     let BODY_FAT_PERCENTAGE = "BODY_FAT_PERCENTAGE"
     let CYCLING = "CYCLING"
     let FLIGHTS = "FLIGHTS"
@@ -281,6 +282,10 @@ class HealthkitReader: NSObject {
                 HKObjectType.quantityType(forIdentifier: .height)!
             ]
             dataTypesDict[BLOOD_GLUCOSE] = [HKSampleType.quantityType(forIdentifier: .bloodGlucose)!]
+            dataTypesDict[BLOOD_PRESSURE] = [
+                HKSampleType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+                HKSampleType.quantityType(forIdentifier: .bloodPressureDiastolic)!
+            ]
             dataTypesDict[BODY_FAT_PERCENTAGE] = [HKSampleType.quantityType(forIdentifier: .bodyFatPercentage)!]
             dataTypesDict[CYCLING] = [HKQuantityType.quantityType(forIdentifier: .distanceCycling)!]
             dataTypesDict[FLIGHTS] = [HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!]

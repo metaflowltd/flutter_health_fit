@@ -289,6 +289,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                         call: call,
                         outputType: .detailedMap,
                         result: result)
+
+        case "getBloodPressure":
+            getQuantity(quantityType: HKSampleType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.glucoseMillimolesPerLiter),
+                        call: call,
+                        outputType: .detailedMap,
+                        result: result)
         
         case "getForcedVitalCapacity":
             getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!,
@@ -384,6 +391,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "isBloodGlucoseAuthorized":
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.bloodGlucoseQuantityType], result: result)
+
+        case "isBloodPressureAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: reader.dataTypesDict[reader.BLOOD_PRESSURE], result: result)
         
         case "isForcedVitalCapacityAuthorized":
             let reader = HealthkitReader.sharedInstance

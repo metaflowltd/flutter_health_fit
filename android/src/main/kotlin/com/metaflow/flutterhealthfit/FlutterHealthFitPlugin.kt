@@ -39,6 +39,7 @@ enum class CallDataType {
     AGGREGATE_STEP_COUNT,
     BASIC_HEALTH,
     BLOOD_GLUCOSE,
+    BLOOD_PRESSURE,
     BODY_FAT_PERCENTAGE,
     HEART_RATE,
     HEIGHT,
@@ -229,6 +230,21 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
                 VitalsReader().getBloodGlucose(activity, start, end) { values: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(values)
+                    }
+                }
+            }
+
+            "getBloodPressure" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                VitalsReader().getBloodPressure(activity, start, end) { values: List<Map<String, Any>>?, e: Throwable? ->
                     if (e != null) {
                         sendNativeLog("$TAG | failed: ${e.message}")
                         activity?.let { handleGoogleDisconnection(e, it) }
@@ -516,6 +532,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isBloodGlucoseAuthorized" -> result.success(isAuthorized(CallDataType.BLOOD_GLUCOSE))
 
+            "isBloodPressureAuthorized" -> result.success(isAuthorized(CallDataType.BLOOD_PRESSURE))
+
             "isHeartRateAuthorized" -> result.success(isAuthorized(CallDataType.HEART_RATE))
 
             "isBodyFatPercentageAuthorized" -> result.success(isAuthorized(CallDataType.BODY_FAT_PERCENTAGE))
@@ -561,6 +579,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             CallDataType.AGGREGATE_STEP_COUNT -> setOf(DataType.AGGREGATE_STEP_COUNT_DELTA)
             CallDataType.BASIC_HEALTH -> setOf(DataType.TYPE_WEIGHT, DataType.TYPE_HEIGHT)
             CallDataType.BLOOD_GLUCOSE -> setOf(HealthDataTypes.TYPE_BLOOD_GLUCOSE)
+            CallDataType.BLOOD_PRESSURE -> setOf(HealthDataTypes.TYPE_BLOOD_PRESSURE)
             CallDataType.BODY_FAT_PERCENTAGE -> setOf(DataType.TYPE_BODY_FAT_PERCENTAGE)
             CallDataType.CYCLING, CallDataType.FLIGHTS -> setOf()
             CallDataType.HEART_RATE -> setOf(DataType.TYPE_HEART_RATE_BPM)
@@ -606,6 +625,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun isAnyPermissionAuthorized(): Boolean =
         isAuthorized(CallDataType.WEIGHT) ||
                 isAuthorized(CallDataType.BLOOD_GLUCOSE) ||
+                isAuthorized(CallDataType.BLOOD_PRESSURE) ||
                 isAuthorized(CallDataType.STEPS) ||
                 isAuthorized(CallDataType.HEART_RATE) ||
                 isAuthorized(CallDataType.SLEEP)

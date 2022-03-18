@@ -76,4 +76,56 @@ class VitalsReader {
                 result(null, exception)
             }
     }
+
+    fun getBloodPressure(
+        currentActivity: Activity?,
+        startTime: Long,
+        endTime: Long,
+        result: (List<Map<String, Any>>?, Throwable?) -> Unit,
+    ) {
+        if (currentActivity == null) {
+            result(null, null)
+            return
+        }
+
+        val fitnessOptions = FlutterHealthFitPlugin.getFitnessOptions(HealthDataTypes.TYPE_BLOOD_PRESSURE)
+
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, fitnessOptions)
+
+        val request = DataReadRequest.Builder().read(HealthDataTypes.TYPE_BLOOD_PRESSURE)
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .build()
+
+        Fitness.getHistoryClient(currentActivity, gsa)
+            .readData(request)
+            .addOnSuccessListener { response ->
+                val resultList = mutableListOf<Map<String, Any>>()
+                for (dataPoint in response.dataSets.flatMap { it.dataPoints }) {
+                    val dateTime = dataPoint.getTimestamp(TimeUnit.MILLISECONDS)
+                    val systolicValue = dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_PRESSURE.fields[0]).asFloat()
+                    val diastolicValue = dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_PRESSURE.fields[1]).asFloat()
+
+                    Log.i(
+                        logTag, "Blood pressure data:" +
+                                "\n Systolic value: $systolicValue" +
+                                "\n Diastolic value: $diastolicValue" +
+                                "\n Datetime: $dateTime"
+                    )
+
+                    resultList.add(
+                        mapOf(
+                            "dateTime" to dateTime,
+                            "systolic" to systolicValue,
+                            "diastolic" to diastolicValue,
+                            "sourceApp" to dataPoint.originalDataSource.appPackageName,
+                        )
+                    )
+                }
+                result(resultList, null)
+            }
+            .addOnFailureListener { exception ->
+                Log.e(logTag, "Failed to read blood pressure", exception)
+                result(null, exception)
+            }
+    }
 }

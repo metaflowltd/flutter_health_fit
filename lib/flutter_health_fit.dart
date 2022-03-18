@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_health_fit/blood_pressure_sample.dart';
 import 'package:flutter_health_fit/data_point_value.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
 import 'package:flutter_health_fit/data_types.dart';
@@ -463,13 +464,24 @@ class FlutterHealthFit {
     }
   }
 
-  /// Checks if iBloodGlucose permission has been authorized
+  /// Checks if BloodGlucose permission has been authorized
   Future<bool> isBloodGlucoseAuthorized() async {
     try {
       final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
       return status;
     } catch (e) {
       _logDeviceError("isBloodGlucoseAuthorized", e);
+      return false;
+    }
+  }
+
+  /// Checks if BloodPressure permission has been authorized
+  Future<bool> isBloodPressureAuthorized() async {
+    try {
+      final status = await _channel.invokeMethod("isBloodPressureAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isBloodPressureAuthorized", e);
       return false;
     }
   }
@@ -794,6 +806,16 @@ class FlutterHealthFit {
       return rawSamples?.map((s) => BloodGlucoseSample.fromMap(Map<String, dynamic>.from(s))).toList();
     } catch (e) {
       _logDeviceError("getBloodGlucose", e);
+      return null;
+    }
+  }
+
+  Future<List<BloodPressureSample>?> getBloodPressure(int start, int end) async {
+    try {
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>('getBloodPressure', {"start": start, "end": end});
+      return rawSamples?.map((s) => BloodPressureSample.fromMap(Map<String, dynamic>.from(s))).toList();
+    } catch (e) {
+      _logDeviceError("getBloodPressure", e);
       return null;
     }
   }
