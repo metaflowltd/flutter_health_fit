@@ -81,7 +81,7 @@ class WorkoutsReader {
                         val workoutUID = "$workoutActivity-$workoutStart-$workoutEnd"
 
                         Log.i(
-                            logTag, "555 - Workout data data:" +
+                            logTag, "Workout data data:" +
                                     "\n Name: $workoutActivity" +
                                     "\n Activity type: $workoutType" +
                                     "\n Session start: ${Date(workoutStart)}" +
