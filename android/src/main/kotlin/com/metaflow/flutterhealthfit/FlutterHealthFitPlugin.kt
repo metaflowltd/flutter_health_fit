@@ -37,6 +37,7 @@ enum class LumenUnit(val value: String) {
     G("g"),
     KCAL("kCal"),
     PERCENT("percent"),
+    COUNT("count"),
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
@@ -50,7 +51,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         private const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
-        val stepsDataType: DataType = DataType.TYPE_STEP_COUNT_DELTA
         val weightDataType: DataType = DataType.TYPE_WEIGHT
         val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
         val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
@@ -280,28 +280,18 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             }
 
             "getStepsBySegment" -> {
-                val start = call.argument<Long>("start")!!
-                val end = call.argument<Long>("end")!!
-                val duration = call.argument<Int>("duration")!!
-                val unitInt = call.argument<Int>("unit")!!
-                val lumenTimeUnit = LumenTimeUnit.values().first { it.value == unitInt }
-                val timeUnit =
-                    mapOf(
-                        LumenTimeUnit.DAYS to TimeUnit.DAYS,
-                        LumenTimeUnit.MINUTES to TimeUnit.MINUTES
-                    ).getValue(
-                        lumenTimeUnit
-                    )
-                getStepsInRange(
-                    start,
-                    end,
-                    duration,
-                    timeUnit
-                ) { map: Map<Long, Int>?, e: Throwable? ->
-                    if (map != null) {
-                        result.success(map)
-                    } else {
-                        result.error("failed", e?.message, null)
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    result.error("Missing mandatory fields", "start, end", null)
+                } else {
+                    UserActivityReader().getSteps(activity, start, end) { dataPointValue: DataPointValue?, e: Throwable? ->
+                        e?.let { error ->
+                            sendNativeLog("${UserEnergyReader::class.java.simpleName} | failed: ${error.message}")
+                            result.error("failed", e.message, null)
+                        } ?: run {
+                            result.success(dataPointValue?.resultMap())
+                        }
                     }
                 }
             }
@@ -521,7 +511,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isStepsAuthorized(): Boolean {
         return isAuthorized(
-            FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
+            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
                 .build()
         )
     }
@@ -581,7 +571,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
                 recordDataPointsIfGranted(
                     resultCode == Activity.RESULT_OK, listOfNotNull(
-                        stepsDataType,
+                        UserActivityReader.stepsDataType,
                         weightDataType,
                         bodyFatDataType,
                         NutritionReader.nutritionType,
@@ -697,14 +687,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         result: (Map<Long, Int>?, Throwable?) -> Unit,
     ) {
         val fitnessOptions =
-            FitnessOptions.builder().addDataType(stepsDataType).addDataType(aggregatedDataType)
+            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
                 .build()
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val ds = DataSource.Builder()
             .setAppPackageName("com.google.android.gms")
-            .setDataType(stepsDataType)
+            .setDataType(UserActivityReader.stepsDataType)
             .setType(DataSource.TYPE_DERIVED)
             .setStreamName("estimated_steps")
             .build()
@@ -727,7 +717,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     val dp = bucket.dataSets.firstOrNull()?.dataPoints?.firstOrNull()
                     if (dp != null) {
                         val count = dp.getValue(aggregatedDataType.fields[0])
-
                         val startTime = dp.getStartTime(TimeUnit.MILLISECONDS)
                         val startDate = Date(startTime)
                         val endDate = Date(dp.getEndTime(TimeUnit.MILLISECONDS))
@@ -1055,7 +1044,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun getFitnessOptions(): FitnessOptions = FitnessOptions.builder()
-        .addDataType(stepsDataType, FitnessOptions.ACCESS_READ)
+        .addDataType(UserActivityReader.stepsDataType, FitnessOptions.ACCESS_READ)
         .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
         .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
         .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)

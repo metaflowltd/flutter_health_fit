@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_health_fit/data_point_unit.dart';
 import 'package:flutter_health_fit/data_point_value.dart';
 import 'package:flutter_health_fit/data_pointd_output.dart';
+import 'package:flutter_health_fit/user_activity_data_point_value.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
 
 abstract class HealthFitLog {
@@ -817,18 +817,15 @@ class FlutterHealthFit {
     }
   }
 
-  Future<Map<DateTime, int>> getStepsBySegment(int start, int end, int duration, TimeUnit unit) async {
+  Future<UserActivityDataPointValue?> getStepsBySegment(int start, int end) async {
     try {
-      Map stepsByTimestamp = await _channel
-          .invokeMethod("getStepsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-      return stepsByTimestamp.cast<int, int>().map((int key, int value) {
-        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-        return MapEntry(dateTime, value);
-      });
+      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getStepsBySegment",
+          {"start": start, "end": end});
+      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      return dataPointValue;
     } catch (e) {
       _logDeviceError("getStepsBySegment", e);
-      return {};
+      return null;
     }
   }
 
@@ -842,33 +839,27 @@ class FlutterHealthFit {
     }
   }
 
-  Future<Map<DateTime, int>> getFlightsBySegment(int start, int end, int duration, TimeUnit unit) async {
+  Future<UserActivityDataPointValue?> getFlightsBySegment(int start, int end) async {
     try {
-      Map flightsByTimestamp = await _channel
-          .invokeMethod("getFlightsBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-      return flightsByTimestamp.cast<int, int>().map((int key, int value) {
-        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-        return MapEntry(dateTime, value);
-      });
+      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getFlightsBySegment",
+          {"start": start, "end": end});
+      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      return dataPointValue;
     } catch (e) {
       _logDeviceError("getFlightsBySegment", e);
-      return {};
+      return null;
     }
   }
 
-  Future<Map<DateTime, double>> getCyclingBySegment(int start, int end, int duration, TimeUnit unit) async {
+  Future<UserActivityDataPointValue?> getCyclingBySegment(int start, int end) async {
     try {
-      Map cyclingByTimestamp = await _channel.invokeMethod(
-          "getCyclingDistanceBySegment", {"start": start, "end": end, "duration": duration, "unit": unit.index});
-      return cyclingByTimestamp.cast<int, double>().map((int key, double value) {
-        var dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day); // remove hours, minutes, seconds
-        return MapEntry(dateTime, value);
-      });
+      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getCyclingDistanceBySegment",
+          {"start": start, "end": end});
+      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      return dataPointValue;
     } catch (e) {
       _logDeviceError("getCyclingDistanceBySegment", e);
-      return {};
+      return null;
     }
   }
 
