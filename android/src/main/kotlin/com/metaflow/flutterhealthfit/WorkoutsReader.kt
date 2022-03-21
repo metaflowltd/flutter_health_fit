@@ -44,7 +44,7 @@ class WorkoutsReader {
             .aggregate(caloriesDataType)
             .aggregate(activityDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByActivitySegment(29, TimeUnit.MINUTES) // It's not a workout if it's less than 29 minutes
+            .bucketByActivitySegment(20, TimeUnit.MINUTES) // It's not a workout if it's less than 20 minutes
             .build()
 
         val outputList = mutableListOf<Map<String, Any>>()
@@ -52,9 +52,7 @@ class WorkoutsReader {
         Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
                 val caloriesExpendedField = caloriesDataType.fields[0]
-                val activityField = activitySummaryDataType.fields.first {
-                    it.name == "activity"
-                }
+                val activityField = activitySummaryDataType.fields[0]
 
                 response.buckets.forEach {
                     val activityDataPoint =
