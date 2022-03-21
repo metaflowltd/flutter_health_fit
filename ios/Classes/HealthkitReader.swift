@@ -57,6 +57,8 @@ enum LMNUnit: String {
             return HKUnit.liter().unitDivided(by: HKUnit.minute())
         case .kCal:
             return .kilocalorie()
+        case .mmHg:
+            return HKUnit.millimeterOfMercury()
         }
     }
 }
@@ -814,6 +816,52 @@ class HealthkitReader: NSObject {
                     ]
                 }
                 handler(map, nil)
+            }
+        }
+        healthStore.execute(query)
+    }
+    
+    func getBloodPressureReadings(start: TimeInterval, end: TimeInterval, completion: @escaping (([Any]?, Error?) -> Swift.Void)) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate,
+                                                    end: endDate,
+                                                    options: [])
+        
+        guard let type = HKQuantityType.correlationType(forIdentifier: HKCorrelationTypeIdentifier.bloodPressure),
+            let systolicType = HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodPressureSystolic),
+            let diastolicType = HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodPressureDiastolic) else {
+
+                return
+        }
+
+        let query = HKSampleQuery(
+            sampleType: type,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: nil
+        ) {
+            (query, results, error) in
+            
+            if let readings = results as? [HKCorrelation] {
+                let map = readings.map { reading -> [String: Any] in
+                    let systolicData = reading.objects(for: systolicType).first as! HKQuantitySample
+                    let diastolicData = reading.objects(for: diastolicType).first as! HKQuantitySample
+
+                    let dateTime = Int(systolicData.startDate.timeIntervalSince1970 * 1000)
+                    let systolicValue = systolicData.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
+                    let diastolicValue = diastolicData.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
+                    let sourceApp = systolicData.sourceRevision.source.bundleIdentifier
+
+                    return [
+                        "dateTime": dateTime,
+                        "systolic": systolicValue,
+                        "diastolic": diastolicValue,
+                        "sourceApp": sourceApp,
+                    ]
+                }
+                completion(map, nil)
             }
         }
         healthStore.execute(query)

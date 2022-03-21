@@ -283,11 +283,21 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                         result: result)
 
         case "getBloodPressure":
-            getQuantity(quantityType: HKSampleType.quantityType(forIdentifier: .bloodPressureSystolic)!,
-                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.mmHg),
-                        call: call,
-                        outputType: .detailedMap,
-                        result: result)
+            let args = call.arguments as! [String: Int]
+            let startMillis = args["start"]!.toTimeInterval
+            let endMillis = args["end"]!.toTimeInterval
+            
+            reader.getBloodPressureReadings(start: startMillis, end: endMillis)  { (readings, error) in
+                if let error = error as NSError? {
+                    print("[getBloodPressure] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+                if let readings = readings {
+                    result(readings)
+                } else {
+                    print("No blood pressure readings found")
+                }
+            }
         
         case "getForcedVitalCapacity":
             getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!,
