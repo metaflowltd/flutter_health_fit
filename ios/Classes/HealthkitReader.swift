@@ -821,6 +821,54 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
+    func getBloodGlucoseReadings(start: TimeInterval, end: TimeInterval, completion: @escaping (([Any]?, Error?) -> Swift.Void)) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate,
+                                                    end: endDate,
+                                                    options: [])
+
+        let query = HKSampleQuery(
+            sampleType: HKObjectType.quantityType(forIdentifier: .bloodGlucose)!,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: nil
+        ) {
+            (query, results, error) in
+            
+            if let readings = results {
+                let map = readings.map { item -> [String: Any] in
+                    let reading = item as! HKQuantitySample
+
+                    let dateTime = Int(reading.startDate.timeIntervalSince1970 * 1000)
+                    let value = reading.quantity.doubleValue(for: LMNUnit.glucoseMillimolesPerLiter.hkUnit())
+                    let mealTimeInt = reading.metadata?[HKMetadataKeyBloodGlucoseMealTime] as? Int
+                    let readingType = {
+                        switch (mealTimeInt) {
+                        case .some(1):
+                            return "BEFORE_MEAL"
+                        case .some(2):
+                            return "AFTER_MEAL"
+                        default:
+                            return "GENERAL"
+                        }
+                    }() as String
+                    let sourceApp = reading.sourceRevision.source.bundleIdentifier
+
+                    return [
+                        "dateTime": dateTime,
+                        "value": value,
+                        "readingType": readingType,
+                        "sourceApp": sourceApp,
+                    ]
+                }
+                completion(map, nil)
+            }
+        }
+        healthStore.execute(query)
+    }
+    
     func getBloodPressureReadings(start: TimeInterval, end: TimeInterval, completion: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
