@@ -19,7 +19,7 @@ class UserEnergyReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(DataType.TYPE_NUTRITION))
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(DataType.TYPE_BASAL_METABOLIC_RATE))
 
         val request = DataReadRequest.Builder()
             .read(DataType.TYPE_BASAL_METABOLIC_RATE)

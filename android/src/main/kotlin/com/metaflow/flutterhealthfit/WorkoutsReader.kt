@@ -5,11 +5,18 @@ import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.data.DataType
-import com.google.android.gms.fitness.data.Session
-import com.google.android.gms.fitness.request.SessionReadRequest
+import com.google.android.gms.fitness.request.DataReadRequest
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class WorkoutsReader {
+    companion object {
+        private val activityDataType = DataType.TYPE_ACTIVITY_SEGMENT
+        private val workoutDataType = DataType.TYPE_WORKOUT_EXERCISE
+        private val caloriesDataType = DataType.TYPE_CALORIES_EXPENDED
+        private val distanceDataType = DataType.TYPE_DISTANCE_DELTA
+        private val activitySummaryDataType = DataType.AGGREGATE_ACTIVITY_SUMMARY
+    }
 
     private val logTag = WorkoutsReader::class.java.simpleName
     private val unknownActivityType: Int = 4
@@ -20,77 +27,83 @@ class WorkoutsReader {
         currentActivity: Activity?,
         startTime: Long,
         endTime: Long,
-        result: (List<Map<String, Any>>?, Throwable?) -> Unit
+        result: (List<Map<String, Any>>?, Throwable?) -> Unit,
     ) {
         if (currentActivity == null) {
             result(null, null)
             return
         }
 
-        // Build a session read request
-        val readRequest = SessionReadRequest.Builder()
-            .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-            .read(DataType.AGGREGATE_ACTIVITY_SUMMARY)
-            .read(DataType.TYPE_CALORIES_EXPENDED)
-            .read(DataType.TYPE_DISTANCE_DELTA)
-            .includeActivitySessions()
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(workoutDataType))
+
+        val request = DataReadRequest.Builder()
+            .read(workoutDataType)
             .enableServerQueries()
-            .readSessionsFromAllApps()
+            .aggregate(caloriesDataType)
+            .aggregate(distanceDataType)
+            .aggregate(activityDataType)
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .bucketByActivitySegment(20, TimeUnit.MINUTES) // It's not a workout if it's less than 20 minutes
             .build()
 
-        val account = GoogleSignIn.getLastSignedInAccount(currentActivity) ?: return
+        val outputList = mutableListOf<Map<String, Any>>()
 
-        Fitness.getSessionsClient(currentActivity, account)
-            .readSession(readRequest)
+        Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
+                val caloriesExpendedField = caloriesDataType.fields[0]
+                val distanceDeltaField = distanceDataType.fields[0]
+                val activityField = activitySummaryDataType.fields[0]
 
-                val sessions = response.sessions.filter {
-                    it.getActivityTypeByReflection() !in listOf(
-                        unknownActivityType,
-                        stillActivityType,
-                        carActivityType
-                    )
-                }
+                response.buckets.forEach {
+                    val activityDataPoint =
+                        it.getDataSet(activitySummaryDataType)?.dataPoints?.lastOrNull()
+                    val workoutType =
+                        activityDataPoint?.getValue(activityField)?.asInt() ?: unknownActivityType
 
-                val outputList = mutableListOf<Map<String, Any>>()
+                    if (workoutType !in listOf(
+                            unknownActivityType,
+                            stillActivityType,
+                            carActivityType
+                        )
+                    ) {
+                        val caloriesDataPoint =
+                            it.getDataSet(caloriesDataType)?.dataPoints?.lastOrNull()
+                        val distanceDataPoint =
+                            it.getDataSet(distanceDataType)?.dataPoints?.lastOrNull()
 
-                for (session in sessions) {
+                        val workoutActivity = it.activity
+                        val workoutStart = it.getStartTime(TimeUnit.MILLISECONDS)
+                        val workoutEnd = it.getEndTime(TimeUnit.MILLISECONDS)
+                        val workoutDistance =
+                            distanceDataPoint?.getValue(distanceDeltaField)?.asFloat()
+                        val workoutEnergy =
+                            caloriesDataPoint?.getValue(caloriesExpendedField)?.asFloat()
+                        val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
+                            ?: caloriesDataPoint?.dataSource?.appPackageName
+                        val workoutUID = "$workoutActivity-$workoutStart-$workoutEnd"
 
-                    val caloriesInTotal =
-                        response.getDataSet(session, DataType.TYPE_CALORIES_EXPENDED)
-                            .firstOrNull()?.dataPoints?.map { dataPoint ->
-                                dataPoint.getValue(DataType.TYPE_CALORIES_EXPENDED.fields[0]).asFloat()
-                            }?.sum()
+                        Log.i(
+                            logTag, "Workout data data:" +
+                                    "\n Name: $workoutActivity" +
+                                    "\n Activity type: $workoutType" +
+                                    "\n Session start: ${Date(workoutStart)}" +
+                                    "\n Session end: ${Date(workoutEnd)}" +
+                                    "\n Session id: $workoutUID" +
+                                    "\n Distance: $workoutDistance" +
+                                    "\n Calories spent: $workoutEnergy" +
+                                    "\n Reported from: $workoutSource"
+                        )
 
-                    val distanceInTotal =
-                        response.getDataSet(session, DataType.TYPE_DISTANCE_DELTA)
-                            .firstOrNull()?.dataPoints?.map { dataPoint ->
-                                dataPoint.getValue(DataType.TYPE_DISTANCE_DELTA.fields[0]).asFloat()
-                            }?.sum()
-
-                    val activityType = session.getActivityTypeByReflection()
-
-                    Log.i(
-                        logTag, "Session data:" +
-                                "\n Name: ${session.activity}" +
-                                "\n Activity type: $activityType" +
-                                "\n Session start: $startTime" +
-                                "\n Session end: $endTime" +
-                                "\n Session id: ${session.identifier}" +
-                                "\n Distance: $distanceInTotal" +
-                                "\n Calories spent: $caloriesInTotal" +
-                                "\n Reported from: ${session.appPackageName}"
-                    )
-
-                    createWorkoutMap(
-                        type = activityType,
-                        id = session.identifier,
-                        start = session.getStartTime(TimeUnit.MILLISECONDS),
-                        end = session.getEndTime(TimeUnit.MILLISECONDS),
-                        distance = distanceInTotal,
-                        energy = caloriesInTotal,
-                        source = session.appPackageName,
-                    ).also { outputList.add(it) }
+                        createWorkoutMap(
+                            type = workoutType,
+                            id = workoutUID,
+                            start = workoutStart,
+                            end = workoutEnd,
+                            distance = workoutDistance,
+                            energy = workoutEnergy,
+                            source = workoutSource,
+                        ).also { workout -> outputList.add(workout) }
+                    }
                 }
 
                 if (outputList.isEmpty()) {
@@ -100,16 +113,8 @@ class WorkoutsReader {
                 }
             }
             .addOnFailureListener { e ->
-                Log.e(logTag, "Failed to read session", e)
                 result(null, e)
             }
-    }
-
-    private fun Session.getActivityTypeByReflection(): Int {
-        return javaClass.getDeclaredField("zzlg").let {
-            it.isAccessible = true
-            return@let it.getInt(this)
-        }
     }
 
     private fun createWorkoutMap(
@@ -119,7 +124,7 @@ class WorkoutsReader {
         end: Long,
         distance: Float?,
         energy: Float?,
-        source: String?
+        source: String?,
     ): Map<String, Any> {
 
         val map = mutableMapOf(
