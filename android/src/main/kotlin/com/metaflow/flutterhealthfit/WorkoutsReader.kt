@@ -6,92 +6,98 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataType
-import com.google.android.gms.fitness.data.Session
-import com.google.android.gms.fitness.request.SessionReadRequest
+import com.google.android.gms.fitness.request.DataReadRequest
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 class WorkoutsReader {
+    companion object {
+        private val activityDataType = DataType.TYPE_ACTIVITY_SEGMENT
+        private val workoutDataType = DataType.TYPE_WORKOUT_EXERCISE
+        private val caloriesDataType = DataType.TYPE_CALORIES_EXPENDED
+        private val activitySummaryDataType = DataType.AGGREGATE_ACTIVITY_SUMMARY
+        val authorizedFitnessOptions: FitnessOptions =
+            FitnessOptions.builder().addDataType(workoutDataType).build()
+    }
 
     private val logTag = WorkoutsReader::class.java.simpleName
-    private val workoutDataType: DataType = DataType.TYPE_WORKOUT_EXERCISE
-    private val caloriesDataType: DataType = DataType.TYPE_CALORIES_EXPENDED
     private val unknownActivityType: Int = 4
     private val stillActivityType: Int = 3
     private val carActivityType: Int = 0
-
-    fun authorizedFitnessOptions(): FitnessOptions {
-        return FitnessOptions.builder().addDataType(workoutDataType).build()
-    }
 
     fun getWorkouts(
         currentActivity: Activity?,
         startTime: Long,
         endTime: Long,
-        result: (List<Map<String, Any>>?, Throwable?) -> Unit
+        result: (List<Map<String, Any>>?, Throwable?) -> Unit,
     ) {
         if (currentActivity == null) {
             result(null, null)
             return
         }
 
-        // Build a session read request
-        val readRequest = SessionReadRequest.Builder()
-            .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-            .read(caloriesDataType)
-            .read(DataType.AGGREGATE_ACTIVITY_SUMMARY)
-            .includeActivitySessions()
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedFitnessOptions)
+
+        val request = DataReadRequest.Builder()
+            .read(workoutDataType)
             .enableServerQueries()
-            .readSessionsFromAllApps()
+            .aggregate(caloriesDataType)
+            .aggregate(activityDataType)
+            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+            .bucketByActivitySegment(20, TimeUnit.MINUTES) // It's not a workout if it's less than 20 minutes
             .build()
 
-        val account = GoogleSignIn.getLastSignedInAccount(currentActivity) ?: return
+        val outputList = mutableListOf<Map<String, Any>>()
 
-        Fitness.getSessionsClient(currentActivity, account)
-            .readSession(readRequest)
+        Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
+                val caloriesExpendedField = caloriesDataType.fields[0]
+                val activityField = activitySummaryDataType.fields[0]
 
-                val sessions = response.sessions.filter {
-                    it.getActivityTypeByReflection() !in listOf(
-                        unknownActivityType,
-                        stillActivityType,
-                        carActivityType
-                    )
-                }
+                response.buckets.forEach {
+                    val activityDataPoint =
+                        it.getDataSet(activitySummaryDataType)?.dataPoints?.lastOrNull()
+                    val workoutType =
+                        activityDataPoint?.getValue(activityField)?.asInt() ?: unknownActivityType
 
-                val outputList = mutableListOf<Map<String, Any>>()
+                    if (workoutType !in listOf(
+                            unknownActivityType,
+                            stillActivityType,
+                            carActivityType
+                        )
+                    ) {
+                        val caloriesDataPoint =
+                            it.getDataSet(caloriesDataType)?.dataPoints?.lastOrNull()
 
-                for (session in sessions) {
+                        val workoutActivity = it.activity
+                        val workoutStart = it.getStartTime(TimeUnit.MILLISECONDS)
+                        val workoutEnd = it.getEndTime(TimeUnit.MILLISECONDS)
+                        val workoutEnergy =
+                            caloriesDataPoint?.getValue(caloriesExpendedField)?.asFloat()
+                        val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
+                            ?: caloriesDataPoint?.dataSource?.appPackageName
+                        val workoutUID = "$workoutActivity-$workoutStart-$workoutEnd"
 
-                    val caloriesInTotal =
-                        response.getDataSet(session, caloriesDataType)
-                            .firstOrNull()?.dataPoints?.map { dataPoint ->
-                                dataPoint.getValue(caloriesDataType.fields[0]).asFloat()
-                            }?.reduce { acc, value ->
-                                acc + value
-                            }
+                        Log.i(
+                            logTag, "Workout data data:" +
+                                    "\n Name: $workoutActivity" +
+                                    "\n Activity type: $workoutType" +
+                                    "\n Session start: ${Date(workoutStart)}" +
+                                    "\n Session end: ${Date(workoutEnd)}" +
+                                    "\n Session id: $workoutUID" +
+                                    "\n Calories spent: $workoutEnergy" +
+                                    "\n Reported from: $workoutSource"
+                        )
 
-                    val activityType = session.getActivityTypeByReflection()
-
-                    Log.i(
-                        logTag, "Session data:" +
-                                "\n Name: ${session.activity}" +
-                                "\n Activity type: $activityType" +
-                                "\n Session start: $startTime" +
-                                "\n Session end: $endTime" +
-                                "\n Session id: ${session.identifier}" +
-                                "\n Calories spent: $caloriesInTotal" +
-                                "\n Reported from: ${session.appPackageName}"
-                    )
-
-                    createWorkoutMap(
-                        type = activityType,
-                        id = session.identifier,
-                        start = session.getStartTime(TimeUnit.MILLISECONDS),
-                        end = session.getEndTime(TimeUnit.MILLISECONDS),
-                        energy = caloriesInTotal,
-                        source = session.appPackageName,
-                    ).also { outputList.add(it) }
+                        createWorkoutMap(
+                            type = workoutType,
+                            id = workoutUID,
+                            start = workoutStart,
+                            end = workoutEnd,
+                            energy = workoutEnergy,
+                            source = workoutSource,
+                        ).also { workout -> outputList.add(workout) }
+                    }
                 }
 
                 if (outputList.isEmpty()) {
@@ -101,16 +107,8 @@ class WorkoutsReader {
                 }
             }
             .addOnFailureListener { e ->
-                Log.e(logTag, "Failed to read session", e)
                 result(null, e)
             }
-    }
-
-    private fun Session.getActivityTypeByReflection(): Int {
-        return javaClass.getDeclaredField("zzlg").let {
-            it.isAccessible = true
-            return@let it.getInt(this)
-        }
     }
 
     private fun createWorkoutMap(
@@ -119,7 +117,7 @@ class WorkoutsReader {
         start: Long,
         end: Long,
         energy: Float?,
-        source: String?
+        source: String?,
     ): Map<String, Any> {
 
         val map = mutableMapOf(

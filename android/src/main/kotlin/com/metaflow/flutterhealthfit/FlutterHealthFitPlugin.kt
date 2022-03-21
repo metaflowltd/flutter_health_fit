@@ -535,7 +535,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun isWorkoutsAuthorized(): Boolean {
-        return isAuthorized(WorkoutsReader().authorizedFitnessOptions())
+        return isAuthorized(WorkoutsReader.authorizedFitnessOptions)
     }
 
     private fun isMenstrualCycleAuthorized(): Boolean {
@@ -547,8 +547,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun isRestingEnergyAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(UserEnergyReader.restingEnergyType)
-            .build())
+        return isAuthorized(UserEnergyReader.authorizedEnergyOptions)
     }
 
     private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {
