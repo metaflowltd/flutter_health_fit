@@ -24,6 +24,7 @@ class WorkoutsReader {
     private val unknownActivityType: Int = 4
     private val stillActivityType: Int = 3
     private val carActivityType: Int = 0
+    private val walkingActivityType: Int = 7
 
     fun getWorkouts(
         currentActivity: Activity?,
@@ -44,7 +45,7 @@ class WorkoutsReader {
             .aggregate(caloriesDataType)
             .aggregate(activityDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketByActivitySegment(20, TimeUnit.MINUTES) // It's not a workout if it's less than 20 minutes
+            .bucketByActivitySegment(1, TimeUnit.MINUTES)
             .build()
 
         val outputList = mutableListOf<Map<String, Any>>()
@@ -77,9 +78,10 @@ class WorkoutsReader {
                         val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
                             ?: caloriesDataPoint?.dataSource?.appPackageName
                         val workoutUID = "$workoutActivity-$workoutStart-$workoutEnd"
-
+                        val durationInMinutes = (workoutEnd - workoutStart) / 60000
                         Log.i(
                             logTag, "Workout data data:" +
+                                    "\n duration: $durationInMinutes" +
                                     "\n Name: $workoutActivity" +
                                     "\n Activity type: $workoutType" +
                                     "\n Session start: ${Date(workoutStart)}" +
@@ -88,15 +90,21 @@ class WorkoutsReader {
                                     "\n Calories spent: $workoutEnergy" +
                                     "\n Reported from: $workoutSource"
                         )
-
-                        createWorkoutMap(
-                            type = workoutType,
-                            id = workoutUID,
-                            start = workoutStart,
-                            end = workoutEnd,
-                            energy = workoutEnergy,
-                            source = workoutSource,
-                        ).also { workout -> outputList.add(workout) }
+                        if (durationInMinutes > 15 || workoutType != walkingActivityType) {
+                            // we don't want to log walks that are less than 15 minutes
+                            Log.i(logTag, "logged workout")
+                            createWorkoutMap(
+                                type = workoutType,
+                                id = workoutUID,
+                                start = workoutStart,
+                                end = workoutEnd,
+                                energy = workoutEnergy,
+                                source = workoutSource,
+                            ).also { workout -> outputList.add(workout) }
+                        }
+                        else {
+                            Log.i(logTag, "workout was not logged")
+                        }
                     }
                 }
 
