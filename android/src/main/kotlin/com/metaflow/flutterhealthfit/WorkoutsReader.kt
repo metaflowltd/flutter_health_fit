@@ -25,6 +25,7 @@ class WorkoutsReader {
     private val stillActivityType: Int = 3
     private val carActivityType: Int = 0
     private val walkingActivityType: Int = 7
+    private val runningActivityType: Int = 8
 
     fun getWorkouts(
         currentActivity: Activity?,
@@ -90,8 +91,9 @@ class WorkoutsReader {
                                     "\n Calories spent: $workoutEnergy" +
                                     "\n Reported from: $workoutSource"
                         )
-                        if (durationInMinutes > 15 || workoutType != walkingActivityType) {
-                            // we don't want to log walks that are less than 15 minutes
+                        if (durationInMinutes > 15 ||
+                            (workoutType != walkingActivityType && workoutType != runningActivityType) ) {
+                            // we don't want to log walks and runs that are less than 15 minutes
                             Log.i(logTag, "logged workout")
                             createWorkoutMap(
                                 type = workoutType,
