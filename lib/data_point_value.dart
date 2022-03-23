@@ -26,7 +26,6 @@ class DataPointValue {
     final value = map["value"] as double?;
     final units =  DataPointUnitUtils.getUnit(fromString: map["units"] as String?);
     final sourceApp = map["sourceApp"] as String?;
-    final endDateInMillis = map["endDateInMillis"] as int?;
 
     if (value == null || units == null) {
       return null;
