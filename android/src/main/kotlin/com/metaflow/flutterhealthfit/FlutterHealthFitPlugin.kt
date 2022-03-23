@@ -205,12 +205,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "getMenstrualDataBySegment" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
-                getMenstruationData(start, end) { map: Map<Long, Int>?, e: Throwable? ->
-                    if (e != null) {
-                        result.error("failed to get monthly cycle data", e.message, null)
-                    } else {
-                        result.success(map)
-                    }
+                getMenstruationData(start, end) { list: List<DataPointValue>?, e: Throwable? ->
+                    handleDataPointValueListResponse(result = result, list = list, e = e)
                 }
             }
 
@@ -1013,7 +1009,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun getMenstruationData(
         startTime: Long,
         endTime: Long,
-        result: (Map<Long, Int>?, Throwable?) -> Unit,
+        result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
         val fitnessOptions = getFitnessOptions(HealthDataTypes.TYPE_MENSTRUATION)
 
@@ -1029,22 +1025,28 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         Fitness.getHistoryClient(activity, gsa)
             .readData(request)
             .addOnSuccessListener { response ->
-                val resultMap = mutableMapOf<Long, Int>()
+                val resultList = mutableListOf<DataPointValue>()
                 for (dataSet in response.buckets.flatMap { it.dataSets }) {
                     dataSet
                         .dataPoints
                         .lastOrNull()
                         ?.let {
                             try {
-                                resultMap[it.getTimestamp(TimeUnit.MILLISECONDS)] =
-                                    it.getValue(HealthDataTypes.TYPE_MENSTRUATION.fields[0]).asInt()
+                                resultList.add(
+                                    DataPointValue(
+                                        dateInMillis = it.getTimestamp(TimeUnit.MILLISECONDS),
+                                        value = it.getValue(HealthDataTypes.TYPE_MENSTRUATION.fields[0]).asInt().toFloat(),
+                                        units = LumenUnit.COUNT,
+                                        sourceApp = it.originalDataSource.appPackageName
+                                    )
+                                )
                             } catch (e: Exception) {
                                 sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
                                 handleGoogleDisconnection(e, activity)
                             }
                         }
                 }
-                result(resultMap, null)
+                result(resultList, null)
             }
             .addOnFailureListener { exception ->
                 result(null, exception)

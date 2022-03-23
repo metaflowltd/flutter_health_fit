@@ -480,8 +480,8 @@ class HealthkitReader: NSObject {
     func getCategory(categoryType: HKCategoryType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     completion: @escaping ([Int: Int]?, Error?) -> Void) {
-
+                     completion: @escaping ([DataPointValue]?, Error?) -> Void) {
+        
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let sortByTime = NSSortDescriptor(key:HKSampleSortIdentifierEndDate, ascending:false)
@@ -500,9 +500,9 @@ class HealthkitReader: NSObject {
                 completion(nil, error)
                 return
             }
-
-            let dict = results.reduce([Int:Int]()) { (dict, result) -> [Int:Int] in
-                var dict = dict
+            
+            let list = results.reduce([DataPointValue]()) { (list, result) -> [DataPointValue] in
+                var list = list
                 let time = Int(result.startDate.timeIntervalSince1970 * 1000)
                 let value = (result as? HKCategorySample)?.value ?? HKCategoryValueMenstrualFlow.unspecified.rawValue
 
@@ -523,11 +523,17 @@ class HealthkitReader: NSObject {
                         flowValue = 0
                 }
 
-                dict[time] = flowValue
-                return dict
-            }
+                list.append(DataPointValue(
+                    dateInMillis: time,
+                    value: Double(flowValue),
+                    units: .count,
+                    sourceApp: (result as? HKCategorySample)?.sourceRevision.source.bundleIdentifier,
+                    additionalInfo: nil))
 
-            completion(dict, nil)
+                return list
+            }
+            
+            completion(list, nil)
         })
         healthStore.execute(query)
     }
@@ -824,7 +830,7 @@ class HealthkitReader: NSObject {
     func getBloodGlucoseReadings(start: TimeInterval, end: TimeInterval, completion: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
-        
+
         let predicate = HKQuery.predicateForSamples(withStart: startDate,
                                                     end: endDate,
                                                     options: [])
@@ -836,7 +842,7 @@ class HealthkitReader: NSObject {
             sortDescriptors: nil
         ) {
             (query, results, error) in
-            
+
             if let readings = results {
                 let map = readings.map { item -> [String: Any] in
                     let reading = item as! HKQuantitySample
@@ -868,15 +874,15 @@ class HealthkitReader: NSObject {
         }
         healthStore.execute(query)
     }
-    
+
     func getBloodPressureReadings(start: TimeInterval, end: TimeInterval, completion: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
-        
+
         let predicate = HKQuery.predicateForSamples(withStart: startDate,
                                                     end: endDate,
                                                     options: [])
-        
+
         guard let type = HKQuantityType.correlationType(forIdentifier: HKCorrelationTypeIdentifier.bloodPressure),
             let systolicType = HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodPressureSystolic),
             let diastolicType = HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodPressureDiastolic) else {
@@ -891,7 +897,7 @@ class HealthkitReader: NSObject {
             sortDescriptors: nil
         ) {
             (query, results, error) in
-            
+
             if let readings = results as? [HKCorrelation] {
                 let map = readings.map { reading -> [String: Any] in
                     let systolicData = reading.objects(for: systolicType).first as! HKQuantitySample
