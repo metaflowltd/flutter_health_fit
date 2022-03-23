@@ -753,7 +753,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
             else {
-                result(values)
+                let resultList = values?.compactMap({ dataPointValue in
+                    return dataPointValue.resultMap()
+                })
+                result(resultList)
             }
         }
     }

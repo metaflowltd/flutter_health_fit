@@ -38,40 +38,6 @@ enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
 enum SleepSampleType { inBed, asleep, awake }
 
-enum Flow {
-  notSpecified,
-  spotting, // Spotting
-  light, // Light
-  medium, // Medium
-  heavy // Heavy
-}
-
-class MenstrualData {
-  final DateTime dateTime;
-  final Flow flow;
-
-  MenstrualData(this.dateTime, this.flow);
-
-  MenstrualData.fromRawData(this.dateTime, int rawFlowValue) : flow = _flowFromInt(rawFlowValue);
-
-  static Flow _flowFromInt(int input) {
-    switch (input) {
-      case 0:
-        return Flow.notSpecified;
-      case 1:
-        return Flow.spotting;
-      case 2:
-        return Flow.light;
-      case 3:
-        return Flow.medium;
-      case 4:
-        return Flow.heavy;
-      default:
-        throw ArgumentError("Can not map $input to Flow");
-    }
-  }
-}
-
 enum GFSleepSampleType {
   // Unspecified or unknown if user is sleeping.
   unspecified,
@@ -672,24 +638,18 @@ class FlutterHealthFit {
     }
   }
 
-  Future<List<MenstrualData>> getMenstrualData(int start, int end) async {
-    List<MenstrualData> result = [];
-
-    // TODO remove after approval of reproductive_health scope
-    if (!Platform.isIOS) return result;
+  Future<List<DataPointValue>?> getMenstrualData(int start, int end) async {
 
     try {
-      Map? monthlyCycle = await _channel.invokeMethod('getMenstrualDataBySegment', {"start": start, "end": end});
-
-      monthlyCycle?.cast<int, int>().forEach((int key, int value) {
-        final dateTime = DateTime.fromMillisecondsSinceEpoch(key);
-        result.add(MenstrualData.fromRawData(dateTime, value));
-      });
-
-      return result;
+      final dataList = await _channel.invokeListMethod<Map>("getMenstrualDataBySegment",
+          {"start": start, "end": end});
+      final list = dataList?.map((e) =>
+          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>().toList();
+      return list;
     } catch (e) {
       _logDeviceError("getMenstrualDataBySegment", e);
-      return [];
+      return null;
     }
   }
 

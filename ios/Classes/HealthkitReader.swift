@@ -522,7 +522,7 @@ class HealthkitReader: NSObject {
     func getCategory(categoryType: HKCategoryType,
                      start: TimeInterval,
                      end: TimeInterval,
-                     completion: @escaping ([Int: Int]?, Error?) -> Void) {
+                     completion: @escaping ([DataPointValue]?, Error?) -> Void) {
         
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
@@ -543,8 +543,8 @@ class HealthkitReader: NSObject {
                 return
             }
             
-            let dict = results.reduce([Int:Int]()) { (dict, result) -> [Int:Int] in
-                var dict = dict
+            let list = results.reduce([DataPointValue]()) { (list, result) -> [DataPointValue] in
+                var list = list
                 let time = Int(result.startDate.timeIntervalSince1970 * 1000)
                 let value = (result as? HKCategorySample)?.value ?? HKCategoryValueMenstrualFlow.unspecified.rawValue
                 
@@ -563,11 +563,17 @@ class HealthkitReader: NSObject {
                     flowValue = 0
                 }
 
-                dict[time] = flowValue
-                return dict
+                list.append(DataPointValue(
+                    dateInMillis: time,
+                    value: Double(flowValue),
+                    units: .count,
+                    sourceApp: (result as? HKCategorySample)?.sourceRevision.source.bundleIdentifier,
+                    additionalInfo: nil))
+                
+                return list
             }
             
-            completion(dict, nil)
+            completion(list, nil)
         })
         healthStore.execute(query)
     }
