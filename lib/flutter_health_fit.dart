@@ -779,9 +779,11 @@ class FlutterHealthFit {
 
   Future<UserActivityDataPointValue?> getStepsBySegment(int start, int end) async {
     try {
+      logger?.info("calling getStepsBySegment. start: $start, end: $end");
       final dataPointMap = await _channel.invokeMapMethod<String, Object>("getStepsBySegment",
           {"start": start, "end": end});
       final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      logger?.info("data from getStepsBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
       return dataPointValue;
     } catch (e) {
       _logDeviceError("getStepsBySegment", e);
@@ -801,9 +803,11 @@ class FlutterHealthFit {
 
   Future<UserActivityDataPointValue?> getFlightsBySegment(int start, int end) async {
     try {
+      logger?.info("calling getFlightsBySegment. start: $start, end: $end");
       final dataPointMap = await _channel.invokeMapMethod<String, Object>("getFlightsBySegment",
           {"start": start, "end": end});
       final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      logger?.info("data from getFlightsBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
       return dataPointValue;
     } catch (e) {
       _logDeviceError("getFlightsBySegment", e);
@@ -813,12 +817,14 @@ class FlutterHealthFit {
 
   Future<UserActivityDataPointValue?> getCyclingBySegment(int start, int end) async {
     try {
+      logger?.info("calling getCyclingBySegment. start: $start, end: $end");
       final dataPointMap = await _channel.invokeMapMethod<String, Object>("getCyclingDistanceBySegment",
           {"start": start, "end": end});
       final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
+      logger?.info("data from getCyclingBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
       return dataPointValue;
     } catch (e) {
-      _logDeviceError("getCyclingDistanceBySegment", e);
+      _logDeviceError("getCyclingBySegment", e);
       return null;
     }
   }
@@ -1046,7 +1052,7 @@ class FlutterHealthFit {
         logger?.info("$method was called in background");
       }
       else {
-        logger?.severe("Error when calleing $method. ${e.code}: ${e.message}");
+        logger?.severe("Error when calleing $method. ${e.code}: ${e.message}, details-${e.details ?? ""}");
       }
     }
     else {
