@@ -124,7 +124,9 @@ class _MyAppState extends State<MyApp> {
       now.millisecondsSinceEpoch,
     );
     setState(() {
-      _menstrualData = menstrualData.map((element) => "${element.dateTime} : ${element.flow}").toList();
+      if (menstrualData != null) {
+        _menstrualData = menstrualData.map((element) => "${element.date} : ${element.value}").toList();
+      }
     });
   }
 

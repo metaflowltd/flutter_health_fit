@@ -660,6 +660,11 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endDate = Date(timeIntervalSince1970: endMillis)
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
+                    if sum.is(compatibleWith: .count()) == false {
+                        result(FlutterError(code: "\(-1)", message: "getUserActivity", details: "Cannd evaluate count for \(quantityType) "))
+                        return
+                    }
+                    
                     let dataPointValue = DataPointValue(dateInMillis: Int(statistics.startDate.timeIntervalSince1970 * 1000),
                                                         value: sum.doubleValue(for: .count()),
                                                         units: .count,
