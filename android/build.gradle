@@ -2,7 +2,7 @@ group 'com.metaflow.flutterhealthfit'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.6.10'
+    ext.kotlin_version = '1.6.20'
     repositories {
         google()
         jcenter()
@@ -25,7 +25,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 28
+    compileSdk 31
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -41,6 +41,6 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.google.android.gms:play-services-fitness:20.0.0'
-    implementation 'com.google.android.gms:play-services-auth:19.0.0'
+    implementation 'com.google.android.gms:play-services-fitness:21.0.1'
+    implementation 'com.google.android.gms:play-services-auth:20.1.0'
 }

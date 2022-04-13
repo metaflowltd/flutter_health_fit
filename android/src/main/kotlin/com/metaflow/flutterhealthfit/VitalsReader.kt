@@ -65,7 +65,7 @@ class VitalsReader {
                             "dateTime" to dateTime,
                             "value" to value,
                             "readingType" to readingType.name,
-                            "sourceApp" to dataPoint.originalDataSource.appPackageName,
+                            "sourceApp" to (dataPoint.originalDataSource.appPackageName ?: ""),
                         )
                     )
                 }
@@ -117,7 +117,7 @@ class VitalsReader {
                             "dateTime" to dateTime,
                             "systolic" to systolicValue,
                             "diastolic" to diastolicValue,
-                            "sourceApp" to dataPoint.originalDataSource.appPackageName,
+                            "sourceApp" to (dataPoint.originalDataSource.appPackageName ?: ""),
                         )
                     )
                 }
