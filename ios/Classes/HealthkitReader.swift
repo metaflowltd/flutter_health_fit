@@ -529,7 +529,6 @@ class HealthkitReader: NSObject {
                     units: .count,
                     sourceApp: (result as? HKCategorySample)?.sourceRevision.source.bundleIdentifier,
                     additionalInfo: nil))
-
                 return list
             }
             
