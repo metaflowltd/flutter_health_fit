@@ -4,6 +4,7 @@ import android.app.Activity
 import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
+import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.data.HealthDataTypes
 import com.google.android.gms.fitness.data.HealthFields
 import com.google.android.gms.fitness.request.DataReadRequest
@@ -17,8 +18,12 @@ enum class BloodGlucoseReadingType {
 }
 
 class VitalsReader {
-
     private val logTag = VitalsReader::class.java.simpleName
+
+    companion object {
+        val bloodGlucoseType: DataType = HealthDataTypes.TYPE_BLOOD_GLUCOSE
+        val bloodPressureType: DataType = HealthDataTypes.TYPE_BLOOD_PRESSURE
+    }
 
     fun getBloodGlucose(
         currentActivity: Activity?,
@@ -31,11 +36,11 @@ class VitalsReader {
             return
         }
 
-        val fitnessOptions = FlutterHealthFitPlugin.getFitnessOptions(HealthDataTypes.TYPE_BLOOD_GLUCOSE)
+        val fitnessOptions = FlutterHealthFitPlugin.getFitnessOptions(bloodGlucoseType)
 
         val gsa = GoogleSignIn.getAccountForExtension(currentActivity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(HealthDataTypes.TYPE_BLOOD_GLUCOSE)
+        val request = DataReadRequest.Builder().read(bloodGlucoseType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
@@ -45,8 +50,8 @@ class VitalsReader {
                 val resultList = mutableListOf<Map<String, Any>>()
                 for (dataPoint in response.dataSets.flatMap { it.dataPoints }) {
                     val dateTime = dataPoint.getTimestamp(TimeUnit.MILLISECONDS)
-                    val value = dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_GLUCOSE.fields[0]).asFloat()
-                    val readingType = when (dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_GLUCOSE.fields[1]).asInt()) {
+                    val value = dataPoint.getValue(bloodGlucoseType.fields[0]).asFloat()
+                    val readingType = when (dataPoint.getValue(bloodGlucoseType.fields[1]).asInt()) {
                         HealthFields.FIELD_TEMPORAL_RELATION_TO_MEAL_FASTING -> BloodGlucoseReadingType.FASTING
                         HealthFields.FIELD_TEMPORAL_RELATION_TO_MEAL_AFTER_MEAL -> BloodGlucoseReadingType.AFTER_MEAL
                         HealthFields.FIELD_TEMPORAL_RELATION_TO_MEAL_BEFORE_MEAL -> BloodGlucoseReadingType.BEFORE_MEAL
@@ -88,11 +93,11 @@ class VitalsReader {
             return
         }
 
-        val fitnessOptions = FlutterHealthFitPlugin.getFitnessOptions(HealthDataTypes.TYPE_BLOOD_PRESSURE)
+        val fitnessOptions = FlutterHealthFitPlugin.getFitnessOptions(bloodPressureType)
 
         val gsa = GoogleSignIn.getAccountForExtension(currentActivity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(HealthDataTypes.TYPE_BLOOD_PRESSURE)
+        val request = DataReadRequest.Builder().read(bloodPressureType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
@@ -102,8 +107,8 @@ class VitalsReader {
                 val resultList = mutableListOf<Map<String, Any>>()
                 for (dataPoint in response.dataSets.flatMap { it.dataPoints }) {
                     val dateTime = dataPoint.getTimestamp(TimeUnit.MILLISECONDS)
-                    val systolicValue = dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_PRESSURE.fields[0]).asFloat()
-                    val diastolicValue = dataPoint.getValue(HealthDataTypes.TYPE_BLOOD_PRESSURE.fields[1]).asFloat()
+                    val systolicValue = dataPoint.getValue(bloodPressureType.fields[0]).asFloat()
+                    val diastolicValue = dataPoint.getValue(bloodPressureType.fields[1]).asFloat()
 
                     Log.i(
                         logTag, "Blood pressure data:" +

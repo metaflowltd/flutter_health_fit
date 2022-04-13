@@ -43,7 +43,10 @@ class WorkoutsReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(workoutDataType))
+        val gsa = GoogleSignIn.getAccountForExtension(
+            currentActivity,
+            FlutterHealthFitPlugin.getFitnessOptions(workoutDataType)
+        )
 
         val request = DataReadRequest.Builder()
             .read(workoutDataType)
@@ -104,7 +107,8 @@ class WorkoutsReader {
                                     "\n Reported from: $workoutSource"
                         )
                         if (durationInMinutes > 15 ||
-                            (workoutType != walkingActivityType && workoutType != runningActivityType) ) {
+                            (workoutType != walkingActivityType && workoutType != runningActivityType)
+                        ) {
                             // we don't want to log walks and runs that are less than 15 minutes
                             Log.i(logTag, "logged workout")
                             createWorkoutMap(
@@ -116,8 +120,7 @@ class WorkoutsReader {
                                 energy = workoutEnergy,
                                 source = workoutSource,
                             ).also { workout -> outputList.add(workout) }
-                        }
-                        else {
+                        } else {
                             Log.i(logTag, "workout was not logged")
                         }
                     }
@@ -166,13 +169,16 @@ class WorkoutsReader {
         return map
     }
 
-    private fun checkPermission(currentActivity: Activity): Boolean{
+    private fun checkPermission(currentActivity: Activity): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             ContextCompat.checkSelfPermission(currentActivity, Manifest.permission.ACTIVITY_RECOGNITION)
-            != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(currentActivity,
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                currentActivity,
                 arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
-                MY_PERMISSIONS_REQUEST_ACTIVITY_RECOGNITION)
+                MY_PERMISSIONS_REQUEST_ACTIVITY_RECOGNITION
+            )
             return false
         }
         return true

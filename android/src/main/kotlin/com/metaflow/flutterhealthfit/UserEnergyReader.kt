@@ -9,6 +9,10 @@ import com.google.android.gms.fitness.request.DataReadRequest
 import java.util.concurrent.TimeUnit
 
 class UserEnergyReader {
+    companion object {
+        val restingEnergyType: DataType = DataType.TYPE_BASAL_METABOLIC_RATE
+    }
+
     fun getRestingEnergy(
         currentActivity: Activity?,
         startTime: Long,
@@ -20,17 +24,17 @@ class UserEnergyReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(DataType.TYPE_BASAL_METABOLIC_RATE))
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(restingEnergyType))
 
         val request = DataReadRequest.Builder()
-            .read(DataType.TYPE_BASAL_METABOLIC_RATE)
+            .read(restingEnergyType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
         Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
-                val field = DataType.TYPE_BASAL_METABOLIC_RATE.fields[0]
-                val caloriesDataSet = response.getDataSet(DataType.TYPE_BASAL_METABOLIC_RATE)
+                val field = restingEnergyType.fields[0]
+                val caloriesDataSet = response.getDataSet(restingEnergyType)
                 caloriesDataSet.dataPoints.lastOrNull()?.let { dataPoint ->
                     val dataPointValue = DataPointValue(
                         dateInMillis = dataPoint.getStartTime(TimeUnit.MILLISECONDS),
