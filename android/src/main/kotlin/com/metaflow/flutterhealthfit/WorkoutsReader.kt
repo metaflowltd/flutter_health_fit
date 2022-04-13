@@ -1,13 +1,20 @@
 package com.metaflow.flutterhealthfit
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.request.DataReadRequest
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+const val MY_PERMISSIONS_REQUEST_ACTIVITY_RECOGNITION = 12
 
 class WorkoutsReader {
     companion object {
@@ -31,7 +38,7 @@ class WorkoutsReader {
         endTime: Long,
         result: (List<Map<String, Any>>?, Throwable?) -> Unit,
     ) {
-        if (currentActivity == null) {
+        if (currentActivity == null || !checkPermission(currentActivity)) {
             result(null, null)
             return
         }
@@ -157,5 +164,17 @@ class WorkoutsReader {
         }
 
         return map
+    }
+
+    private fun checkPermission(currentActivity: Activity): Boolean{
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(currentActivity, Manifest.permission.ACTIVITY_RECOGNITION)
+            != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(currentActivity,
+                arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                MY_PERMISSIONS_REQUEST_ACTIVITY_RECOGNITION)
+            return false
+        }
+        return true
     }
 }

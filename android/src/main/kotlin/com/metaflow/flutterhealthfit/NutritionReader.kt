@@ -13,10 +13,6 @@ import java.util.concurrent.TimeUnit
 class NutritionReader {
     private val logTag = NutritionReader::class.java.simpleName
 
-    companion object {
-        val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(DataType.TYPE_NUTRITION).build()
-    }
-
     fun getEnergyConsumed(
         currentActivity: Activity?,
         startTime: Long,
