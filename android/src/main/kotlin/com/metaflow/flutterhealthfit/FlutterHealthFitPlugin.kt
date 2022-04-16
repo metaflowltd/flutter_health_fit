@@ -397,15 +397,22 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         return when (requestCode) {
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
-                recordDataPointsIfGranted(
-                        resultCode == Activity.RESULT_OK, listOfNotNull(
-                        stepsDataType,
-                        weightDataType,
-                        bodyFatDataType,
-                        if (hasSensorPermissionCompat()) heartRateDataType else null
-                ),
-                        deferredResult
-                )
+                // recordDataPointsIfGranted(
+                //         resultCode == Activity.RESULT_OK, listOfNotNull(
+                //         stepsDataType,
+                //         weightDataType,
+                //         bodyFatDataType,
+                //         if (hasSensorPermissionCompat()) heartRateDataType else null
+                // ),
+                //         deferredResult
+                // )
+
+                var hasPerm = isAuthorized(false)
+                if(hasPerm)
+                    deferredResult?.success(true)
+                else
+                    deferredResult?.error("canceled", "User cancelled or app not authorized", null)
+
                 deferredResult = null
                 true
             }
@@ -450,7 +457,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private fun isAuthorized(useSensitive: Boolean): Boolean {
         val fitnessOptions = getFitnessOptions(useSensitive)
         val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
-        sendNativeLog("isAuthorized: Google account = $account")
+        sendNativeLog("isAuthorized: Google account = ${account?.email?: account}")
         val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
         sendNativeLog("isAuthorized result: hasPermissions = $hasPermissions")
         return hasPermissions
