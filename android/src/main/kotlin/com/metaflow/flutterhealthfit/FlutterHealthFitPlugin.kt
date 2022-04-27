@@ -605,11 +605,11 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun extractDataTypesFromCall(call: MethodCall): Set<DataType> {
-        val args = call.arguments as HashMap<*, *>
+        val args = call.arguments as Map<String, *>
         if (!args.containsKey("types")) {
-            throw IllegalArgumentException("Invalid arguments")
+            throw IllegalArgumentException("Missing arguments")
         }
-        val callTypes = (args["types"] as ArrayList<*>).filterIsInstance<String>()
+        val callTypes = (args["types"] as List<*>).filterIsInstance<String>()
         return callTypes.fold(setOf()) { r, t -> r.union(callTypeToDataTypes(CallDataType.valueOf(t))) }
     }
 

@@ -308,7 +308,7 @@ class HealthkitReader: NSObject {
         guard let arguments = call.arguments as? NSDictionary,
               let types = arguments["types"] as? Array<String>
         else {
-            completion(.unknown, PluginError(message: "Invalid Arguments!"))
+            completion(.unknown, PluginError(message: "Missing arguments"))
             return
         }
         var typesToRead = Set<HKObjectType>()
@@ -813,8 +813,8 @@ class HealthkitReader: NSObject {
                     return [
                         "id": id,
                         "type": type,
-                        "energy": energy as Any,
-                        "distance": distance as Any,
+                        "energy": energy,
+                        "distance": distance,
                         "start": startDate,
                         "end": endDate,
                         "source": source,
