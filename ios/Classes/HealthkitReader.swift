@@ -290,7 +290,9 @@ class HealthkitReader: NSObject {
 
         var typesToRead = Set<HKObjectType>()
         for key in types {
-            typesToRead.formUnion(dataTypesDict[key]!)
+            if let newTypes = dataTypesDict[key] {
+                typesToRead.formUnion(newTypes)
+            }
         }
 
         if #available(iOS 11.0, *) {
@@ -313,7 +315,9 @@ class HealthkitReader: NSObject {
         }
         var typesToRead = Set<HKObjectType>()
         for key in types {
-            typesToRead.formUnion(dataTypesDict[key]!)
+            if let newTypes = dataTypesDict[key] {
+                typesToRead.formUnion(newTypes)
+            }
         }
         getRequestStatus(for: typesToRead, completion: completion)
     }
