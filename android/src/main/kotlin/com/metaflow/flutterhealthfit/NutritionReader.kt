@@ -147,7 +147,7 @@ class NutritionReader {
                     if (value != null && value > 0) {
                         aggregatedCalories += value
 
-                        val sourceApp = dataPoint.dataSource.appPackageName ?: ""
+                        val sourceApp = dataPoint.dataSource.appPackageName ?: "not_recognized"
                         val dateInMillis = dataPoint.getStartTime(TimeUnit.MILLISECONDS)
                         val sourceValue = valueMap[sourceApp]
                         if (sourceValue != null) {

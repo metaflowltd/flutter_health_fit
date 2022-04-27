@@ -315,7 +315,7 @@ class FlutterHealthFit {
   Future<bool> isAuthorized({List<HealthDataType>? types}) async {
     try {
       final status = await _channel.invokeMethod("isAuthorized", {
-        "types": types?.map((e) => e.name).toList(),
+        "types": (types ?? HealthDataType.values).map((e) => e.name).toList(),
       });
       return status;
     } catch (e) {
