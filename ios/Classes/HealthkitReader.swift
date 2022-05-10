@@ -360,8 +360,11 @@ class HealthkitReader: NSObject {
         
         let anchorDate = Calendar.current.date(from: anchorComponents)!
         
+        let predicate = NSPredicate(format: "metadata.%K != YES", HKMetadataKeyWasUserEntered)
+
+        
         let query = HKStatisticsCollectionQuery(quantityType: quantityType,
-                                                quantitySamplePredicate: nil,
+                                                quantitySamplePredicate: predicate,
                                                 options: options,
                                                 anchorDate: anchorDate,
                                                 intervalComponents: interval)
