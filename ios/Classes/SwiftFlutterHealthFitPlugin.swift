@@ -33,15 +33,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private let methodNamesToQuantityTypes: [String: HKQuantityType] = [
-        "getEnergyConsumed": HealthkitReader.sharedInstance.dietaryEnergyConsumed,
-        "getSugarConsumed": HealthkitReader.sharedInstance.dietarySugar,
-        "getCarbsConsumed": HealthkitReader.sharedInstance.dietaryCarbohydrates,
-        "getFatConsumed": HealthkitReader.sharedInstance.dietaryFatTotal,
-        "getFiberConsumed": HealthkitReader.sharedInstance.dietaryFiber,
-        "getProteinConsumed": HealthkitReader.sharedInstance.dietaryProtein,
-    ]
-    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_health_fit", binaryMessenger: registrar.messenger())
         let instance = SwiftFlutterHealthFitPlugin()
@@ -58,33 +49,36 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             result(FlutterError(code: "background call", message: "cannot read from healthkit on background", details:""))
             return
         }
+        
+        
+        let reader = HealthkitReader.sharedInstance
 
     switch call.method {
         case "requestAuthorization":
-            HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
+            reader.requestHealthAuthorization(call: call) { success in
                 result(success)
             }
             
         case "isAuthorized":  // only checks if requested! no telling if authorized!
             if #available(iOS 12.0, *) {
-                HealthkitReader.sharedInstance.getRequestStatusForAuthorization { (status: HKAuthorizationRequestStatus, error: Error?) in
+                reader.getRequestStatusForAuthorization(call: call) { (status: HKAuthorizationRequestStatus, error: Error?) in
                     switch status {
                     case .shouldRequest:
                         result(false)
                     case .unnecessary:
                         result(true)
-                    case .unknown:
+                    default: // includes .unknown
                         let error = error! as NSError
                         result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                     }
                 }
             } else {
                 // Fallback on earlier versions
-                result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
+                result(reader.hasRequestedHealthKitInThisRun)
             }
             
         case "getActivity":
-            self.getActivity(call, result: result)
+            self.getActivity(call: call, result: result)
             
             
         case "getBasicHealthData":
@@ -92,16 +86,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
             
         case "getStepsBySegment":
-            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.stepsQuantityType, result: result)
+            getUserActivity(call: call, quantityType: HKQuantityType.quantityType(forIdentifier: .stepCount)!, result: result)
         
         case "getSleepBySegment":
             getSleepSamples(call: call, result: result)
             
         case "getFlightsBySegment":
-            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.flightsClimbedQuantityType, result: result)
+            getUserActivity(call: call, quantityType: HKQuantityType.quantityType(forIdentifier: .flightsClimbed)!, result: result)
             
         case "getCyclingDistanceBySegment":
-            getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.cyclingDistanceQuantityType, result: result)
+            getUserActivity(call: call, quantityType: HKQuantityType.quantityType(forIdentifier: .distanceCycling)!, result: result)
 
         case "getWaistSizeBySegment":
             guard let args = call.arguments as? [String: Any],
@@ -110,7 +104,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                       result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
                       return
                   }
-            HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.waistSizeQuantityType,
+            reader.getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.waistCircumference)!,
                                                        start: startMillis.toTimeInterval,
                                                        end: endMillis.toTimeInterval,
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
@@ -141,7 +135,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                       result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
                       return
                   }
-            HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.bodyFatPercentageQuantityType,
+            reader.getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!,
                                                        start: startMillis.toTimeInterval,
                                                        end: endMillis.toTimeInterval,
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
@@ -166,7 +160,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         
         case "getMenstrualDataBySegment":
-            getCategoryBySegment(categoryType: HealthkitReader.sharedInstance.menstrualFlowCategoryType, call: call, result: result)
+            getCategoryBySegment(categoryType: HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.menstrualFlow)!, call: call, result: result)
         
         case "getWeightInInterval":
             guard let myArgs = call.arguments as? [String: Int],
@@ -177,7 +171,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                   }
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: DataPointValue?, error: Error?) in
+            reader.getWeight(start: start, end: end) { (weight: DataPointValue?, error: Error?) in
                 if let error = error as NSError?{
                     print("[getWeight] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
@@ -191,9 +185,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let startMillis = args["start"]!.toTimeInterval
             let endMillis = args["end"]!.toTimeInterval
             
-            HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
+            reader.getWorkoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
                 if let error = error as NSError? {
-                    print("[getWokoutsBySegment] got error: \(error)")
+                    print("[getWorkoutsBySegment] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
                 if let workouts = workouts {
@@ -208,7 +202,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { (rate: [String: Any]?, error: Error?) in
+            reader.getHeartRateSample(start: start, end: end) { (rate: [String: Any]?, error: Error?) in
                 if let error = error as NSError? {
                     print("[getHeartRateSample] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
@@ -217,7 +211,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
         case "getAverageHeartRate":
-            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.heartRateQuantityType,
+            getAverageQuantity(quantityType: HKQuantityType.quantityType(forIdentifier: .heartRate)!,
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
                 if let error = error as NSError? {
@@ -227,7 +221,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
         case "getAverageWalkingHeartRate":
-            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType,
+            getAverageQuantity(quantityType: HKQuantityType.quantityType(forIdentifier: .walkingHeartRateAverage)!,
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
                 if let error = error as NSError? {
@@ -237,7 +231,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
         case "getAverageRestingHeartRate":
-            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.restingHeartRateQuantityType,
+            getAverageQuantity(quantityType: HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!,
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
                 if let error = error as NSError? {
@@ -247,7 +241,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 }
             }
         case "getAverageHeartRateVariability":
-            getAverageQuantity(quantityType: HealthkitReader.sharedInstance.hrvQuantityType,
+            getAverageQuantity(quantityType: HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
                          call: call,
                                unit: HKUnit.secondUnit(with: .milli)) { (rates: [[String : Any]]?, error: Error?) in
                 if let error = error as NSError? {
@@ -262,7 +256,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getTotalStepsInInterval(start: start, end: end) { (steps: Int?, error: Error?) in
+            reader.getTotalStepsInInterval(start: start, end: end) { (steps: Int?, error: Error?) in
                 if let steps = steps {
                     result(steps)
                 } else {
@@ -277,26 +271,53 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             getNutritionSampleInInterval(call: call, result: result)
                        
         case "getStepsSources":
-            HealthkitReader.sharedInstance.getStepsSources { (steps: Array<String>) in
+            reader.getStepsSources { (steps: Array<String>) in
                 result(steps)
             }
         
         case "getBloodGlucose":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.bloodGlucoseQuantityType,
-                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.glucoseMillimolesPerLiter),
-                        call: call,
-                        outputType: .detailedMap,
-                        result: result)
+            let args = call.arguments as! [String: Int]
+            let startMillis = args["start"]!.toTimeInterval
+            let endMillis = args["end"]!.toTimeInterval
+            
+            reader.getBloodGlucoseReadings(start: startMillis, end: endMillis)  { (readings, error) in
+                if let error = error as NSError? {
+                    print("[getBloodGlucoseReadings] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+                if let readings = readings {
+                    result(readings)
+                } else {
+                    print("No blood glucose readings found")
+                }
+            }
+
+        case "getBloodPressure":
+            let args = call.arguments as! [String: Int]
+            let startMillis = args["start"]!.toTimeInterval
+            let endMillis = args["end"]!.toTimeInterval
+            
+            reader.getBloodPressureReadings(start: startMillis, end: endMillis)  { (readings, error) in
+                if let error = error as NSError? {
+                    print("[getBloodPressure] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                }
+                if let readings = readings {
+                    result(readings)
+                } else {
+                    print("No blood pressure readings found")
+                }
+            }
         
         case "getForcedVitalCapacity":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.forcedVitalCapacityQuantityType,
+            getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!,
                         lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.liter),
                         call: call,
                         outputType: .detailedMap,
                         result: result)
         
         case "getPeakExpiratoryFlowRate":
-            getQuantity(quantityType: HealthkitReader.sharedInstance.peakExpiratoryFlowRateQuantityType,
+            getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .peakExpiratoryFlowRate)!,
                         lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.literPerMin),
                         call: call,
                         outputType: .detailedMap,
@@ -310,95 +331,54 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         case "isAnyPermissionAuthorized":
             // Not supposed to be invoked on iOS. Returns a fake result.
-            result(HealthkitReader.sharedInstance.hasRequestedHealthKitInThisRun)
+            result(reader.hasRequestedHealthKitInThisRun)
             
         case "isStepsAuthorized":
-            getRequestStatus(types: [HealthkitReader.sharedInstance.stepsQuantityType], result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.STEPS]!, result: result)
         case "isCyclingAuthorized":
-            getRequestStatus(types: [HealthkitReader.sharedInstance.cyclingDistanceQuantityType], result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.CYCLING]!, result: result)
         case "isFlightsAuthorized":
-            getRequestStatus(types: [HealthkitReader.sharedInstance.flightsClimbedQuantityType], result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.FLIGHTS]!, result: result)
         case "isSleepAuthorized":
-            getRequestStatus(types: [HealthkitReader.sharedInstance.sleepCategoryType], result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.SLEEP]!, result: result)
         case "isWeightAuthorized":
-            getRequestStatus(types: [HealthkitReader.weightQuantityType()], result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.WEIGHT]!, result: result)
         case "isHeartRateAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            var types = [reader.heartRateQuantityType]
-            if #available(iOS 11.0, *) {
-                types.append(contentsOf: [
-                    reader.heartRateVariabilityQuantityType,
-                    reader.restingHeartRateQuantityType,
-                    reader.walkingHeartRateAverageQuantityType,
-                ])
-            }
-            getRequestStatus(types: types, result: result)
-            
+            getRequestStatus(types: reader.dataTypesDict[reader.HEART_RATE]!, result: result)
         case "isCarbsConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryCarbohydrates], result: result)
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!], result: result)
         case "isFiberConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryFiber], result: result)
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietaryFiber)!], result: result)
         case "isFatConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryFatTotal], result: result)
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!], result: result)
         case "isSugarConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietarySugar], result: result)
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietarySugar)!], result: result)
         case "isProteinConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryProtein], result: result)
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!], result: result)
         case "isEnergyConsumedAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.dietaryEnergyConsumed], result: result)
-
-        
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!], result: result)
         case "isWaistSizeAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.waistSizeQuantityType], result: result)
-        
+            getRequestStatus(types: [HKObjectType.quantityType(forIdentifier: .waistCircumference)!], result: result)
         case "isBodyFatPercentageAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.bodyFatPercentageQuantityType], result: result)
-        
+            getRequestStatus(types: reader.dataTypesDict[reader.BODY_FAT_PERCENTAGE]!, result: result)
         case "isHeartRateVariabilityAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.hrvQuantityType], result: result)
-
+            getRequestStatus(types: [HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!], result: result)
         case "isMenstrualDataAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.menstrualFlowCategoryType], result: result)
-
+            getRequestStatus(types: reader.dataTypesDict[reader.MENSTRUATION]!, result: result)
         case "isWorkoutsAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.workoutType], result: result)
-        
+            getRequestStatus(types: reader.dataTypesDict[reader.WORKOUT]!, result: result)
         case "isBloodGlucoseAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.bloodGlucoseQuantityType], result: result)
-        
+            getRequestStatus(types: reader.dataTypesDict[reader.BLOOD_GLUCOSE]!, result: result)
+        case "isBloodPressureAuthorized":
+            getRequestStatus(types: reader.dataTypesDict[reader.BLOOD_PRESSURE]!, result: result)
         case "isForcedVitalCapacityAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.forcedVitalCapacityQuantityType], result: result)
-        
+            getRequestStatus(types: [HKObjectType.quantityType(forIdentifier: .forcedVitalCapacity)!], result: result)
         case "isPeakExpiratoryFlowRateAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.peakExpiratoryFlowRateQuantityType], result: result)
-
+            getRequestStatus(types: [HKObjectType.quantityType(forIdentifier: .peakExpiratoryFlowRate)!], result: result)
         case "isRestingEnergyAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.restingEnergyQuantityType], result: result)
-
+            getRequestStatus(types: reader.dataTypesDict[reader.RESTING_ENERGY]!, result: result)
         case "isActiveEnergyAuthorized":
-            let reader = HealthkitReader.sharedInstance
-            getRequestStatus(types: [reader.activeEnergyQuantityType], result: result)
-
+            getRequestStatus(types: [HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!], result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -411,7 +391,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                   result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
                   return
               }
-        HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.restingEnergyQuantityType,
+        HealthkitReader.sharedInstance.getQuantity(quantityType: HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval,
                                                    lmnUnit: .kCal,
@@ -444,7 +424,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                   return
               }
         
-        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.activeEnergyQuantityType,
+        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
                                                                    searchUnit: .kilocalorie(),
                                                                    reportUnit: .kCal,
                                                                    start: startMillis.toTimeInterval,
@@ -467,9 +447,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func getRequestStatus(types: [HKObjectType], result: @escaping FlutterResult) {
+    func getRequestStatus(types: Set<HKObjectType>, result: @escaping FlutterResult) {
         if #available(iOS 12.0, *){
-            HealthkitReader.sharedInstance.getRequestStatus(for: Set(types)) { status, error in
+            HealthkitReader.sharedInstance.getRequestStatus(for: types) { status, error in
                 if let error = error {
                     result(FlutterError(code: "\((error as NSError).code)", message: error.localizedDescription, details: nil))
                 } else {
@@ -509,7 +489,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func getActivity(_ call: FlutterMethodCall, result: @escaping FlutterResult){
+    func getActivity(call: FlutterMethodCall, result: @escaping FlutterResult){
         guard let params = call.arguments as? Dictionary<String,String> else {
             result(nil)
             return
@@ -543,7 +523,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             return;
         }
         
-        HealthkitReader.sharedInstance.requestHealthAuthorization() { success in
+        HealthkitReader.sharedInstance.requestHealthAuthorization(call: call) { success in
             HealthkitReader.sharedInstance.getHealthDataValue(type: type, strUnitType: units) { results in
                 if let data = results {
                     var value: Double = 0
@@ -765,6 +745,15 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             }
         }
     }
+    
+    private let methodNamesToQuantityTypes: [String: HKQuantityType] = [
+        "getEnergyConsumed": HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!,
+        "getSugarConsumed": HKQuantityType.quantityType(forIdentifier: .dietarySugar)!,
+        "getCarbsConsumed": HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!,
+        "getFatConsumed": HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!,
+        "getFiberConsumed": HKQuantityType.quantityType(forIdentifier: .dietaryFiber)!,
+        "getProteinConsumed": HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!,
+    ]
     
     private func getNutritionSampleInInterval(call: FlutterMethodCall,
                                               result: @escaping FlutterResult) {

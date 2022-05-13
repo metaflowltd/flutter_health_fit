@@ -27,17 +27,33 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-enum class LumenTimeUnit(val value: Int) {
-    MINUTES(0),
-    DAYS(1),
-}
-
 enum class LumenUnit(val value: String) {
     KG("kg"),
     G("g"),
     KCAL("kCal"),
     PERCENT("percent"),
     COUNT("count"),
+}
+
+enum class CallDataType {
+    AGGREGATE_STEP_COUNT,
+    BASIC_HEALTH,
+    BLOOD_GLUCOSE,
+    BLOOD_PRESSURE,
+    BODY_FAT_PERCENTAGE,
+    HEART_RATE,
+    HEIGHT,
+    MENSTRUATION,
+    NUTRITION,
+    RESTING_ENERGY,
+    SLEEP,
+    STEPS,
+    WEIGHT,
+    WORKOUT,
+
+    // Not implemented on Android
+    CYCLING,
+    FLIGHTS
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
@@ -52,13 +68,23 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         private const val SENSOR_PERMISSION_REQUEST_CODE = 9174802
 
         val weightDataType: DataType = DataType.TYPE_WEIGHT
-        val aggregatedDataType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
         val heartRateDataType: DataType = DataType.TYPE_HEART_RATE_BPM
         val sleepDataType: DataType = DataType.TYPE_SLEEP_SEGMENT
         val bodyFatDataType: DataType = DataType.TYPE_BODY_FAT_PERCENTAGE
         val menstruationDataType: DataType = HealthDataTypes.TYPE_MENSTRUATION
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
 
+        fun getFitnessOptions(type: DataType): FitnessOptions = getFitnessOptions(setOf(type))
+
+        fun getFitnessOptions(types: Set<DataType>): FitnessOptions {
+            val builder = FitnessOptions.builder()
+            types.forEach {
+                builder.addDataType(it, FitnessOptions.ACCESS_READ)
+            }
+            return builder.build()
+        }
+
+        @Suppress("unused")
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             if (registrar.activity() == null) return
@@ -78,6 +104,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     private var logsChannel: EventChannel? = null
     private var deferredResult: Result? = null
     private var activity: Activity? = null
+
+    // Keep track of which data types are requested to then start recording once permissions are returned
+    private var requestedDataTypes: Set<DataType> = setOf()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         onAttachedToEngine(binding.binaryMessenger)
@@ -132,11 +161,25 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
 
-            "requestAuthorization" -> connect(result)
+            "requestAuthorization" -> {
+                try {
+                    val types = extractDataTypesFromCall(call)
+                    requestAuthorization(types, result)
+                } catch (e: IllegalArgumentException) {
+                    result.error("illegal-argument", e.message, null)
+                }
+            }
 
             "requestBodySensorsPermission" -> requestBodySensorsPermission(result)
 
-            "isAuthorized" -> result.success(isAuthorized())
+            "isAuthorized" -> {
+                try {
+                    val types = extractDataTypesFromCall(call)
+                    result.success(isAuthorized(types))
+                } catch (e: IllegalArgumentException) {
+                    result.error("illegal-argument", e.message, null)
+                }
+            }
 
             "signOut" -> result.success(activity?.let { signOut(it) })
 
@@ -181,6 +224,40 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                         result.error("failed", e.message, null)
                     } else {
                         result.success(value?.resultMap())
+                    }
+                }
+            }
+
+            "getBloodGlucose" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                VitalsReader().getBloodGlucose(activity, start, end) { values: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(values)
+                    }
+                }
+            }
+
+            "getBloodPressure" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                VitalsReader().getBloodPressure(
+                    activity,
+                    start,
+                    end
+                ) { values: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(values)
                     }
                 }
             }
@@ -445,7 +522,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 
-            "isStepsAuthorized" -> result.success(isStepsAuthorized())
+            "isStepsAuthorized" -> result.success(isAuthorized(CallDataType.STEPS))
 
             "isCyclingAuthorized" -> // only implemented on iOS
                 result.success(false)
@@ -453,15 +530,19 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isFlightsAuthorized" -> // only implemented on iOS
                 result.success(false)
 
-            "isSleepAuthorized" -> result.success(isSleepAuthorized())
+            "isSleepAuthorized" -> result.success(isAuthorized(CallDataType.SLEEP))
 
-            "isMenstrualDataAuthorized" -> result.success(isMenstrualCycleAuthorized())
+            "isMenstrualDataAuthorized" -> result.success(isAuthorized(CallDataType.MENSTRUATION))
 
-            "isWeightAuthorized" -> result.success(isWeightAuthorized())
+            "isWeightAuthorized" -> result.success(isAuthorized(CallDataType.WEIGHT))
 
-            "isHeartRateAuthorized" -> result.success(isHeartRateSampleAuthorized())
+            "isBloodGlucoseAuthorized" -> result.success(isAuthorized(CallDataType.BLOOD_GLUCOSE))
 
-            "isBodyFatPercentageAuthorized" -> result.success(isBodyFatAuthorized())
+            "isBloodPressureAuthorized" -> result.success(isAuthorized(CallDataType.BLOOD_PRESSURE))
+
+            "isHeartRateAuthorized" -> result.success(isAuthorized(CallDataType.HEART_RATE))
+
+            "isBodyFatPercentageAuthorized" -> result.success(isAuthorized(CallDataType.BODY_FAT_PERCENTAGE))
 
             "isEnergyConsumedAuthorized",
             "isProteinConsumedAuthorized",
@@ -469,13 +550,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isFatConsumedAuthorized",
             "isFiberConsumedAuthorized",
             "isCarbsConsumedAuthorized",
-            -> result.success(isNutritionAuthorized())
+            -> result.success(isAuthorized(CallDataType.NUTRITION))
 
-            "isWorkoutsAuthorized" -> result.success(isWorkoutsAuthorized())
+            "isWorkoutsAuthorized" -> result.success(isAuthorized(CallDataType.WORKOUT))
 
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
-            "isRestingEnergyAuthorized" -> result.success(isRestingEnergyAuthorized())
+            "isRestingEnergyAuthorized" -> result.success(isAuthorized(CallDataType.RESTING_ENERGY))
 
             else -> result.notImplemented()
         }
@@ -499,6 +580,39 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
+    private fun callTypeToDataTypes(type: CallDataType): Set<DataType> {
+        return when (type) {
+            CallDataType.AGGREGATE_STEP_COUNT -> setOf(UserActivityReader.aggregatedStepDataType)
+            CallDataType.BASIC_HEALTH -> setOf(weightDataType, DataType.TYPE_HEIGHT)
+            CallDataType.BLOOD_GLUCOSE -> setOf(VitalsReader.bloodGlucoseType)
+            CallDataType.BLOOD_PRESSURE -> setOf(VitalsReader.bloodPressureType)
+            CallDataType.BODY_FAT_PERCENTAGE -> setOf(bodyFatDataType)
+            CallDataType.CYCLING, CallDataType.FLIGHTS -> setOf()
+            CallDataType.HEART_RATE -> setOf(heartRateDataType)
+            CallDataType.HEIGHT -> setOf(DataType.TYPE_HEIGHT)
+            CallDataType.MENSTRUATION -> setOf(menstruationDataType)
+            CallDataType.NUTRITION -> setOf(NutritionReader.nutritionType)
+            CallDataType.RESTING_ENERGY -> setOf(UserEnergyReader.restingEnergyType)
+            CallDataType.SLEEP -> setOf(sleepDataType)
+            CallDataType.STEPS -> setOf(UserActivityReader.stepsDataType)
+            CallDataType.WEIGHT -> setOf(weightDataType)
+            CallDataType.WORKOUT -> setOf(
+                DataType.AGGREGATE_ACTIVITY_SUMMARY,
+                DataType.TYPE_CALORIES_EXPENDED,
+                DataType.TYPE_DISTANCE_DELTA
+            )
+        }
+    }
+
+    private fun extractDataTypesFromCall(call: MethodCall): Set<DataType> {
+        val args = call.arguments as Map<String, *>
+        if (!args.containsKey("types")) {
+            throw IllegalArgumentException("Missing arguments")
+        }
+        val callTypes = (args["types"] as List<*>).filterIsInstance<String>()
+        return callTypes.fold(setOf()) { r, t -> r.union(callTypeToDataTypes(CallDataType.valueOf(t))) }
+    }
+
     private fun requestBodySensorsPermission(result: Result) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
             this.deferredResult = result
@@ -514,54 +628,23 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private fun isAnyPermissionAuthorized(): Boolean {
-        return isWeightAuthorized() || isStepsAuthorized() || isHeartRateSampleAuthorized() || isSleepAuthorized()
-    }
+    private fun isAnyPermissionAuthorized(): Boolean =
+        isAuthorized(CallDataType.WEIGHT) ||
+                isAuthorized(CallDataType.BLOOD_GLUCOSE) ||
+                isAuthorized(CallDataType.BLOOD_PRESSURE) ||
+                isAuthorized(CallDataType.STEPS) ||
+                isAuthorized(CallDataType.HEART_RATE) ||
+                isAuthorized(CallDataType.SLEEP)
 
-    private fun isStepsAuthorized(): Boolean {
-        return isAuthorized(
-            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
-                .build()
-        )
-    }
+    private fun isAuthorized(callType: CallDataType): Boolean = isAuthorized(callTypeToDataTypes(callType))
 
-    private fun isSleepAuthorized(): Boolean {
-        return isAuthorized(
-            FitnessOptions.builder().addDataType(DataType.TYPE_SLEEP_SEGMENT).build()
-        )
-    }
-
-    private fun isWeightAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(weightDataType).build())
-    }
-
-    private fun isBodyFatAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(bodyFatDataType).build())
-    }
-
-    private fun isNutritionAuthorized(): Boolean {
-        return isAuthorized(NutritionReader.authorizedNutritionOptions)
-    }
-
-    private fun isWorkoutsAuthorized(): Boolean {
-        return isAuthorized(WorkoutsReader.authorizedFitnessOptions)
-    }
-
-    private fun isMenstrualCycleAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(menstruationDataType).build())
-    }
-
-    private fun isHeartRateSampleAuthorized(): Boolean {
-        return isAuthorized(FitnessOptions.builder().addDataType(heartRateDataType).build())
-    }
-
-    private fun isRestingEnergyAuthorized(): Boolean {
-        return isAuthorized(UserEnergyReader.authorizedEnergyOptions)
-    }
-
-    private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {
+    private fun isAuthorized(types: Set<DataType>): Boolean {
+        val fitnessOptions = getFitnessOptions(types)
         val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
-        return GoogleSignIn.hasPermissions(account, fitnessOptions)
+        sendNativeLog("isAuthorized: Google account = $account")
+        val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
+        sendNativeLog("isAuthorized result: hasPermissions = $hasPermissions")
+        return hasPermissions
     }
 
     private fun hasSensorPermissionCompat(): Boolean {
@@ -579,14 +662,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         return when (requestCode) {
             GOOGLE_FIT_PERMISSIONS_REQUEST_CODE -> {
                 recordDataPointsIfGranted(
-                    resultCode == Activity.RESULT_OK, listOfNotNull(
-                        UserActivityReader.stepsDataType,
-                        weightDataType,
-                        bodyFatDataType,
-                        NutritionReader.nutritionType,
-                        menstruationDataType,
-                        if (hasSensorPermissionCompat()) heartRateDataType else null
-                    ),
+                    resultCode == Activity.RESULT_OK,
+                    requestedDataTypes,
                     deferredResult
                 )
                 deferredResult = null
@@ -598,9 +675,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun recordDataPointsIfGranted(
         isGranted: Boolean,
-        dataPoints: List<DataType>,
+        dataPoints: Set<DataType>,
         result: Result?,
     ) {
+        sendNativeLog(" $TAG | Recording for ${dataPoints.map { it.name }}!")
         if (isGranted) {
             val failedTypes = arrayListOf<DataType>()
             dataPoints.forEach {
@@ -630,27 +708,19 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         )
     }
 
-    private fun isAuthorized(): Boolean {
-        val fitnessOptions = getFitnessOptions()
-        val account = activity?.let { GoogleSignIn.getAccountForExtension(it, fitnessOptions) }
-        sendNativeLog("isAuthorized: Google account = $account")
-        val hasPermissions = GoogleSignIn.hasPermissions(account, fitnessOptions)
-        sendNativeLog("isAuthorized result: hasPermissions = $hasPermissions")
-        return hasPermissions
-    }
-
     private fun sendNativeLog(message: String) {
         activity?.runOnUiThread {
             logger?.success(message)
         }
     }
 
-    private fun connect(result: Result) {
-        sendNativeLog("Connecting")
-        val fitnessOptions = getFitnessOptions()
-        if (!isAuthorized()) {
+    private fun requestAuthorization(types: Set<DataType>, result: Result) {
+        sendNativeLog("Connecting for types $types")
+        val fitnessOptions = getFitnessOptions(types)
+        if (!isAuthorized(types)) {
             sendNativeLog("User has no permissions")
             deferredResult = result
+            requestedDataTypes = types
             activity?.let { activity ->
                 val client = GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
                 sendNativeLog("Calling for google client sign out")
@@ -696,8 +766,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         result: (Map<Long, Int>?, Throwable?) -> Unit,
     ) {
         val fitnessOptions =
-            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
-                .build()
+            getFitnessOptions(setOf(UserActivityReader.stepsDataType, UserActivityReader.aggregatedStepDataType))
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
@@ -725,7 +794,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 for (bucket in readDataResult.buckets) {
                     val dp = bucket.dataSets.firstOrNull()?.dataPoints?.firstOrNull()
                     if (dp != null) {
-                        val count = dp.getValue(aggregatedDataType.fields[0])
+                        val count = dp.getValue(UserActivityReader.aggregatedStepDataType.fields[0])
                         val startTime = dp.getStartTime(TimeUnit.MILLISECONDS)
                         val startDate = Date(startTime)
                         val endDate = Date(dp.getEndTime(TimeUnit.MILLISECONDS))
@@ -757,7 +826,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         result: (List<Map<String, Any?>>?, Throwable?) -> Unit,
     ) {
 
-        val fitnessOptions = FitnessOptions.builder().addDataType(sleepDataType).build()
+        val fitnessOptions = getFitnessOptions(sleepDataType)
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
@@ -773,7 +842,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         )
 
         val request = SessionReadRequest.Builder()
-            .read(DataType.TYPE_SLEEP_SEGMENT)
+            .read(sleepDataType)
             // By default, only activity sessions are included, not sleep sessions. Specifying
             // includeSleepSessions also sets the behaviour to *exclude* activity sessions.
             .includeSleepSessions()
@@ -846,7 +915,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         end: Long,
         result: (List<DataPoint>?, Throwable?) -> Unit,
     ) {
-        val fitnessOptions = FitnessOptions.builder().addDataType(heartRateDataType).build()
+        val fitnessOptions = getFitnessOptions(heartRateDataType)
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
@@ -901,7 +970,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         endTime: Long,
         result: (DataPointValue?, Throwable?) -> Unit,
     ) {
-        val fitnessOptions = FitnessOptions.builder().addDataType(bodyFatDataType).build()
+        val fitnessOptions = getFitnessOptions(bodyFatDataType)
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
@@ -952,12 +1021,12 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        val fitnessOptions = FitnessOptions.builder().addDataType(menstruationDataType).build()
+        val fitnessOptions = getFitnessOptions(menstruationDataType)
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(HealthDataTypes.TYPE_MENSTRUATION)
+        val request = DataReadRequest.Builder().read(menstruationDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .bucketByTime(1, TimeUnit.DAYS)
             .setLimit(1)
@@ -999,12 +1068,12 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         endTime: Long,
         result: (DataPointValue?, Throwable?) -> Unit,
     ) {
-        val fitnessOptions = FitnessOptions.builder().addDataType(weightDataType).build()
+        val fitnessOptions = getFitnessOptions(weightDataType)
 
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
+        val request = DataReadRequest.Builder().read(weightDataType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .setLimit(1)
             .build()
@@ -1058,28 +1127,18 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }
     }
 
-    private fun getFitnessOptions(): FitnessOptions = FitnessOptions.builder()
-        .addDataType(UserActivityReader.stepsDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(aggregatedDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(heartRateDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(sleepDataType, FitnessOptions.ACCESS_READ)
-        .addDataType(NutritionReader.nutritionType, FitnessOptions.ACCESS_READ)
-        .addDataType(menstruationDataType, FitnessOptions.ACCESS_READ)
-        .build()
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>?,
-        grantResults: IntArray?,
+        permissions: Array<out String>,
+        grantResults: IntArray,
     ): Boolean {
         return when (requestCode) {
             SENSOR_PERMISSION_REQUEST_CODE -> {
                 val result = this.deferredResult!!
                 this.deferredResult = null
-                if (grantResults?.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    if (isHeartRateSampleAuthorized()) {
-                        recordDataPointsIfGranted(true, listOf(heartRateDataType), result)
+                if (grantResults.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (isAuthorized(CallDataType.HEART_RATE)) {
+                        recordDataPointsIfGranted(true, callTypeToDataTypes(CallDataType.HEART_RATE), result)
                     } else {
                         result.success(true)
                     }

@@ -4,8 +4,6 @@ import android.app.Activity
 import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
-import com.google.android.gms.fitness.FitnessOptions
-import com.google.android.gms.fitness.data.DataSource
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.data.Field.*
 import com.google.android.gms.fitness.request.DataReadRequest
@@ -16,7 +14,6 @@ class NutritionReader {
 
     companion object {
         val nutritionType: DataType = DataType.TYPE_NUTRITION
-        val authorizedNutritionOptions: FitnessOptions = FitnessOptions.builder().addDataType(nutritionType).build()
     }
 
     fun getEnergyConsumed(
@@ -25,12 +22,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_CALORIES,
-        units = LumenUnit.KCAL,
-        currentActivity = currentActivity,
-        startTime = startTime,
-        endTime = endTime,
-        result = result)
+        getNutrition(
+            type = NUTRIENT_CALORIES,
+            units = LumenUnit.KCAL,
+            currentActivity = currentActivity,
+            startTime = startTime,
+            endTime = endTime,
+            result = result
+        )
     }
 
     fun getFatConsumed(
@@ -39,12 +38,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_TOTAL_FAT,
+        getNutrition(
+            type = NUTRIENT_TOTAL_FAT,
             units = LumenUnit.G,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
-            result = result)
+            result = result
+        )
     }
 
     fun getCarbsConsumed(
@@ -53,12 +54,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_TOTAL_CARBS,
+        getNutrition(
+            type = NUTRIENT_TOTAL_CARBS,
             units = LumenUnit.G,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
-            result = result)
+            result = result
+        )
     }
 
     fun getProteinConsumed(
@@ -67,12 +70,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_PROTEIN,
+        getNutrition(
+            type = NUTRIENT_PROTEIN,
             units = LumenUnit.G,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
-            result = result)
+            result = result
+        )
     }
 
     fun getFiberConsumed(
@@ -81,12 +86,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_DIETARY_FIBER,
+        getNutrition(
+            type = NUTRIENT_DIETARY_FIBER,
             units = LumenUnit.G,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
-            result = result)
+            result = result
+        )
     }
 
     fun getSugarConsumed(
@@ -95,12 +102,14 @@ class NutritionReader {
         endTime: Long,
         result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
-        getNutrition(type = NUTRIENT_SUGAR,
+        getNutrition(
+            type = NUTRIENT_SUGAR,
             units = LumenUnit.G,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
-            result = result)
+            result = result
+        )
     }
 
     private fun getNutrition(
@@ -116,7 +125,10 @@ class NutritionReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedNutritionOptions)
+        val gsa = GoogleSignIn.getAccountForExtension(
+            currentActivity,
+            FlutterHealthFitPlugin.getFitnessOptions(nutritionType)
+        )
 
         val request = DataReadRequest.Builder()
             .read(nutritionType)
@@ -127,7 +139,7 @@ class NutritionReader {
         Fitness.getHistoryClient(currentActivity, gsa).readData(request)
             .addOnSuccessListener { response ->
                 val nutritionField = nutritionType.fields[0]
-                val valueMap = mutableMapOf<String,DataPointValue>()
+                val valueMap = mutableMapOf<String, DataPointValue>()
                 val caloriesDataSet = response.getDataSet(nutritionType)
                 var aggregatedCalories = 0.0F
                 caloriesDataSet.dataPoints.forEach { dataPoint ->
@@ -135,15 +147,15 @@ class NutritionReader {
                     if (value != null && value > 0) {
                         aggregatedCalories += value
 
-                        val sourceApp = dataPoint.dataSource.appPackageName
+                        val sourceApp = dataPoint.dataSource.appPackageName ?: "not_recognized"
                         val dateInMillis = dataPoint.getStartTime(TimeUnit.MILLISECONDS)
                         val sourceValue = valueMap[sourceApp]
                         if (sourceValue != null) {
                             valueMap[sourceApp] = sourceValue.add(
                                 value = value,
-                                dateInMillis = dateInMillis)
-                        }
-                        else {
+                                dateInMillis = dateInMillis
+                            )
+                        } else {
                             valueMap[sourceApp] = DataPointValue(
                                 dateInMillis = dateInMillis,
                                 value = value,
@@ -156,13 +168,12 @@ class NutritionReader {
 
                 if (valueMap.isEmpty()) {
                     result(null, null)
-                }
-                else {
+                } else {
                     val outputList = valueMap.values.toMutableList()
                     val dataPointValue = DataPointValue(
                         dateInMillis = outputList.first().dateInMillis,
                         value = aggregatedCalories,
-                        units =units,
+                        units = units,
                         sourceApp = FlutterHealthFitPlugin.AGGREGATED_SOURCE_APP,
                     )
                     outputList.add(dataPointValue)

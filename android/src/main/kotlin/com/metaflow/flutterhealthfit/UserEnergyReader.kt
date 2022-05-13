@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit
 class UserEnergyReader {
     companion object {
         val restingEnergyType: DataType = DataType.TYPE_BASAL_METABOLIC_RATE
-        val authorizedEnergyOptions: FitnessOptions = FitnessOptions.builder().addDataType(
-            restingEnergyType).build()
     }
 
     fun getRestingEnergy(
@@ -26,7 +24,7 @@ class UserEnergyReader {
             return
         }
 
-        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedEnergyOptions)
+        val gsa = GoogleSignIn.getAccountForExtension(currentActivity, FlutterHealthFitPlugin.getFitnessOptions(restingEnergyType))
 
         val request = DataReadRequest.Builder()
             .read(restingEnergyType)
