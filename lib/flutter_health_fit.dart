@@ -33,6 +33,35 @@ extension QuantityUnitExtension on QuantityUnit {
   }
 }
 
+enum HealthFitAuthorizationStatus {
+  /// Stands for successful authorization.
+  authorized,
+  /// Stands for general unsuccessful authorization.
+  unauthorized,
+  /// (Android) Specific status for authorization issue due to user cancellation on Android.
+  userCancelled,
+  /// Stands for other possible issues during authorization process.
+  error,
+}
+
+/// Authorization result data. It contains [status] which informs of the actual completion result.
+/// Optionally may contain [error] in case if the status is [HealthFitAuthorizationStatus.error].
+class HealthFitAuthorizationResult {
+  final HealthFitAuthorizationStatus status;
+  final Object? error;
+
+  HealthFitAuthorizationResult({required this.status, this.error});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is HealthFitAuthorizationResult && runtimeType == other.runtimeType
+              && status == other.status && error == other.error;
+
+  @override
+  int get hashCode => status.hashCode ^ error.hashCode;
+}
+
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
@@ -596,13 +625,29 @@ class FlutterHealthFit {
   }
 
   /// Will ask to authorize, prompting the user if necessary.
-  Future<bool> authorize() async {
+  Future<HealthFitAuthorizationResult> authorize() async {
+    HealthFitAuthorizationStatus status;
+    Object? error;
+
     try {
-      return await _channel.invokeMethod('requestAuthorization');
+      final authorized = await _channel.invokeMethod('requestAuthorization');
+      if (authorized) {
+        status = HealthFitAuthorizationStatus.authorized;
+      } else {
+        status = HealthFitAuthorizationStatus.unauthorized;
+      }
     } catch (e) {
       _logDeviceError("requestAuthorization", e);
-      return false;
+
+      // On Android we can recognise if user cancelled the permission flow
+      if (Platform.isAndroid && e is PlatformException && e.code == 'canceled') {
+        status = HealthFitAuthorizationStatus.userCancelled;
+      } else {
+        status = HealthFitAuthorizationStatus.error;
+        error = e;
+      }
     }
+    return HealthFitAuthorizationResult(status: status, error: error);
   }
 
   /// Will ask to authorize android.permission.BODY_SENSORS permission on Android.
