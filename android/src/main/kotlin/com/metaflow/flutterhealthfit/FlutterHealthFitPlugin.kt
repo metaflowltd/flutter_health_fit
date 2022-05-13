@@ -1129,14 +1129,14 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>?,
-        grantResults: IntArray?,
+        permissions: Array<out String>,
+        grantResults: IntArray,
     ): Boolean {
         return when (requestCode) {
             SENSOR_PERMISSION_REQUEST_CODE -> {
                 val result = this.deferredResult!!
                 this.deferredResult = null
-                if (grantResults?.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.isNotEmpty() == true && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (isAuthorized(CallDataType.HEART_RATE)) {
                         recordDataPointsIfGranted(true, callTypeToDataTypes(CallDataType.HEART_RATE), result)
                     } else {
