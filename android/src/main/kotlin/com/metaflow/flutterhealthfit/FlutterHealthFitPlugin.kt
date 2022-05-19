@@ -138,7 +138,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
             "isAuthorized" -> result.success(isAuthorized())
 
-            "signOut" -> result.success(activity?.let { signOut(it) })
+            "signOut" -> activity?.let { signOut(result, it) }
 
             "getBasicHealthData" -> result.success(HashMap<String, String>())
 
@@ -889,11 +889,17 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         }.start()
     }
 
-    private fun signOut(activity: Activity) {
+    private fun signOut(result: Result?, activity: Activity) {
         sendNativeLog("$TAG | signing out from google client")
         val client =
             GoogleSignIn.getClient(activity, GoogleSignInOptions.DEFAULT_SIGN_IN)
-        Tasks.await(client.signOut())
+        client.signOut().addOnSuccessListener {
+            sendNativeLog("$TAG | Successfully signed out from google")
+            result?.success(null)
+        }.addOnFailureListener {
+            sendNativeLog("$TAG | Failed to sign out")
+            result?.error("failed", "Failed to sign out, reason: ${it.message}", null)
+        }
     }
 
     private fun getBodyFat(
@@ -1054,7 +1060,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         sendNativeLog("$TAG | checking if disconnected from the client")
         if ((e.cause as? ApiException)?.statusCode == 4) {
             sendNativeLog("$TAG | disconnected from Google client")
-            signOut(activity)
+            signOut(null, activity)
         }
     }
 
