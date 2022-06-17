@@ -317,6 +317,7 @@ class HeartRateSample {
 class FlutterHealthFit {
   static const aggregatedSourceProvider = "Aggregated";
   static const MethodChannel _channel = const MethodChannel('flutter_health_fit');
+  static const EventChannel _workoutsChannel = const EventChannel('flutter_health_fit/workouts');
   static const EventChannel _logsChannel = const EventChannel('flutter_health_fit_logs_channel');
   static HealthFitLog? logger;
 
@@ -846,6 +847,15 @@ class FlutterHealthFit {
     }
   }
 
+  Stream<String> observeWorkouts() {
+    try {
+      return _workoutsChannel.receiveBroadcastStream().map((event) => '$event');
+    } catch (e) {
+      _logDeviceError("observeWorkouts", e);
+      return Stream.error(e);
+    }
+  }
+
   Future<UserActivityDataPointValue?> getFlightsBySegment(int start, int end) async {
     try {
       logger?.info("calling getFlightsBySegment. start: $start, end: $end");
@@ -1092,9 +1102,6 @@ class FlutterHealthFit {
     if (e is PlatformException) {
       if (e.code == "healthkit not available") {
         logger?.info("healthkit not available");
-      }
-      else if (e.code == "background call") {
-        logger?.info("$method was called in background");
       }
       else {
         logger?.severe("Error when calleing $method. ${e.code}: ${e.message}, details-${e.details ?? ""}");
