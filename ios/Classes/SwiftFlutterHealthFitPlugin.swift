@@ -44,18 +44,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_health_fit", binaryMessenger: registrar.messenger())
+        let workoutsChannel = FlutterEventChannel(name: "flutter_health_fit/workouts", binaryMessenger: registrar.messenger())
+
         let instance = SwiftFlutterHealthFitPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
+        workoutsChannel.setStreamHandler(WorkoutsObserver())
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard HKHealthStore.isHealthDataAvailable() else {
             result(FlutterError(code: "healthkit not available", message: "healthkit not available on this device", details:""))
-            return
-        }
-        
-        guard UIApplication.shared.applicationState == .active else {
-            result(FlutterError(code: "background call", message: "cannot read from healthkit on background", details:""))
             return
         }
 
