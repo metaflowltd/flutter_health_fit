@@ -34,10 +34,14 @@ class WorkoutsObserver: NSObject, FlutterStreamHandler {
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         print("WorkoutsObserver cancelled")
         eventSink = nil
-        if let observerQuery = self.observerQuery {
+        if let observerQuery = observerQuery {
             HealthkitReader.sharedInstance.healthStore.stop(observerQuery)
         }
         return nil
+    }
+    
+    func onDetach() {
+        _ = onCancel(withArguments: nil)
     }
     
 }

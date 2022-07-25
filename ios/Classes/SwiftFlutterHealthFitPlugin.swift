@@ -5,6 +5,8 @@ import HealthKit
 
 @available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
+    private var workoutsObserver: WorkoutsObserver? = nil
+    
     private enum OutputType{
         case oneValue
         case valueMap
@@ -47,8 +49,11 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let workoutsChannel = FlutterEventChannel(name: "flutter_health_fit/workouts", binaryMessenger: registrar.messenger())
 
         let instance = SwiftFlutterHealthFitPlugin()
+        let workoutsObserver = WorkoutsObserver()
+        instance.workoutsObserver = workoutsObserver
         registrar.addMethodCallDelegate(instance, channel: channel)
-        workoutsChannel.setStreamHandler(WorkoutsObserver())
+        workoutsChannel.setStreamHandler(workoutsObserver)
+        registrar.publish(instance)
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -807,6 +812,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             return (HKUnit.kilocalorie(), .kCal)
         } else {
             return (HKUnit.gram(), .g)
+        }
+    }
+    
+   public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        if let workoutsObserver = workoutsObserver {
+            workoutsObserver.onDetach()
         }
     }
 }
