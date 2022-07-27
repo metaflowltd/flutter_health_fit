@@ -1076,8 +1076,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>?,
-        grantResults: IntArray?,
+        permissions: Array<out String>,
+        grantResults: IntArray,
     ): Boolean {
         return when (requestCode) {
             SENSOR_PERMISSION_REQUEST_CODE -> {
