@@ -452,8 +452,10 @@ class FlutterHealthFit {
     }
   }
 
-  /// Checks if iBloodGlucose permission has been authorized
+  /// Checks if BloodGlucose permission has been authorized. Blood Glucose is never authorized on Android.
   Future<bool> isBloodGlucoseAuthorized() async {
+    if (!Platform.isIOS) return false;
+
     try {
       final status = await _channel.invokeMethod("isBloodGlucoseAuthorized");
       return status;
