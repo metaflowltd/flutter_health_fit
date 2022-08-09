@@ -71,7 +71,6 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .crossTraining),
         HKQuery.predicateForWorkouts(with: .curling),
         HKQuery.predicateForWorkouts(with: .cycling),
-        HKQuery.predicateForWorkouts(with: .dance),
         HKQuery.predicateForWorkouts(with: .elliptical),
         HKQuery.predicateForWorkouts(with: .equestrianSports),
         HKQuery.predicateForWorkouts(with: .fencing),
@@ -216,39 +215,39 @@ class HealthkitReader: NSObject {
     var bodyFatPercentageQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyFatPercentage)!
     }
-
+    
     var bloodGlucoseQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bloodGlucose)!
     }
-
+    
     var forcedVitalCapacityQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.forcedVitalCapacity)!
     }
-
+    
     var peakExpiratoryFlowRateQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.peakExpiratoryFlowRate)!
     }
-
+    
     var hrvQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.heartRateVariabilitySDNN)!
     }
-
+    
     var menstrualFlowCategoryType: HKCategoryType {
         return HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.menstrualFlow)!
     }
-
+    
     var workoutType: HKObjectType{
         return HKObjectType.workoutType()
     }
-
+    
     var activeEnergyQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.activeEnergyBurned)!
     }
-
+    
     var restingEnergyQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.basalEnergyBurned)!
     }
-
+    
     func quantityTypesToRead() -> [HKQuantityType]{
         return [
             stepsQuantityType,
@@ -562,7 +561,7 @@ class HealthkitReader: NSObject {
                 case .none:
                     flowValue = 0
                 }
-
+                
                 list.append(DataPointValue(
                     dateInMillis: time,
                     value: Double(flowValue),
@@ -816,11 +815,18 @@ class HealthkitReader: NSObject {
                 HKQuery.predicateForWorkouts(with: .discSports),
                 HKQuery.predicateForWorkouts(with: .fitnessGaming)
             ]
-            if #available(iOS 14.0, *) {
-                workoutPredicate += [
-                    HKQuery.predicateForWorkouts(with: .cooldown),
-                ]
-            }
+        }
+        if #available(iOS 14.0, *) {
+            workoutPredicate += [
+                HKQuery.predicateForWorkouts(with: .cooldown),
+                HKQuery.predicateForWorkouts(with: .pickleball),
+                HKQuery.predicateForWorkouts(with: .cardioDance),
+                HKQuery.predicateForWorkouts(with: .socialDance),
+            ]
+        } else {
+            workoutPredicate += [
+                HKQuery.predicateForWorkouts(with: .dance),
+            ]
         }
         let timePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
         let combinedPredicate = NSCompoundPredicate.init(andPredicateWithSubpredicates: [NSCompoundPredicate(orPredicateWithSubpredicates:workoutPredicate), timePredicate])
