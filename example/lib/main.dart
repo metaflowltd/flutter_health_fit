@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 
@@ -31,6 +33,9 @@ class _MyAppState extends State<MyApp> {
   TextEditingController _menstrualDaysController = TextEditingController(text: '7');
   TextEditingController _bodyFatPercentageDaysController = TextEditingController(text: '7');
   TextEditingController _workoutsDaysController = TextEditingController(text: '7');
+
+  List<String> _workoutUpdates = [];
+  StreamSubscription? _workoutsObserverSubscription;
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -90,13 +95,13 @@ class _MyAppState extends State<MyApp> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
-    final steps = await FlutterHealthFit()
-        .getStepsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
+    final steps =
+        await FlutterHealthFit().getStepsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
     final running = await FlutterHealthFit().getWalkingAndRunningDistance;
-    final cycle = await FlutterHealthFit()
-        .getCyclingBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
-    final flights = await FlutterHealthFit()
-        .getFlightsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
+    final cycle =
+        await FlutterHealthFit().getCyclingBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
+    final flights =
+        await FlutterHealthFit().getFlightsBySegment(yesterday.millisecondsSinceEpoch, today.millisecondsSinceEpoch);
     setState(() {
       _activityData = "steps: $steps\nwalking running: $running\ncycle: $cycle flights: $flights";
     });
@@ -138,7 +143,7 @@ class _MyAppState extends State<MyApp> {
       now.millisecondsSinceEpoch,
     );
     setState(() {
-      _bodyFatData = [bodyFatData?.value?.toString() ?? ""];
+      _bodyFatData = [bodyFatData?.value.toString() ?? ""];
     });
   }
 
@@ -151,6 +156,29 @@ class _MyAppState extends State<MyApp> {
     );
     setState(() {
       _workoutData = workoutsData?.map((element) => element.toString()) ?? [];
+    });
+  }
+
+  void _subscribeToWorkouts() {
+    setState(() {
+      _workoutsObserverSubscription = FlutterHealthFit().observeWorkouts().listen(
+        (event) async {
+          setState(() {
+            _workoutUpdates = [..._workoutUpdates, "${DateTime.now()} : $event"];
+          });
+        },
+        onDone: () => _workoutsObserverSubscription = null,
+        onError: (error, st) => print('error in workouts observer $error'),
+      );
+    });
+  }
+
+  void _unsubscribeFromWorkouts() {
+    _workoutsObserverSubscription?.cancel();
+
+    setState(() {
+      _workoutUpdates = [];
+      _workoutsObserverSubscription = null;
     });
   }
 
@@ -238,7 +266,8 @@ class _MyAppState extends State<MyApp> {
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
                   itemBuilder: (context, index) => Text('\n${_bodyFatData[index]}\n'),
-                ),                Divider(height: 1),
+                ),
+                Divider(height: 1),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -260,6 +289,16 @@ class _MyAppState extends State<MyApp> {
                   shrinkWrap: true,
                   physics: ScrollPhysics(),
                   itemBuilder: (context, index) => Text('\n${_workoutData.elementAt(index)}\n'),
+                ),
+                if (_workoutsObserverSubscription == null)
+                  ElevatedButton(child: Text("Subscribe To Workouts"), onPressed: _subscribeToWorkouts)
+                else
+                  ElevatedButton(child: Text("Unsubscribe From Workouts"), onPressed: _unsubscribeFromWorkouts),
+                ListView.builder(
+                  itemCount: _workoutUpdates.length,
+                  shrinkWrap: true,
+                  physics: ScrollPhysics(),
+                  itemBuilder: (context, index) => Text('\n${_workoutUpdates.elementAt(index)}\n'),
                 ),
               ],
             ),
