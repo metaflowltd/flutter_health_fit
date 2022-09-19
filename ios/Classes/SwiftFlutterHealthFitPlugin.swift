@@ -6,6 +6,7 @@ import HealthKit
 @available(iOS 9.0, *)
 public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
     private var workoutsObserver: WorkoutsObserver? = nil
+    private var workoutsChannel: FlutterEventChannel? = nil
     
     private enum OutputType{
         case oneValue
@@ -51,10 +52,20 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let instance = SwiftFlutterHealthFitPlugin()
         let workoutsObserver = WorkoutsObserver()
         instance.workoutsObserver = workoutsObserver
+        instance.workoutsChannel = workoutsChannel
         registrar.addMethodCallDelegate(instance, channel: channel)
         workoutsChannel.setStreamHandler(workoutsObserver)
         registrar.publish(instance)
     }
+    
+    public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        if let workoutsObserver = workoutsObserver {
+            workoutsObserver.onDetach()
+        }
+        if let workoutsChannel = workoutsChannel {
+            workoutsChannel.setStreamHandler(nil)
+        }
+     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard HKHealthStore.isHealthDataAvailable() else {
@@ -815,11 +826,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
     
-   public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
-        if let workoutsObserver = workoutsObserver {
-            workoutsObserver.onDetach()
-        }
-    }
 }
 
 class QuantityArgs {
