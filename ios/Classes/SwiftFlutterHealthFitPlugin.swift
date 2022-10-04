@@ -99,7 +99,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         case "getSleepBySegment":
             getSleepSamples(call: call, result: result)
-            
+
+        case "getRawSleepDataInRange":
+            getRawSleepDataInRange(call: call, result: result)
+
         case "getFlightsBySegment":
             getUserActivity(call: call, quantityType:HealthkitReader.sharedInstance.flightsClimbedQuantityType, result: result)
             
@@ -715,7 +718,29 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                handler: { samples, error in
             
             if let samples = samples {
-                result(samples)
+                result(samples.map { $0["data"] })
+            } else {
+                let error = error! as NSError
+                print("[\(#function)] got error: \(error)")
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            }
+            
+        })
+    }
+    
+    private func getRawSleepDataInRange(call: FlutterMethodCall,
+                                 result: @escaping FlutterResult) {
+        let args = call.arguments as! [String: Int]
+        let startMillis = args["start"]!
+        let endMillis = args["end"]!
+        let start = startMillis.toTimeInterval
+        let end = endMillis.toTimeInterval
+        
+        HealthkitReader.sharedInstance.getSleepSamplesForRange(start: start,
+                                                               end: end,
+                                                               handler: { samples, error in
+            if let samples = samples {
+                result( samples.map { $0["rawData"]})
             } else {
                 let error = error! as NSError
                 print("[\(#function)] got error: \(error)")

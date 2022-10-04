@@ -16,6 +16,7 @@ import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.*
 import com.google.android.gms.fitness.request.DataReadRequest
 import com.google.android.gms.fitness.request.SessionReadRequest
+import com.google.android.gms.fitness.result.SessionReadResponse
 import com.google.android.gms.tasks.Tasks
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -326,6 +327,30 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
+            "getRawSleepDataInRange" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+
+                getRawSleepDataInRange(
+                    start,
+                    end
+                ) { data: List<Map<String, Any?>>?, e: Throwable? ->
+                    data?.let {
+                        if (data.isEmpty()) {
+                            result.success(null)
+                        } else {
+                            result.success(it)
+                        }
+                    } ?: run {
+                        result.error(
+                            "failed",
+                            "Failed to retrieve raw sleep data, reason: ${e?.localizedMessage}",
+                            e
+                        )
+                    }
+                }
+            }
+
             "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
             }
@@ -520,7 +545,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isStepsAuthorized(): Boolean {
         return isAuthorized(
-            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
+            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType)
+                .addDataType(aggregatedDataType)
                 .build()
         )
     }
@@ -696,7 +722,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         result: (Map<Long, Int>?, Throwable?) -> Unit,
     ) {
         val fitnessOptions =
-            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType).addDataType(aggregatedDataType)
+            FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType)
+                .addDataType(aggregatedDataType)
                 .build()
         val activity = activity ?: return
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
@@ -756,21 +783,146 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         end: Long,
         result: (List<Map<String, Any?>>?, Throwable?) -> Unit,
     ) {
+        getSleepSessionsInRange(start, end) { sessionReadResponse, error ->
+            if (error != null) {
+                sendNativeLog("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
+                result(null, error)
+                return@getSleepSessionsInRange
+            }
+
+            sessionReadResponse ?: run {
+                result(
+                    null,
+                    Exception("sessionReadResponse is null, cannot read sleep data")
+                )
+                return@getSleepSessionsInRange
+            }
+
+            val activity = activity ?: run {
+                result(
+                    null,
+                    Exception("No activity available, cannot read sleep data")
+                )
+                return@getSleepSessionsInRange
+            }
+
+            val sleepStageNames = arrayOf(
+                "Unused",
+                "Awake (during sleep)",
+                "Sleep",
+                "Out-of-bed",
+                "Light sleep",
+                "Deep sleep",
+                "REM sleep"
+            )
+
+            val resultList = mutableListOf<Map<String, Any?>>()
+
+            for (session in sessionReadResponse.sessions) {
+                val sessionResults = mutableListOf<Map<String, Any?>>()
+                val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
+                val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
+                sendNativeLog("$TAG | Sleep between $sessionStart and $sessionEnd")
+
+                val dataSets = sessionReadResponse.getDataSet(session)
+
+                for (dataSet in dataSets) {
+                    for (point in dataSet.dataPoints) {
+                        try {
+                            val sleepStageVal =
+                                point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
+                            val sleepStage = sleepStageNames[sleepStageVal]
+                            val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
+                            val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
+                            sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
+                            sessionResults.add(
+                                mapOf(
+                                    "type" to sleepStageVal,
+                                    "start" to segmentStart,
+                                    "end" to segmentEnd,
+                                    "source" to session.appPackageName,
+                                )
+                            )
+                        } catch (e: Exception) {
+                            sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
+                            handleGoogleDisconnection(e, activity)
+                        }
+                    }
+                }
+                // If we were unable to get granular data from the session, we will use not rough data:
+                if (sessionResults.isEmpty()) {
+                    resultList.add(
+                        mapOf(
+                            "type" to 0,
+                            "start" to sessionStart,
+                            "end" to sessionEnd,
+                            "source" to session.appPackageName,
+                        )
+                    )
+                } else {
+                    resultList.addAll(sessionResults)
+                }
+            }
+
+            result(resultList, null)
+        }
+    }
+
+    private fun getRawSleepDataInRange(
+        start: Long,
+        end: Long,
+        result: (List<Map<String, Any?>>?, Throwable?) -> Unit,
+    ) {
+        getSleepSessionsInRange(start, end) { sessionReadResponse, error ->
+
+            if (error != null) {
+                sendNativeLog("$TAG | \tFailed to get raw sleep data ${error.localizedMessage}")
+                result(null, error)
+                return@getSleepSessionsInRange
+            }
+
+            sessionReadResponse ?: run {
+                result(
+                    null,
+                    Exception("sessionReadResponse is null, cannot read sleep data")
+                )
+                return@getSleepSessionsInRange
+            }
+
+            val sessionsRawData = sessionReadResponse.sessions.map {
+                listOfNotNull<Pair<String, Any?>>(
+                    "activity" to it.activity,
+                    "appPackageName" to it.appPackageName,
+                    "description" to it.description,
+                    "identifier" to it.identifier,
+                    "isOngoing" to it.isOngoing,
+                    "name" to it.name,
+                    "startTime" to it.getStartTime(TimeUnit.MILLISECONDS),
+                    "endTime" to it.getStartTime(TimeUnit.MILLISECONDS),
+                    if (it.hasActiveTime()) "activeTime" to it.getActiveTime(TimeUnit.MILLISECONDS) else null
+                ).toMap()
+            }
+            result(sessionsRawData, null)
+        }
+    }
+
+    private fun getSleepSessionsInRange(
+        start: Long,
+        end: Long,
+        result: (SessionReadResponse?, Throwable?) -> Unit,
+    ) {
 
         val fitnessOptions = FitnessOptions.builder().addDataType(sleepDataType).build()
 
-        val activity = activity ?: return
-        val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
+        val activity = activity ?: run {
+            result(
+                null,
+                Exception("No activity available, cannot request sleep sessions")
+            )
+            return
+        }
 
-        val sleepStageNames = arrayOf(
-            "Unused",
-            "Awake (during sleep)",
-            "Sleep",
-            "Out-of-bed",
-            "Light sleep",
-            "Deep sleep",
-            "REM sleep"
-        )
+        val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
         val request = SessionReadRequest.Builder()
             .read(DataType.TYPE_SLEEP_SEGMENT)
@@ -784,59 +936,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
         Fitness.getSessionsClient(activity, gsa).readSession(request)
             .addOnSuccessListener { response ->
-
-                val resultList = mutableListOf<Map<String, Any?>>()
-
-                for (session in response.sessions) {
-                    val sessionResults = mutableListOf<Map<String, Any?>>()
-                    val sessionStart = session.getStartTime(TimeUnit.MILLISECONDS)
-                    val sessionEnd = session.getEndTime(TimeUnit.MILLISECONDS)
-                    sendNativeLog("$TAG | Sleep between $sessionStart and $sessionEnd")
-
-                    val dataSets = response.getDataSet(session)
-
-                    for (dataSet in dataSets) {
-                        for (point in dataSet.dataPoints) {
-                            try {
-                                val sleepStageVal =
-                                    point.getValue(Field.FIELD_SLEEP_SEGMENT_TYPE).asInt()
-                                val sleepStage = sleepStageNames[sleepStageVal]
-                                val segmentStart = point.getStartTime(TimeUnit.MILLISECONDS)
-                                val segmentEnd = point.getEndTime(TimeUnit.MILLISECONDS)
-                                sendNativeLog("$TAG | \t* Type $sleepStage between $segmentStart and $segmentEnd")
-                                sessionResults.add(
-                                    mapOf(
-                                        "type" to sleepStageVal,
-                                        "start" to segmentStart,
-                                        "end" to segmentEnd,
-                                        "source" to session.appPackageName,
-                                    )
-                                )
-                            } catch (e: Exception) {
-                                sendNativeLog("$TAG | \tFailed to parse data point, ${e.localizedMessage}")
-                                handleGoogleDisconnection(e, activity)
-                            }
-                        }
-                    }
-                    // If we were unable to get granular data from the session, we will use not rough data:
-                    if (sessionResults.isEmpty()) {
-                        resultList.add(
-                            mapOf(
-                                "type" to 0,
-                                "start" to sessionStart,
-                                "end" to sessionEnd,
-                                "source" to session.appPackageName,
-                            )
-                        )
-                    } else {
-                        resultList.addAll(sessionResults)
-                    }
-                }
-
-                result(resultList, null)
+                result(response, null)
             }
             .addOnFailureListener { error ->
-                sendNativeLog("$TAG | \tFailed to get sleep data ${error.localizedMessage}")
                 result(null, error)
             }
     }
@@ -982,7 +1084,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                                 resultList.add(
                                     DataPointValue(
                                         dateInMillis = it.getTimestamp(TimeUnit.MILLISECONDS),
-                                        value = it.getValue(menstruationDataType.fields[0]).asInt().toFloat(),
+                                        value = it.getValue(menstruationDataType.fields[0]).asInt()
+                                            .toFloat(),
                                         units = LumenUnit.COUNT,
                                         sourceApp = it.originalDataSource.appPackageName
                                     )

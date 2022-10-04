@@ -964,6 +964,21 @@ class FlutterHealthFit {
     }
   }
 
+  /// Returns the raw sleep data retrieved from the health data provider for the requested time range.
+  ///
+  /// params: [start], [end] in milliseconds, starting from epoch time.
+  Future<List<Map<String, dynamic>>?> getRawSleepDataInRange(int start, int end) async {
+    try {
+      final List<Map>? rawSleepData = await _channel.invokeListMethod<Map>(
+          "getRawSleepDataInRange", {"start": start, "end": end});
+      return rawSleepData?.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (e) {
+      _logDeviceError("getRawSleepDataInRange", e);
+      return null;
+    }
+  }
+
+
   /// Calories returned in kCal for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getEnergyConsumed(int start, int end) async {
