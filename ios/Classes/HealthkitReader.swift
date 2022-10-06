@@ -367,7 +367,7 @@ class HealthkitReader: NSObject {
     
     func getSleepSamplesForRange(start: TimeInterval,
                                  end: TimeInterval,
-                                 handler: @escaping (_ result: [Any]?, _ error: Error?) -> Void)  {
+                                 handler: @escaping (_ result: [[String: Any?]]?, _ error: Error?) -> Void)  {
         
         // Use a sortDescriptor to get the recent data first
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
@@ -375,7 +375,6 @@ class HealthkitReader: NSObject {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictEndDate])
-        
         let query = HKSampleQuery(
             sampleType: sleepCategoryType,
             predicate: predicate,
@@ -398,12 +397,42 @@ class HealthkitReader: NSObject {
                         let source = sample.sourceRevision.source.bundleIdentifier
                         
                         print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
-                        
                         return [
-                            "type": value,
-                            "start": startDate,
-                            "end": endDate,
-                            "source": source
+                            "data" : [
+                                "type": value,
+                                "start": startDate,
+                                "end": endDate,
+                                "source": source,
+                            ],
+                            "rawData" : [
+                                "uuid": sample.uuid.uuidString,
+                                "value": sample.value,
+                                "startDate": Int(sample.startDate.timeIntervalSince1970),
+                                "endDate": Int(sample.endDate.timeIntervalSince1970),
+                                "sourceRevision": [
+                                    "version": sample.sourceRevision.version as Any?,
+                                    "operatingSystemVersion": [
+                                        "majorVersion": sample.sourceRevision.operatingSystemVersion.majorVersion,
+                                        "minorVersion": sample.sourceRevision.operatingSystemVersion.minorVersion,
+                                        "patchVersion": sample.sourceRevision.operatingSystemVersion.patchVersion,
+                                    ],
+                                    
+                                    "source": [
+                                        "name": sample.sourceRevision.source.name,
+                                        "bundleIdentifier": sample.sourceRevision.source.bundleIdentifier,
+                                    ],
+                                    "productType": sample.sourceRevision.productType as Any?,
+                                ],
+                                "device": sample.device != nil ? [
+                                    "name": sample.device!.name,
+                                    "model": sample.device!.model,
+                                    "manufacturer": sample.device!.manufacturer,
+                                    "firmwareVersion": sample.device!.firmwareVersion,
+                                    "hardwareVersion": sample.device!.hardwareVersion,
+                                    "softwareVersion": sample.device!.softwareVersion,
+                                ] : nil,
+                                "metadata": sample.metadata,
+                            ]
                         ]
                         
                     }
