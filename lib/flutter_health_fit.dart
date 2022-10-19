@@ -65,7 +65,14 @@ class HealthFitAuthorizationResult {
 // Current day's accumulated values
 enum _ActivityType { steps, cycling, walkRun, heartRate, flights }
 
-enum SleepSampleType { inBed, asleep, awake }
+enum SleepSampleType {
+  inBed,
+  asleepUnspecified,
+  awake,
+  asleepREM,
+  asleepDeep,
+  asleepCore,
+}
 
 enum GFSleepSampleType {
   // Unspecified or unknown if user is sleeping.
@@ -113,9 +120,16 @@ class SleepSample {
       case 0:
         return SleepSampleType.inBed;
       case 1:
-        return SleepSampleType.asleep;
+        return SleepSampleType.asleepUnspecified;
       case 2:
         return SleepSampleType.awake;
+      case 3:
+        return SleepSampleType.asleepCore;
+      case 4:
+        return SleepSampleType.asleepDeep;
+      case 5:
+        return SleepSampleType.asleepREM;
+
       default:
         throw ArgumentError("Can not map $input to SleepSampleType");
     }
