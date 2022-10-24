@@ -727,18 +727,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getSleepSamplesForRange(start: start,
                                                                end: end,
                                                                handler: { samples, error in
-            
             if let samples = samples {
-                result(samples.map { $0["data"] })
+                result(samples)
             } else {
                 let error = error! as NSError
                 print("[\(#function)] got error: \(error)")
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
-            
         })
     }
-    
+
     private func getRawSleepDataInRange(call: FlutterMethodCall,
                                  result: @escaping FlutterResult) {
         let args = call.arguments as! [String: Int]
@@ -746,18 +744,17 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let endMillis = args["end"]!
         let start = startMillis.toTimeInterval
         let end = endMillis.toTimeInterval
-        
-        HealthkitReader.sharedInstance.getSleepSamplesForRange(start: start,
+
+        HealthkitReader.sharedInstance.getRawSleepDataForRange(start: start,
                                                                end: end,
-                                                               handler: { samples, error in
-            if let samples = samples {
-                result( samples.map { $0["rawData"]})
+                                                               handler: { rawData, error in
+            if let rawData = rawData {
+                result(rawData)
             } else {
                 let error = error! as NSError
                 print("[\(#function)] got error: \(error)")
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
-            
         })
     }
     
