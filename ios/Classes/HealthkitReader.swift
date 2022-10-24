@@ -369,6 +369,95 @@ class HealthkitReader: NSObject {
                                  end: TimeInterval,
                                  handler: @escaping (_ result: [[String: Any?]]?, _ error: Error?) -> Void)  {
         
+        fetchSleepSamples(start: start, end: end) { samples, error in
+            if let error = error {
+                print("Failed to get sleep data, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            if let samples = samples {
+                let map = samples.map { item -> [String: Any] in
+                    let sample = item as! HKCategorySample
+                    let value = sample.value
+                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                    let source = sample.sourceRevision.source.bundleIdentifier
+                    
+                    print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
+                    return [
+                        "type": value,
+                        "start": startDate,
+                        "end": endDate,
+                        "source": source,
+                    ]
+                }
+                handler(map, nil)
+            }
+        }
+    }
+
+    func getRawSleepDataForRange(start: TimeInterval,
+                                 end: TimeInterval,
+                                 handler: @escaping (_ result: [[String: Any?]]?, _ error: Error?) -> Void)  {
+        
+        fetchSleepSamples(start: start, end: end) { samples, error in
+            if let error = error {
+                print("Failed to get raw sleep data, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            if let samples = samples {
+                let map = samples.map { item -> [String: Any?] in
+                    let sample = item as! HKCategorySample
+                    
+                    return [
+                        "uuid": sample.uuid.uuidString,
+                        "value": sample.value,
+                        "startDate": Int(sample.startDate.timeIntervalSince1970),
+                        "endDate": Int(sample.endDate.timeIntervalSince1970),
+                        "sourceRevision": [
+                            "version": sample.sourceRevision.version as Any?,
+                            "operatingSystemVersion": [
+                                "majorVersion": sample.sourceRevision.operatingSystemVersion.majorVersion,
+                                "minorVersion": sample.sourceRevision.operatingSystemVersion.minorVersion,
+                                "patchVersion": sample.sourceRevision.operatingSystemVersion.patchVersion,
+                            ],
+                            
+                            "source": [
+                                "name": sample.sourceRevision.source.name,
+                                "bundleIdentifier": sample.sourceRevision.source.bundleIdentifier,
+                            ],
+                            "productType": sample.sourceRevision.productType as Any?,
+                        ],
+                        "device": sample.device != nil ? [
+                            "name": sample.device!.name,
+                            "model": sample.device!.model,
+                            "manufacturer": sample.device!.manufacturer,
+                            "firmwareVersion": sample.device!.firmwareVersion,
+                            "hardwareVersion": sample.device!.hardwareVersion,
+                            "softwareVersion": sample.device!.softwareVersion,
+                        ] : nil,
+                        "metadata": sample.metadata?.mapValues({ value -> Any? in
+                            if(value is NSDate){
+                                return Int((value as! NSDate).timeIntervalSince1970)
+                            } else if (value is HKQuantity) {
+                                return (value as! HKQuantity).description
+                            } else {
+                                return value
+                            }
+                        }),
+                    ]
+                }
+                handler(map, nil)
+            }
+        }
+    }
+    
+    private func fetchSleepSamples(start: TimeInterval,
+                                   end: TimeInterval,
+                                   handler: @escaping (_ result: [HKSample]?, _ error: Error?) -> Void) {
         // Use a sortDescriptor to get the recent data first
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
@@ -380,66 +469,15 @@ class HealthkitReader: NSObject {
             predicate: predicate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]) {
-                (query: HKSampleQuery, tmpResult: [HKSample]?, error: Error?) in
+                (query: HKSampleQuery, samples: [HKSample]?, error: Error?) in
                 
                 if let error = error {
-                    print("Failed to get sleep data, the reason: \(String(describing: error))")
+                    print("Failed to fetch sleep data, the reason: \(String(describing: error))")
                     handler(nil, error)
                     return
                 }
-                
-                if let rawResult = tmpResult {
-                    let map = rawResult.map { item -> [String: Any] in
-                        let sample = item as! HKCategorySample
-                        let value = sample.value
-                        let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
-                        let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
-                        let source = sample.sourceRevision.source.bundleIdentifier
-                        
-                        print("Healthkit sleep: \(startDate) \(endDate) - value: \(value)")
-                        return [
-                            "data" : [
-                                "type": value,
-                                "start": startDate,
-                                "end": endDate,
-                                "source": source,
-                            ],
-                            "rawData" : [
-                                "uuid": sample.uuid.uuidString,
-                                "value": sample.value,
-                                "startDate": Int(sample.startDate.timeIntervalSince1970),
-                                "endDate": Int(sample.endDate.timeIntervalSince1970),
-                                "sourceRevision": [
-                                    "version": sample.sourceRevision.version as Any?,
-                                    "operatingSystemVersion": [
-                                        "majorVersion": sample.sourceRevision.operatingSystemVersion.majorVersion,
-                                        "minorVersion": sample.sourceRevision.operatingSystemVersion.minorVersion,
-                                        "patchVersion": sample.sourceRevision.operatingSystemVersion.patchVersion,
-                                    ],
-                                    
-                                    "source": [
-                                        "name": sample.sourceRevision.source.name,
-                                        "bundleIdentifier": sample.sourceRevision.source.bundleIdentifier,
-                                    ],
-                                    "productType": sample.sourceRevision.productType as Any?,
-                                ],
-                                "device": sample.device != nil ? [
-                                    "name": sample.device!.name,
-                                    "model": sample.device!.model,
-                                    "manufacturer": sample.device!.manufacturer,
-                                    "firmwareVersion": sample.device!.firmwareVersion,
-                                    "hardwareVersion": sample.device!.hardwareVersion,
-                                    "softwareVersion": sample.device!.softwareVersion,
-                                ] : nil,
-                                "metadata": sample.metadata,
-                            ]
-                        ]
-                        
-                    }
-                    handler(map, nil)
-                }
+                return handler(samples, nil)
             }
-        
         healthStore.execute(query)
     }
     
