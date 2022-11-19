@@ -57,8 +57,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         workoutsChannel.setStreamHandler(workoutsObserver)
         registrar.publish(instance)
     }
-    
+
     public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        NSLog("SwiftFlutterHealthFitPlugin: Detach from engine!")
         if let workoutsObserver = workoutsObserver {
             workoutsObserver.onDetach()
         }
