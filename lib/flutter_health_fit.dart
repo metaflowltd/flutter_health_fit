@@ -631,7 +631,7 @@ class FlutterHealthFit {
   /// Checks if permissions needed for active energy have been authorized
   Future<bool> isActiveEnergyAuthorized() async {
     if (!Platform.isIOS) return false;
-    
+
     try {
       final status = await _channel.invokeMethod("isActiveEnergyAuthorized");
       return status;
@@ -859,6 +859,21 @@ class FlutterHealthFit {
       return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
       _logDeviceError("getWorkoutsBySegment", e);
+      return null;
+    }
+  }
+
+  Future<List<WorkoutSample>?> getWorkoutsSessions(int start, int end) async {
+    if (Platform.isIOS) {
+      // Not supported on iOS
+      return null;
+    }
+
+    try {
+      List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsSessions", {"start": start, "end": end});
+      return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      _logDeviceError("getWorkoutsSessions", e);
       return null;
     }
   }
