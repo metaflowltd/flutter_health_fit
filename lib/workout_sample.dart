@@ -7,6 +7,7 @@ class WorkoutSample {
   final WorkoutSampleType type;
   final DateTime start;
   final DateTime end;
+  final int duration;
   final double? energy; // kilo-Calories
   final double? distance; // meters
   final String source;
@@ -16,6 +17,7 @@ class WorkoutSample {
     required this.type,
     required this.start,
     required this.end,
+    required this.duration,
     required this.energy,
     required this.distance,
     required this.source,
@@ -23,24 +25,35 @@ class WorkoutSample {
 
   @override
   String toString() {
-    return 'WorkoutSample{id: $id, type: $type, start: $start, end: $end, energy: $energy, distance: $distance, source: $source}';
+    return 'WorkoutSample{id: $id, type: $type, start: $start, end: $end,  duration: $duration, energy: $energy, distance: $distance, source: $source}';
   }
 
   WorkoutSample.fromMap(Map<String, dynamic> map)
       : id = map["id"].toString(),
-        type = _typeFromInt(map["type"].toInt()),
+        type = _typeFromPlatformValue(map["type"]),
         start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
         end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
+        duration = map["duration"] ??
+            DateTime.fromMillisecondsSinceEpoch(map["end"])
+                .difference(DateTime.fromMillisecondsSinceEpoch(map["start"]))
+                .inMinutes,
         energy = map["energy"],
         distance = map["distance"],
         source = map["source"];
 
-  static WorkoutSampleType _typeFromInt(int input) {
+  static WorkoutSampleType _typeFromPlatformValue(dynamic input) {
     if (Platform.isAndroid) {
-      return _androidTypeFromInt(input);
-    }
-    else { // ios
-      return _iosTypeFromInt(input);
+      // On Android the workout type type is different for workout samples and sessions:
+      // for workouts - int
+      // for sessions - String
+      if (input is int) {
+        return _androidTypeFromInt(input);
+      } else {
+        return _androidTypeFromString(input);
+      }
+    } else {
+      // ios
+      return _iosTypeFromInt(input.toInt());
     }
   }
 
@@ -210,6 +223,196 @@ class WorkoutSample {
         return WorkoutSampleType.other;
       default:
         print("ERROR unable to detect workout type");
+        return WorkoutSampleType.other;
+    }
+  }
+
+  static WorkoutSampleType _androidTypeFromString(String input) {
+    // values are mapped according to FitnessActivities
+    // https://developers.google.com/android/reference/com/google/android/gms/fitness/FitnessActivities
+    switch (input) {
+      case "walking":
+        return WorkoutSampleType.walking;
+      case "aerobics":
+        return WorkoutSampleType.aerobics;
+      case "archery":
+        return WorkoutSampleType.archery;
+      case "baseball":
+        return WorkoutSampleType.baseball;
+      case "basketball":
+        return WorkoutSampleType.basketball;
+      case "biathlon":
+        return WorkoutSampleType.biathlon;
+      case "biking":
+      case "biking.hand":
+      case "biking.mountain":
+      case "biking.road":
+      case "biking.spinning":
+      case "biking.stationary":
+      case "biking.utility":
+        return WorkoutSampleType.cycling;
+      case "boxing":
+        return WorkoutSampleType.boxing;
+      case "calisthenics":
+        return WorkoutSampleType.calisthenics;
+      case "circuit_training":
+        return WorkoutSampleType.circuitTraining;
+      case "cricket":
+        return WorkoutSampleType.cricket;
+      case "crossfit":
+        return WorkoutSampleType.crossTraining;
+      case "curling":
+        return WorkoutSampleType.curling;
+      case "dancing":
+        return WorkoutSampleType.dance;
+      case "diving":
+        return WorkoutSampleType.diving;
+      case "elevator":
+        return WorkoutSampleType.elevator;
+      case "elliptical":
+        return WorkoutSampleType.elliptical;
+      case "ergometer":
+        return WorkoutSampleType.ergometer;
+      case "escalator":
+        return WorkoutSampleType.escalator;
+      case "fencing":
+        return WorkoutSampleType.fencing;
+      case "football.american":
+        return WorkoutSampleType.americanFootball;
+      case "football.australian":
+        return WorkoutSampleType.australianFootball;
+      case "football.soccer":
+        return WorkoutSampleType.soccer;
+      case "frisbee_disc":
+        return WorkoutSampleType.frisbee;
+      case "gardening":
+        return WorkoutSampleType.gardening;
+      case "golf":
+        return WorkoutSampleType.golf;
+      case "guided_breathing":
+        return WorkoutSampleType.guidedBreathing;
+      case "gymnastics":
+        return WorkoutSampleType.gymnastics;
+      case "handball":
+        return WorkoutSampleType.handball;
+      case "interval_training":
+      case "interval_training.high_intensity":
+        return WorkoutSampleType.intervalTraining;
+      case "hiking":
+        return WorkoutSampleType.hiking;
+      case "hockey":
+        return WorkoutSampleType.hockey;
+      case "horseback_riding":
+        return WorkoutSampleType.horsebackRiding;
+      case "housework":
+        return WorkoutSampleType.housework;
+      case "ice_skating":
+        return WorkoutSampleType.iceSkating;
+      case "jump_rope":
+        return WorkoutSampleType.jumpRope;
+      case "kayaking":
+        return WorkoutSampleType.kayaking;
+      case "kettlebell_training":
+        return WorkoutSampleType.kettlebellTraining;
+      case "kickboxing":
+        return WorkoutSampleType.kickboxing;
+      case "kitesurfing":
+        return WorkoutSampleType.kitesurfing;
+      case "martial_arts":
+      case "martial_arts.mixed":
+        return WorkoutSampleType.martialArts;
+      case "meditation":
+        return WorkoutSampleType.meditation;
+      case "paragliding":
+        return WorkoutSampleType.paragliding;
+      case "pilates":
+        return WorkoutSampleType.pilates;
+      case "polo":
+        return WorkoutSampleType.polo;
+      case "racquetball":
+        return WorkoutSampleType.racquetball;
+      case "rock_climbing":
+        return WorkoutSampleType.climbing;
+      case "rowing":
+      case "rowing.machine":
+        return WorkoutSampleType.rowing;
+      case "rugby":
+        return WorkoutSampleType.rugby;
+      case "running":
+      case "running.jogging":
+      case "running.sand":
+      case "running.treadmill":
+        return WorkoutSampleType.running;
+      case "sailing":
+        return WorkoutSampleType.sailing;
+      case "scuba_diving":
+        return WorkoutSampleType.diving;
+      case "skateboarding":
+        return WorkoutSampleType.skatingSports;
+      case "skating":
+      case "skating.cross":
+      case "skating.indoor":
+      case "skating.inline":
+        return WorkoutSampleType.skatingSports;
+      case "skiing":
+      case "skiing.back_country":
+      case "skiing.kite":
+      case "skiing.roller":
+        return WorkoutSampleType.skiing;
+      case "skiing.cross_country":
+        return WorkoutSampleType.crossCountrySkiing;
+      case "skiing.downhill":
+        return WorkoutSampleType.downhillSkiing;
+      case "sledding":
+      case "snowmobile":
+      case "snowshoeing":
+        return WorkoutSampleType.snowSports;
+      case "snowboarding":
+        return WorkoutSampleType.snowboarding;
+      case "softball":
+        return WorkoutSampleType.softball;
+      case "squash":
+        return WorkoutSampleType.squash;
+      case "stair_climbing":
+      case "stair_climbing.machine":
+        return WorkoutSampleType.stairClimbing;
+      case "standup_paddleboarding":
+        return WorkoutSampleType.paddleSports;
+      case "surfing":
+        return WorkoutSampleType.surfingSports;
+      case "swimming":
+      case "swimming.pool":
+      case "swimming.open_water":
+        return WorkoutSampleType.swimming;
+      case "table_tennis":
+        return WorkoutSampleType.tableTennis;
+      case "tennis":
+        return WorkoutSampleType.tennis;
+      case "treadmill":
+        return WorkoutSampleType.walking;
+      case "volleyball":
+      case "volleyball.beach":
+      case "volleyball.indoor":
+        return WorkoutSampleType.volleyball;
+      case "walking":
+      case "walking.fitness":
+      case "walking.nordic":
+      case "walking.treadmill":
+      case "walking.stroller":
+        return WorkoutSampleType.walking;
+      case "water_polo":
+        return WorkoutSampleType.polo;
+      case "weightlifting":
+        return WorkoutSampleType.weightlifting;
+      case "wheelchair":
+        return WorkoutSampleType.wheelchairRunPace;
+      case "windsurfing":
+        return WorkoutSampleType.surfingSports;
+      case "yoga":
+        return WorkoutSampleType.yoga;
+      case "zumba":
+        return WorkoutSampleType.zumba;
+      default:
         return WorkoutSampleType.other;
     }
   }

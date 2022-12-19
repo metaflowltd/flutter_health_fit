@@ -373,6 +373,25 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
+            "getWorkoutsSessions" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+                WorkoutsReader().getWorkoutsSessions(
+                    activity,
+                    start,
+                    end
+                ) { list: List<Map<String, Any>>?, e: Throwable? ->
+                    if (e != null) {
+                        sendNativeLog("$TAG | failed: ${e.message}")
+                        activity?.let { handleGoogleDisconnection(e, it) }
+
+                        result.error("failed", e.message, null)
+                    } else {
+                        result.success(list)
+                    }
+                }
+            }
+
             "getCyclingDistanceBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Double>())
             }

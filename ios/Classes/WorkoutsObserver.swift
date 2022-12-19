@@ -47,6 +47,7 @@ class WorkoutsObserver: NSObject, FlutterStreamHandler {
     }
     
     func onDetach() {
+        NSLog("WorkoutsObserver: Detaching workouts observer")
         _ = onCancel(withArguments: nil)
     }
     
