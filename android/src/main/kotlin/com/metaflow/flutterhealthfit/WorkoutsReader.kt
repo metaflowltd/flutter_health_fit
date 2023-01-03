@@ -107,8 +107,7 @@ class WorkoutsReader {
                                 energy = workoutEnergy,
                                 source = workoutSource,
                             ).also { workout -> outputList.add(workout) }
-                        }
-                        else {
+                        } else {
                             Log.i(logTag, "workout was not logged")
                         }
                     }
@@ -157,6 +156,11 @@ class WorkoutsReader {
                     }
                     val session = it.session!!
 
+                    if (session.isOngoing) {
+                        Log.i(logTag, "An ongoing workout session skipped")
+                        return@forEach
+                    }
+
                     if (session.activity !in listOf(
                             FitnessActivities.UNKNOWN,
                             FitnessActivities.STILL,
@@ -166,36 +170,42 @@ class WorkoutsReader {
                         val caloriesDataPoint =
                             it.getDataSet(DataType.TYPE_CALORIES_EXPENDED)?.dataPoints?.lastOrNull()
 
-                        val workoutStart = it.getStartTime(TimeUnit.MILLISECONDS)
-                        val workoutEnd = it.getEndTime(TimeUnit.MILLISECONDS)
+                        val sessionStart = it.getStartTime(TimeUnit.MILLISECONDS)
+                        val sessionEnd = it.getEndTime(TimeUnit.MILLISECONDS)
                         val workoutEnergy =
                             caloriesDataPoint?.getValue(Field.FIELD_CALORIES)?.asFloat()
                         val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
                             ?: caloriesDataPoint?.dataSource?.appPackageName
-                        val durationInMinutes = session.getActiveTime(TimeUnit.MINUTES).toInt()
+                        val sessionActiveTime = if (session.hasActiveTime()) {
+                            session.getActiveTime(TimeUnit.MINUTES).toInt()
+                        } else {
+                            null
+                        }
+                        val sessionTotalDuration = (sessionEnd - sessionStart) / 60000
                         Log.i(
-                            logTag, "Workout data:" +
+                            logTag, "Session data:" +
                                     "\n Name: ${session.name}" +
                                     "\n Id: ${session.identifier}" +
                                     "\n Activity type: ${session.activity}" +
-                                    "\n Session start: ${Date(workoutStart)}" +
-                                    "\n Session end: ${Date(workoutEnd)}" +
-                                    "\n Duration: $durationInMinutes" +
+                                    "\n Session start: ${Date(sessionStart)}" +
+                                    "\n Session end: ${Date(sessionEnd)}" +
+                                    "\n Duration: $sessionActiveTime" +
                                     "\n Calories spent: $workoutEnergy" +
                                     "\n Reported from: $workoutSource"
                         )
-                        if (session.getActiveTime(TimeUnit.MINUTES) > 15 ||
+                        if ((sessionActiveTime != null && sessionActiveTime > 15) ||
+                            sessionTotalDuration > 15 ||
                             (session.activity != FitnessActivities.WALKING
                                     && session.activity != FitnessActivities.RUNNING)
                         ) {
                             // we don't want to log walks and runs that are less than 15 minutes
-                            Log.i(logTag, "logged workout")
+                            Log.i(logTag, "logged workout session")
                             createWorkoutMap(
                                 type = session.activity,
                                 id = session.identifier,
-                                start = workoutStart,
-                                end = workoutEnd,
-                                duration = durationInMinutes,
+                                start = sessionStart,
+                                end = sessionEnd,
+                                duration = sessionActiveTime,
                                 energy = workoutEnergy,
                                 source = workoutSource,
                             ).also { workout -> outputList.add(workout) }
