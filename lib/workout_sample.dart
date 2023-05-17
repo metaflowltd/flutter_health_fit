@@ -40,6 +40,7 @@ class WorkoutSample {
 
   static int calcDuration(Map<String, dynamic> map) {
     final duration = map["duration"];
+    // we expect duration to be a number so both int and double are valid
     if (duration is int) {
       return duration;
     }

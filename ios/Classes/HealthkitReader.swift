@@ -923,7 +923,7 @@ class HealthkitReader: NSObject {
                     let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
                     let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
                     let source = sample.sourceRevision.source.bundleIdentifier
-                    let durationMinutes = sample.duration / 60.0
+                    let durationMinutes = lround(sample.duration / 60.0)
                     
                     return [
                         "id": id,
