@@ -33,13 +33,26 @@ class WorkoutSample {
         type = _typeFromPlatformValue(map["type"]),
         start = DateTime.fromMillisecondsSinceEpoch(map["start"]),
         end = DateTime.fromMillisecondsSinceEpoch(map["end"]),
-        duration = map["duration"] ??
-            DateTime.fromMillisecondsSinceEpoch(map["end"])
-                .difference(DateTime.fromMillisecondsSinceEpoch(map["start"]))
-                .inMinutes,
+        duration = calcDuration(map),
         energy = map["energy"],
         distance = map["distance"],
         source = map["source"];
+
+  static int calcDuration(Map<String, dynamic> map) {
+    final duration = map["duration"];
+    // we expect duration to be a number so both int and double are valid
+    if (duration is int) {
+      return duration;
+    }
+    else if (duration is double) {
+      return duration.round();
+    }
+
+    return DateTime
+        .fromMillisecondsSinceEpoch(map["end"])
+        .difference(DateTime.fromMillisecondsSinceEpoch(map["start"]))
+        .inMinutes;
+  }
 
   static WorkoutSampleType _typeFromPlatformValue(dynamic input) {
     if (Platform.isAndroid) {
