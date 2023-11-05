@@ -234,6 +234,21 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(rate)
                 }
             }
+        case "getRawHeartRate":
+            let myArgs = call.arguments as! [String: Int]
+            let startMillis = myArgs["start"]!
+            let endMillis = myArgs["end"]!
+            let start = startMillis.toTimeInterval
+            let end = endMillis.toTimeInterval
+            HealthkitReader.sharedInstance.getRawHeartRate(start: start, end: end) { (samples, error) in
+                if let error = error as NSError? {
+                    print("[getRawHeartRate] got error: \(error)")
+                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                } else {
+                    result(samples)
+                }
+            }
+        
         case "getAverageHeartRate":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.heartRateQuantityType,
                          call: call,
@@ -421,6 +436,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
+
     
     private func getRestingEnergy(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],

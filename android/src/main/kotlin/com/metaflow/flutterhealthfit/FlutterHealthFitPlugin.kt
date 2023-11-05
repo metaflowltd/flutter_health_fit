@@ -354,6 +354,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "getFlightsBySegment" -> { // only implemented on iOS
                 result.success(emptyMap<Long, Int>())
             }
+
             "getWorkoutsBySegment" -> {
                 val start = call.argument<Long>("start")!!
                 val end = call.argument<Long>("end")!!
@@ -409,6 +410,31 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                     if (map != null) {
                         assert(map.size <= 1) { "getTotalStepsInInterval should return only one interval. Found: ${map.size}" }
                         result.success(map.values.firstOrNull())
+                    } else {
+                        result.error("failed", e?.message, null)
+                    }
+                }
+            }
+
+            "getRawHeartRate" -> {
+                val start = call.argument<Long>("start")!!
+                val end = call.argument<Long>("end")!!
+
+                getHeartRateInRange(start, end) { samples: List<DataPoint>?, e: Throwable? ->
+                    if (samples != null) {
+                        if (samples.isEmpty()) {
+                            result.success(null)
+                        } else {
+                            val heartRateSamplesList = samples.map {
+                                createHeartRateSampleMap(
+                                    it.getTimestamp(TimeUnit.MILLISECONDS),
+                                    it.getValue(heartRateDataType.fields[0]).asFloat(),
+                                    it.dataSource.appPackageName,
+                                )
+                            }
+
+                            result.success(heartRateSamplesList)
+                        }
                     } else {
                         result.error("failed", e?.message, null)
                     }
@@ -637,6 +663,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 deferredResult = null
                 true
             }
+
             else -> false
         }
     }
@@ -1216,6 +1243,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
                 true
             }
+
             else ->  // Ignore all other requests.
                 false
         }

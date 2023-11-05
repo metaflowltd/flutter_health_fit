@@ -409,7 +409,7 @@ class HealthkitReader: NSObject {
             }
             
             if let samples = samples {
-                let map = samples.map { item -> [String: Any?] in
+                let map = samples.map { [weak self] item -> [String: Any?] in
                     let sample = item as! HKCategorySample
                     
                     return [
@@ -439,15 +439,7 @@ class HealthkitReader: NSObject {
                             "hardwareVersion": sample.device!.hardwareVersion,
                             "softwareVersion": sample.device!.softwareVersion,
                         ] : nil,
-                        "metadata": sample.metadata?.mapValues({ value -> Any? in
-                            if(value is NSDate){
-                                return Int((value as! NSDate).timeIntervalSince1970)
-                            } else if (value is HKQuantity) {
-                                return (value as! HKQuantity).description
-                            } else {
-                                return value
-                            }
-                        }),
+                        "metadata": self?.validHandlerMetadate(sample: sample),
                     ]
                 }
                 handler(map, nil)
@@ -872,6 +864,52 @@ class HealthkitReader: NSObject {
         healthStore.execute(query)
     }
     
+    func getRawHeartRate(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
+        let startDate = Date(timeIntervalSince1970: start)
+        let endDate = Date(timeIntervalSince1970: end)
+        
+        let health: HKHealthStore = HKHealthStore()
+        let predicate = HKQuery.predicateForSamples(withStart: startDate as Date, end: endDate as Date?, options: [])
+        
+        //descriptor
+        let sortDescriptors = [
+            NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        ]
+        
+        let heartRateQuery = HKSampleQuery(sampleType: heartRateQuantityType,
+                                           predicate: predicate,
+                                           limit: HKObjectQueryNoLimit,
+                                           sortDescriptors: sortDescriptors,
+                                           resultsHandler: { (query, results, error) in
+            guard error == nil, let results = results else {
+                print("Failed to get getRawHeartRate, the reason: \(String(describing: error))")
+                handler(nil, error)
+                return
+            }
+            
+            let map: [[String: Any]] = results.compactMap { [weak self] item in
+                guard let sample = item as? HKQuantitySample else {
+                    return nil
+                }
+                let heartRate = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+                let timestamp = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                
+                let mapSampleWithNil: [String: Any?] = [
+                    "value" : Int(heartRate),
+                    "timestamp": timestamp,
+                    "sourceApp": sample.sourceRevision.source.bundleIdentifier,
+                    "sourceDevice": sample.device?.localIdentifier,
+                    "metadata": self?.validHandlerMetadate(sample: sample),
+                ]
+                
+                return mapSampleWithNil.compactMapValues{$0}
+            }
+            
+            handler(map, nil)
+        }) //eo-query
+        
+        health.execute(heartRateQuery)
+    }
     
     func getWokoutsBySegment(start: TimeInterval, end: TimeInterval, handler: @escaping (([Any]?, Error?) -> Swift.Void)) {
         let startDate = Date(timeIntervalSince1970: start)
@@ -907,37 +945,36 @@ class HealthkitReader: NSObject {
         ) {
             (query, samples, error) in
             
-            if let error = error {
+            guard error == nil, let rawResult = samples else {
                 print("Failed to get sleep data, the reason: \(String(describing: error))")
                 handler(nil, error)
                 return
             }
-            
-            if let rawResult = samples {
-                let map = rawResult.map { item -> [String: Any] in
-                    let sample = item as! HKWorkout
-                    let id = sample.uuid.uuidString
-                    let type = sample.workoutActivityType.rawValue
-                    let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie())
-                    let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter())
-                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
-                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
-                    let source = sample.sourceRevision.source.bundleIdentifier
-                    let durationMinutes = lround(sample.duration / 60.0)
-                    
-                    return [
-                        "id": id,
-                        "type": type,
-                        "energy": energy,
-                        "distance": distance,
-                        "start": startDate,
-                        "end": endDate,
-                        "source": source,
-                        "duration": durationMinutes,
-                    ]
-                }
-                handler(map, nil)
+                        
+            let map = rawResult.map { item -> [String: Any] in
+                let sample = item as! HKWorkout
+                let id = sample.uuid.uuidString
+                let type = sample.workoutActivityType.rawValue
+                let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0
+                let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0
+                let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                let source = sample.sourceRevision.source.bundleIdentifier
+                let durationMinutes = lround(sample.duration / 60.0)
+                
+                return [
+                    "id": id,
+                    "type": type,
+                    "energy": energy,
+                    "distance": distance,
+                    "start": startDate,
+                    "end": endDate,
+                    "source": source,
+                    "duration": durationMinutes,
+                ]
             }
+            
+            handler(map, nil)
         }
         healthStore.execute(query)
     }
@@ -1051,6 +1088,27 @@ class HealthkitReader: NSObject {
         self.healthStore.execute(query)
         
     }
+    
+    private func validHandlerMetadate(sample: HKSample) -> [String: Any]? {
+        let metadataWithNil: [String: Any?]? = sample.metadata?.mapValues({ value in
+            if let date = value as? Date {
+                return Int(date.timeIntervalSince1970 * 1000)
+            }
+            if let num = value as? Int {
+                return num
+            }
+            if let num = value as? Double {
+                return num
+            }
+            if let str = value as? String {
+                return str
+            }
+            return nil
+        })
+        
+        return metadataWithNil?.compactMapValues{$0};
+    }
+
     
 }
 
