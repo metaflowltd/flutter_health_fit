@@ -197,7 +197,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: DataPointValue?, error: Error?) in
                 if let error = error as NSError?{
-                    print("[getWeight] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 } else {
                     result(weight?.resultMap())
@@ -211,13 +210,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
             HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
                 if let error = error as NSError? {
-                    print("[getWokoutsBySegment] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
                 if let workouts = workouts {
                     result(workouts)
                 } else {
-                    print("No workouts found")
+                    result(nil)
                 }
             }
         case "getLatestHeartRate":
@@ -228,7 +226,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { (rate: [String: Any]?, error: Error?) in
                 if let error = error as NSError? {
-                    print("[getHeartRateSample] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 } else {
                     result(rate)
@@ -242,7 +239,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getRawHeartRate(start: start, end: end) { (samples, error) in
                 if let error = error as NSError? {
-                    print("[getRawHeartRate] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 } else {
                     result(samples)
@@ -300,7 +296,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                     result(steps)
                 } else {
                     let error = error! as NSError
-                    print("[getStepsByDay] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
             }
@@ -486,10 +481,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             if let error = error {
                 let error = error as NSError
                 if error.code == 11 {
-                    print("no data was found for a given dates range: \(error)")
                     result(nil)
                 } else {
-                    print("got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
             } else {
@@ -748,7 +741,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(samples)
             } else {
                 let error = error! as NSError
-                print("[\(#function)] got error: \(error)")
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
         })
@@ -769,7 +761,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 result(rawData)
             } else {
                 let error = error! as NSError
-                print("[\(#function)] got error: \(error)")
                 result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
             }
         })
@@ -788,7 +779,6 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                 return
             }
             let error = error! as NSError
-            print("[\(#function)] got error: \(error)")
             result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
         }
     }
@@ -842,10 +832,8 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             if let error = error {
                 let error = error as NSError
                 if error.code == 11 {
-                    print("[\(methodName)] no data was found for a given dates range: \(error)")
                     result(nil)
                 } else {
-                    print("[\(methodName)] got error: \(error)")
                     result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
                 }
             } else {
