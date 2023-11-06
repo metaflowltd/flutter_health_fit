@@ -735,6 +735,21 @@ class FlutterHealthFit {
     }
   }
 
+  /// Get raw heart rate samples in the period (for both Platforms).
+  Future<List<HeartRateSample>?> getRawHeartRate(int start, int end) async {
+    try {
+      final samples = await _channel.invokeListMethod<Map>("getRawHeartRate", {"start": start, "end": end});
+      if (samples == null) {
+        return null;
+      }
+
+      return samples?.map((e) => HeartRateSample.fromMap(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      _logDeviceError("getLatestHeartRate", e);
+      return null;
+    }
+  }
+
   /// Get latest heart rate sample in the period (for both Platforms).
   Future<HeartRateSample?> getLatestHeartRate(int start, int end) async {
     try {
