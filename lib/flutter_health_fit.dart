@@ -1165,11 +1165,11 @@ class FlutterHealthFit {
         logger?.info("healthkit not available");
       }
       else {
-        logger?.severe("Error when calleing $method. ${e.code}: ${e.message}, details-${e.details ?? ""}");
+        logger?.severe("Error when calling $method. ${e.code}: ${e.message}, details-${e.details ?? ""}");
       }
     }
     else {
-      logger?.severe("Error when calleing $method. ${e.toString()}");
+      logger?.severe("Error when calling $method. ${e.toString()}");
     }
   }
 }
