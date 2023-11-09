@@ -817,9 +817,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
               let startMillis = myArgs["start"],
               let endMillis = myArgs["end"],
               let sampleType = methodNamesToQuantityTypes[methodName] else {
-                  result(FlutterError(code: "Missing args", message: "missing start and end params", details:""))
-                  return
-              }
+            result(FlutterError(code: "Missing args", message: "missing start and end params", details:""))
+            return
+        }
         let start = startMillis.toTimeInterval
         let end = endMillis.toTimeInterval
         
@@ -831,19 +831,31 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                    end: end) { (list: [DataPointValue]?, error: Error?) in
             if let error = error {
                 let error = error as NSError
-                if error.code == 11 {
-                    result(nil)
-                } else {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                if #available(iOS 14.0, *) {
+                    if error.code == HKError.Code.errorNoData.rawValue {
+                        // no data
+                        result(nil)
+                        return
+                    }
                 }
-            } else {
-                let resultList = list?.compactMap({ dataPointValue in
-                    return dataPointValue.resultMap()
-                })
-                result(resultList)
+                
+                if error.code == HKError.Code.errorDatabaseInaccessible.rawValue {
+                    // phone is locked
+                    result(nil)
+                    return
+                }
+                
+                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                return
             }
+            
+            let resultList = list?.compactMap({ dataPointValue in
+                return dataPointValue.resultMap()
+            })
+            result(resultList)
         }
     }
+
 
     private func getNutritionUnitsBy(methodName: String) -> (searchUnit: HKUnit, reportUnit: DataPointValue.LumenUnit) {
         if methodName == "getEnergyConsumed" {
