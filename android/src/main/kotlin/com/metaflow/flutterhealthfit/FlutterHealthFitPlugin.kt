@@ -615,6 +615,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun isWorkoutsAuthorized(): Boolean {
+        if (!isActivityRecognitionAuthorized()) {
+            return false;
+        }
+
         return isAuthorized(WorkoutsReader.authorizedFitnessOptions)
     }
 
@@ -667,6 +671,13 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             else -> false
         }
     }
+
+    private fun isActivityRecognitionAuthorized() = (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+            || activity?.let {
+        ContextCompat.checkSelfPermission(
+            it,
+            Manifest.permission.ACTIVITY_RECOGNITION)
+    } == PackageManager.PERMISSION_GRANTED)
 
     private fun recordDataPointsIfGranted(
         isGranted: Boolean,
