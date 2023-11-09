@@ -82,15 +82,18 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
         case "isAuthorized":  // only checks if requested! no telling if authorized!
             if #available(iOS 12.0, *) {
-                HealthkitReader.sharedInstance.getRequestStatusForAuthorization { (status: HKAuthorizationRequestStatus, error: Error?) in
+                HealthkitReader.sharedInstance.getRequestStatusForAuthorization { [weak self] (status: HKAuthorizationRequestStatus, error: Error?) in
                     switch status {
                     case .shouldRequest:
                         result(false)
                     case .unnecessary:
                         result(true)
                     case .unknown:
-                        let error = error! as NSError
-                        result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                        if let error = error {
+                            result(self?.createReportError(error: error))
+                            return
+                        }
+                        result(FlutterError(code: "Authorization", message: "missing error details", details: call.method))
                     }
                 }
             } else {
@@ -132,24 +135,24 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                        start: startMillis.toTimeInterval,
                                                        end: endMillis.toTimeInterval,
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
-                                                       maxResults: 1) { dataMap, error in
+                                                       maxResults: 1) { [weak self] dataMap, error in
                 if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    result(self?.createReportError(error: error))
+                    return
                 }
-                else {
-                    if let date = dataMap?.keys.first,
-                       let detailedOutput = dataMap?[date]  {
-                        let value = DataPointValue(dateInMillis: date,
-                                                   value: detailedOutput.value,
-                                                   units: .cm,
-                                                   sourceApp: detailedOutput.sourceApp,
-                                                   additionalInfo: nil)
-                        result(value.resultMap())
-                    }
-                    else {
-                        result(nil)
-                    }
+                
+                if let date = dataMap?.keys.first,
+                   let detailedOutput = dataMap?[date]  {
+                    let value = DataPointValue(dateInMillis: date,
+                                               value: detailedOutput.value,
+                                               units: .cm,
+                                               sourceApp: detailedOutput.sourceApp,
+                                               additionalInfo: nil)
+                    result(value.resultMap())
+                    return
                 }
+                
+                result(nil)
             }
         
         case "getBodyFatPercentageBySegment":
@@ -163,24 +166,24 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                        start: startMillis.toTimeInterval,
                                                        end: endMillis.toTimeInterval,
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
-                                                       maxResults: 1) { dataMap, error in
+                                                       maxResults: 1) { [weak self] dataMap, error in
                 if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                    result(self?.createReportError(error: error))
+                    return
                 }
-                else {
-                    if let date = dataMap?.keys.first,
-                       let detailedOutput = dataMap?[date]  {
-                        let value = DataPointValue(dateInMillis: date,
-                                                   value: detailedOutput.value * 100,
-                                                   units: .percent,
-                                                   sourceApp: detailedOutput.sourceApp,
-                                                   additionalInfo: nil)
-                        result(value.resultMap())
-                    }
-                    else {
-                        result(nil)
-                    }
+                
+                if let date = dataMap?.keys.first,
+                   let detailedOutput = dataMap?[date]  {
+                    let value = DataPointValue(dateInMillis: date,
+                                               value: detailedOutput.value * 100,
+                                               units: .percent,
+                                               sourceApp: detailedOutput.sourceApp,
+                                               additionalInfo: nil)
+                    result(value.resultMap())
+                    return
                 }
+                
+                result(nil)
             }
         
         case "getMenstrualDataBySegment":
@@ -195,12 +198,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                   }
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { (weight: DataPointValue?, error: Error?) in
-                if let error = error as NSError?{
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(weight?.resultMap())
+            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { [weak self] (weight: DataPointValue?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(weight?.resultMap())
             }
             
         case "getWorkoutsBySegment":
@@ -208,15 +212,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let startMillis = args["start"]!.toTimeInterval
             let endMillis = args["end"]!.toTimeInterval
             
-            HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { (workouts, error) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { [weak self] (workouts, error) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
-                if let workouts = workouts {
-                    result(workouts)
-                } else {
-                    result(nil)
-                }
+                
+                result(workouts)
             }
         case "getLatestHeartRate":
             let myArgs = call.arguments as! [String: Int]
@@ -224,12 +226,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { (rate: [String: Any]?, error: Error?) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(rate)
+            HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { [weak self] (rate: [String: Any]?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(rate)
             }
         case "getRawHeartRate":
             let myArgs = call.arguments as! [String: Int]
@@ -237,67 +240,77 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getRawHeartRate(start: start, end: end) { (samples, error) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(samples)
+            HealthkitReader.sharedInstance.getRawHeartRate(start: start, end: end) { [weak self] (samples, error) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(samples)
             }
         
         case "getAverageHeartRate":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.heartRateQuantityType,
                          call: call,
-                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(rates?.first)
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(rates?.first)
             }
+        
         case "getAverageWalkingHeartRate":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.walkingHeartRateAverageQuantityType,
                          call: call,
-                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(rates?.first)
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(rates?.first)
             }
+        
         case "getAverageRestingHeartRate":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.restingHeartRateQuantityType,
                          call: call,
-                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { (rates: [[String : Any]]?, error: Error?) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(rates?.first)
+                         unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(rates?.first)
             }
+        
         case "getAverageHeartRateVariability":
             getAverageQuantity(quantityType: HealthkitReader.sharedInstance.hrvQuantityType,
                          call: call,
-                               unit: HKUnit.secondUnit(with: .milli)) { (rates: [[String : Any]]?, error: Error?) in
-                if let error = error as NSError? {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                } else {
-                    result(rates?.first)
+                               unit: HKUnit.secondUnit(with: .milli)) { [weak self] (rates: [[String : Any]]?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(rates?.first)
+                
             }
+        
         case "getTotalStepsInInterval":
             let myArgs = call.arguments as! [String: Int]
             let startMillis = myArgs["start"]!
             let endMillis = myArgs["end"]!
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getTotalStepsInInterval(start: start, end: end) { (steps: Int?, error: Error?) in
-                if let steps = steps {
-                    result(steps)
-                } else {
-                    let error = error! as NSError
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            HealthkitReader.sharedInstance.getTotalStepsInInterval(start: start, end: end) { [weak self] (steps: Int?, error: Error?) in
+                if let error = error {
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(steps)
             }
             
         case "getEnergyConsumed", "getFiberConsumed", "getSugarConsumed",
@@ -432,36 +445,54 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
 
+    private func createReportError(error: Error) -> FlutterError? {
+        let nsError = error as NSError
+        
+        if #available(iOS 14.0, *) {
+            if nsError.code == HKError.Code.errorNoData.rawValue {
+                // no data
+                return nil
+            }
+        }
+        
+        if nsError.code == HKError.Code.errorDatabaseInaccessible.rawValue {
+            // phone is locked
+            return nil
+        }
+        
+        return FlutterError(code: "\(nsError.code)", message: nsError.domain, details: nsError.localizedDescription)
+    }
+
     
     private func getRestingEnergy(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
               let startMillis = args["start"] as? Int,
               let endMillis = args["end"] as? Int else {
-                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
-                  return
-              }
+            result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+            return
+        }
         HealthkitReader.sharedInstance.getQuantity(quantityType: HealthkitReader.sharedInstance.restingEnergyQuantityType,
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval,
                                                    lmnUnit: .kCal,
-                                                   maxResults: 1) { dataMap, error in
-            if let error = error as NSError? {
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                   maxResults: 1) { [weak self] dataMap, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
             }
-            else {
-                if let date = dataMap?.keys.first,
-                   let detailedOutput = dataMap?[date]  {
-                    let value = DataPointValue(dateInMillis: date,
-                                               value: detailedOutput.value,
-                                               units: .kCal,
-                                               sourceApp: detailedOutput.sourceApp,
-                                               additionalInfo: nil)
-                    result(value.resultMap())
-                }
-                else {
-                    result(nil)
-                }
+            
+            if let date = dataMap?.keys.first,
+               let detailedOutput = dataMap?[date]  {
+                let value = DataPointValue(dateInMillis: date,
+                                           value: detailedOutput.value,
+                                           units: .kCal,
+                                           sourceApp: detailedOutput.sourceApp,
+                                           additionalInfo: nil)
+                result(value.resultMap())
+                return
             }
+            
+            result(nil)
         }
     }
    
@@ -477,31 +508,29 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                    searchUnit: .kilocalorie(),
                                                                    reportUnit: .kCal,
                                                                    start: startMillis.toTimeInterval,
-                                                                   end: endMillis.toTimeInterval) {list, error in
+                                                                   end: endMillis.toTimeInterval) {[weak self] list, error in
             if let error = error {
-                let error = error as NSError
-                if error.code == 11 {
-                    result(nil)
-                } else {
-                    result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
-                }
-            } else {
-                let resultList = list?.compactMap({ dataPointValue in
-                    return dataPointValue.resultMap()
-                })
-                result(resultList)
+                result(self?.createReportError(error: error))
+                return
             }
+            
+            let resultList = list?.compactMap({ dataPointValue in
+                return dataPointValue.resultMap()
+            })
+            result(resultList)
+            
         }
     }
     
     func getRequestStatus(types: [HKObjectType], result: @escaping FlutterResult) {
         if #available(iOS 12.0, *){
-            HealthkitReader.sharedInstance.getRequestStatus(for: Set(types)) { status, error in
+            HealthkitReader.sharedInstance.getRequestStatus(for: Set(types)) { [weak self] status, error in
                 if let error = error {
-                    result(FlutterError(code: "\((error as NSError).code)", message: error.localizedDescription, details: nil))
-                } else {
-                    result(status == .unnecessary)
+                    result(self?.createReportError(error: error))
+                    return
                 }
+                
+                result(status == .unnecessary)
             }
         } else {
             // Fallback on earlier versions
@@ -619,15 +648,12 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                    end: endMillis.toTimeInterval,
                                                    lmnUnit: lmnUnit,
                                                    maxResults: outputType.outputLimit()) { [weak self] dataMap, error in
-            guard let strongSelf = self else {return}
-                
-            if let error = error as NSError? {
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
             }
-            else {
-                let resultData = strongSelf.createResultData(outputType: outputType, dataMap: dataMap)
-                result(resultData)
-            }
+            
+            result(self?.createResultData(outputType: outputType, dataMap: dataMap))
         }
     }
     
@@ -668,6 +694,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                           start: start,
                                                           end: end) { (rates: [[String : Any]]?, error: Error?) in
             if let error = error as NSError? {
+                
                 result( nil, error)
             } else {
                 result(rates, nil)
@@ -681,10 +708,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         guard let args = call.arguments as? [String: Any],
               let startTime = args["start"] as? TimeInterval,
               let endTime = args["end"] as? TimeInterval else {
-                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
-                  return
-              }
-
+            result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+            return
+        }
+        
         let startMillis = startTime / 1000
         let endMillis = endTime / 1000
         HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType,
@@ -692,17 +719,17 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                             end: endMillis,
                                                             duration: 1,
                                                             unit: .days,
-                                                            options: [.cumulativeSum, .separateBySource]) { _, results, error in
-            if let error = error as NSError? {
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                            options: [.cumulativeSum, .separateBySource]) { [weak self] _, results, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
                 return
             }
-
+            
             guard let results = results else {
                 result(nil)
                 return
             }
-
+            
             let startDate = Date(timeIntervalSince1970: startMillis)
             let endDate = Date(timeIntervalSince1970: endMillis)
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
@@ -718,10 +745,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                         sourceApp: statistics.sources?.first?.bundleIdentifier,
                                                         additionalInfo: ["endDateInMillis" : Int(statistics.endDate.timeIntervalSince1970 * 1000)])
                     result(dataPointValue.resultMap())
+                    return
                 }
-                else {
-                    result(nil)
-                }
+                
+                result(nil)
             }
         }
     }
@@ -736,13 +763,13 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         HealthkitReader.sharedInstance.getSleepSamplesForRange(start: start,
                                                                end: end,
-                                                               handler: { samples, error in
-            if let samples = samples {
-                result(samples)
-            } else {
-                let error = error! as NSError
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                               handler: { [weak self] samples, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
             }
+            
+            result(samples)
         })
     }
 
@@ -756,30 +783,34 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
 
         HealthkitReader.sharedInstance.getRawSleepDataForRange(start: start,
                                                                end: end,
-                                                               handler: { rawData, error in
-            if let rawData = rawData {
-                result(rawData)
-            } else {
-                let error = error! as NSError
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                               handler: { [weak self] rawData, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
             }
+            
+            result(rawData)
         })
     }
     
     private func getQuantityBySegment(quantityType: HKQuantityType, call: FlutterMethodCall, convertToInt: Bool = false, result: @escaping FlutterResult) {
         let args = QuantityArgs(arguments: call.arguments!)
-        HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType, start: args.start, end: args.end, duration: args.duration, unit: args.unit) { (quantityByStartTime: [Int: Double]?, error: Error?) -> () in
+        HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType, start: args.start, end: args.end, duration: args.duration, unit: args.unit) { [weak self] (quantityByStartTime: [Int: Double]?, error: Error?) -> () in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
+            }
+            
             if let quantityByStartTime = quantityByStartTime {
                 if convertToInt {
                     result(quantityByStartTime.mapValues({ Int($0) }))
                 } else {
                     result(quantityByStartTime)
                 }
-                
                 return
             }
-            let error = error! as NSError
-            result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+            
+            result(nil)
         }
     }
 
@@ -796,16 +827,16 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         
         HealthkitReader.sharedInstance.getCategory(categoryType: categoryType,
                                                    start: startMillis.toTimeInterval,
-                                                   end: endMillis.toTimeInterval) { values, error in
-            if let error = error as NSError? {
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                                                   end: endMillis.toTimeInterval) { [weak self] values, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
             }
-            else {
-                let resultList = values?.compactMap({ dataPointValue in
-                    return dataPointValue.resultMap()
-                })
-                result(resultList)
-            }
+            
+            let resultList = values?.compactMap({ dataPointValue in
+                return dataPointValue.resultMap()
+            })
+            result(resultList)
         }
     }
     
@@ -828,24 +859,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                    searchUnit: units.searchUnit,
                                                                    reportUnit: units.reportUnit,
                                                                    start: start,
-                                                                   end: end) { (list: [DataPointValue]?, error: Error?) in
+                                                                   end: end) {[weak self] (list: [DataPointValue]?, error: Error?) in
             if let error = error {
-                let error = error as NSError
-                if #available(iOS 14.0, *) {
-                    if error.code == HKError.Code.errorNoData.rawValue {
-                        // no data
-                        result(nil)
-                        return
-                    }
-                }
-                
-                if error.code == HKError.Code.errorDatabaseInaccessible.rawValue {
-                    // phone is locked
-                    result(nil)
-                    return
-                }
-                
-                result(FlutterError(code: "\(error.code)", message: error.domain, details: error.localizedDescription))
+                result(self?.createReportError(error: error))
                 return
             }
             
