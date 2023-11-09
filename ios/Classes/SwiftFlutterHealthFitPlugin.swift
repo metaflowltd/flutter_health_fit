@@ -90,7 +90,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                         result(true)
                     case .unknown:
                         if let error = error {
-                            result(self?.createRportError(error: error))
+                            result(self?.createReportError(error: error))
                             return
                         }
                         result(FlutterError(code: "Authorization", message: "missing error details", details: call.method))
@@ -137,7 +137,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.cm),
                                                        maxResults: 1) { [weak self] dataMap, error in
                 if let error = error as NSError? {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -168,7 +168,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                        lmnUnit: lmnUnit(from: call, defalutUnit: LMNUnit.percent),
                                                        maxResults: 1) { [weak self] dataMap, error in
                 if let error = error as NSError? {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -200,7 +200,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getWeight(start: start, end: end) { [weak self] (weight: DataPointValue?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -214,7 +214,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
             HealthkitReader.sharedInstance.getWokoutsBySegment(start: startMillis, end: endMillis)  { [weak self] (workouts, error) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -228,7 +228,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getHeartRateSample(start: start, end: end) { [weak self] (rate: [String: Any]?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -242,7 +242,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getRawHeartRate(start: start, end: end) { [weak self] (samples, error) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -254,7 +254,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -266,7 +266,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -278,7 +278,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                          call: call,
                          unit: HKUnit.count().unitDivided(by: HKUnit.minute())) { [weak self] (rates: [[String : Any]]?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -290,7 +290,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                          call: call,
                                unit: HKUnit.secondUnit(with: .milli)) { [weak self] (rates: [[String : Any]]?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -306,7 +306,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let end = endMillis.toTimeInterval
             HealthkitReader.sharedInstance.getTotalStepsInInterval(start: start, end: end) { [weak self] (steps: Int?, error: Error?) in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -445,7 +445,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func createRportError(error: Error) -> FlutterError? {
+    private func createReportError(error: Error) -> FlutterError? {
         let nsError = error as NSError
         
         if #available(iOS 14.0, *) {
@@ -477,7 +477,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                    lmnUnit: .kCal,
                                                    maxResults: 1) { [weak self] dataMap, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -510,7 +510,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                    start: startMillis.toTimeInterval,
                                                                    end: endMillis.toTimeInterval) {[weak self] list, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -526,7 +526,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         if #available(iOS 12.0, *){
             HealthkitReader.sharedInstance.getRequestStatus(for: Set(types)) { [weak self] status, error in
                 if let error = error {
-                    result(self?.createRportError(error: error))
+                    result(self?.createReportError(error: error))
                     return
                 }
                 
@@ -649,7 +649,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                    lmnUnit: lmnUnit,
                                                    maxResults: outputType.outputLimit()) { [weak self] dataMap, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -721,7 +721,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                             unit: .days,
                                                             options: [.cumulativeSum, .separateBySource]) { [weak self] _, results, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -765,7 +765,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                end: end,
                                                                handler: { [weak self] samples, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -785,7 +785,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                end: end,
                                                                handler: { [weak self] rawData, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -797,7 +797,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         let args = QuantityArgs(arguments: call.arguments!)
         HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType, start: args.start, end: args.end, duration: args.duration, unit: args.unit) { [weak self] (quantityByStartTime: [Int: Double]?, error: Error?) -> () in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -829,7 +829,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                    start: startMillis.toTimeInterval,
                                                    end: endMillis.toTimeInterval) { [weak self] values, error in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
@@ -861,7 +861,7 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                                                    start: start,
                                                                    end: end) {[weak self] (list: [DataPointValue]?, error: Error?) in
             if let error = error {
-                result(self?.createRportError(error: error))
+                result(self?.createReportError(error: error))
                 return
             }
             
