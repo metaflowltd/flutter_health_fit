@@ -951,32 +951,55 @@ class HealthkitReader: NSObject {
                 return
             }
                         
-            let map = rawResult.map { item -> [String: Any] in
-                let sample = item as! HKWorkout
-                let id = sample.uuid.uuidString
-                let type = sample.workoutActivityType.rawValue
-                let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0
-                let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0
-                let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
-                let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
-                let source = sample.sourceRevision.source.bundleIdentifier
-                let durationMinutes = lround(sample.duration / 60.0)
+            self.fetchStepsForWorkouts(workouts: rawResult) { workoutsAndSteps, error in
+                var map: [[String: Any?]] = workoutsAndSteps.map { item -> [String: Any?] in
+                    let sample = item.0
+                    let id = sample.uuid.uuidString
+                    let type = sample.workoutActivityType.rawValue
+                    let energy = sample.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0
+                    let distance = sample.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0
+                    let startDate = Int(sample.startDate.timeIntervalSince1970 * 1000)
+                    let endDate = Int(sample.endDate.timeIntervalSince1970 * 1000)
+                    let source = sample.sourceRevision.source.bundleIdentifier
+                    let durationMinutes = lround(sample.duration / 60.0)
+                    let steps = item.1
+                    
+                    return [
+                        "id": id,
+                        "type": type,
+                        "energy": energy,
+                        "distance": distance,
+                        "start": startDate,
+                        "end": endDate,
+                        "source": source,
+                        "duration": durationMinutes,
+                        "steps": steps,
+                    ]
+                }
                 
-                return [
-                    "id": id,
-                    "type": type,
-                    "energy": energy,
-                    "distance": distance,
-                    "start": startDate,
-                    "end": endDate,
-                    "source": source,
-                    "duration": durationMinutes,
-                ]
+                handler(map, nil)
             }
-            
-            handler(map, nil)
+        
         }
         healthStore.execute(query)
+    }
+    
+    private func fetchStepsForWorkouts(workouts: [HKSample], completion: @escaping ([(HKWorkout, Int?)], Error?) -> Void) {
+        let dispatchGroup = DispatchGroup()
+        var workoutsAndSteps =  [(HKWorkout, Int?)]()
+        for workout in workouts {
+            dispatchGroup.enter()
+            self.getTotalStepsInInterval(start: workout.startDate.timeIntervalSince1970,
+                                         end: workout.endDate.timeIntervalSince1970,
+                                         completion: {steps, error in
+                workoutsAndSteps.append((workout as! HKWorkout, steps))
+                dispatchGroup.leave()
+            })
+        }
+
+        dispatchGroup.notify(queue: .main) {
+            completion(workoutsAndSteps, nil)
+        }
     }
     
     //MARK: - Type Makers
