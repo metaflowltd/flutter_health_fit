@@ -17,6 +17,7 @@ class WorkoutsReader {
         private val activityDataType = DataType.TYPE_ACTIVITY_SEGMENT
         private val workoutDataType = DataType.TYPE_WORKOUT_EXERCISE
         private val caloriesDataType = DataType.TYPE_CALORIES_EXPENDED
+        private val aggregatedStepsType: DataType = DataType.AGGREGATE_STEP_COUNT_DELTA
         private val activitySummaryDataType = DataType.AGGREGATE_ACTIVITY_SUMMARY
         val authorizedFitnessOptions: FitnessOptions =
             FitnessOptions.builder().addDataType(DataType.TYPE_WORKOUT_EXERCISE).build()
@@ -48,6 +49,7 @@ class WorkoutsReader {
             .enableServerQueries()
             .aggregate(caloriesDataType)
             .aggregate(activityDataType)
+            .aggregate(aggregatedStepsType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .bucketByActivitySegment(1, TimeUnit.MINUTES)
             .build()
@@ -64,6 +66,8 @@ class WorkoutsReader {
                         it.getDataSet(activitySummaryDataType)?.dataPoints?.lastOrNull()
                     val workoutType =
                         activityDataPoint?.getValue(activityField)?.asInt() ?: unknownActivityType
+                    val steps = it.getDataSet(aggregatedStepsType)?.dataPoints?.firstOrNull()
+                        ?.getValue(Field.FIELD_STEPS)?.asInt()
 
                     if (workoutType !in listOf(
                             unknownActivityType,
@@ -92,7 +96,8 @@ class WorkoutsReader {
                                     "\n Session end: ${Date(workoutEnd)}" +
                                     "\n Session id: $workoutUID" +
                                     "\n Calories spent: $workoutEnergy" +
-                                    "\n Reported from: $workoutSource"
+                                    "\n Reported from: $workoutSource" +
+                                    "\n Steps: $steps"
                         )
                         if (durationInMinutes > 15 ||
                             (workoutType != walkingActivityType && workoutType != runningActivityType) ) {
@@ -106,6 +111,7 @@ class WorkoutsReader {
                                 end = workoutEnd,
                                 energy = workoutEnergy,
                                 source = workoutSource,
+                                steps = steps,
                             ).also { workout -> outputList.add(workout) }
                         } else {
                             Log.i(logTag, "workout was not logged")
@@ -141,6 +147,7 @@ class WorkoutsReader {
             .read(DataType.TYPE_WORKOUT_EXERCISE)
             .enableServerQueries()
             .aggregate(DataType.TYPE_CALORIES_EXPENDED)
+            .aggregate(aggregatedStepsType)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .bucketBySession(1, TimeUnit.MINUTES)
             .build()
@@ -169,7 +176,8 @@ class WorkoutsReader {
                     ) {
                         val caloriesDataPoint =
                             it.getDataSet(DataType.TYPE_CALORIES_EXPENDED)?.dataPoints?.lastOrNull()
-
+                        val steps = it.getDataSet(aggregatedStepsType)?.dataPoints?.firstOrNull()
+                            ?.getValue(Field.FIELD_STEPS)?.asInt()
                         val sessionStart = it.getStartTime(TimeUnit.MILLISECONDS)
                         val sessionEnd = it.getEndTime(TimeUnit.MILLISECONDS)
                         val workoutEnergy =
@@ -191,7 +199,8 @@ class WorkoutsReader {
                                     "\n Session end: ${Date(sessionEnd)}" +
                                     "\n Duration: $sessionActiveTime" +
                                     "\n Calories spent: $workoutEnergy" +
-                                    "\n Reported from: $workoutSource"
+                                    "\n Reported from: $workoutSource" +
+                                    "\n Steps: $steps"
                         )
                         if ((sessionActiveTime != null && sessionActiveTime > 15) ||
                             sessionTotalDuration > 15 ||
@@ -208,6 +217,7 @@ class WorkoutsReader {
                                 duration = sessionActiveTime,
                                 energy = workoutEnergy,
                                 source = workoutSource,
+                                steps = steps,
                             ).also { workout -> outputList.add(workout) }
                         } else {
                             Log.i(logTag, "workout session was not logged")
@@ -235,6 +245,7 @@ class WorkoutsReader {
         duration: Int?,
         energy: Float?,
         source: String?,
+        steps: Int?,
     ): Map<String, Any> {
 
         val map = mutableMapOf(
@@ -255,6 +266,10 @@ class WorkoutsReader {
 
         source?.let {
             map["source"] = it
+        }
+
+        steps?.let {
+            map["steps"] = it
         }
 
         return map

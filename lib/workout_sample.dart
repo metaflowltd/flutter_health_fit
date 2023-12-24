@@ -8,6 +8,7 @@ class WorkoutSample {
   final DateTime start;
   final DateTime end;
   final int duration;
+  final int? steps;
   final double? energy; // kilo-Calories
   final double? distance; // meters
   final String source;
@@ -18,6 +19,7 @@ class WorkoutSample {
     required this.start,
     required this.end,
     required this.duration,
+    required this.steps,
     required this.energy,
     required this.distance,
     required this.source,
@@ -25,7 +27,15 @@ class WorkoutSample {
 
   @override
   String toString() {
-    return 'WorkoutSample{id: $id, type: $type, start: $start, end: $end,  duration: $duration, energy: $energy, distance: $distance, source: $source}';
+    return 'WorkoutSample{id: $id, '
+        'type: $type, '
+        'start: $start, '
+        'end: $end, '
+        'duration: $duration, '
+        'energy: $energy, '
+        'distance: $distance, '
+        'source: $source, '
+        'steps: $steps}';
   }
 
   WorkoutSample.fromMap(Map<String, dynamic> map)
@@ -36,6 +46,7 @@ class WorkoutSample {
         duration = calcDuration(map),
         energy = map["energy"],
         distance = map["distance"],
+        steps = map["steps"],
         source = map["source"];
 
   static int calcDuration(Map<String, dynamic> map) {
@@ -43,13 +54,11 @@ class WorkoutSample {
     // we expect duration to be a number so both int and double are valid
     if (duration is int) {
       return duration;
-    }
-    else if (duration is double) {
+    } else if (duration is double) {
       return duration.round();
     }
 
-    return DateTime
-        .fromMillisecondsSinceEpoch(map["end"])
+    return DateTime.fromMillisecondsSinceEpoch(map["end"])
         .difference(DateTime.fromMillisecondsSinceEpoch(map["start"]))
         .inMinutes;
   }
