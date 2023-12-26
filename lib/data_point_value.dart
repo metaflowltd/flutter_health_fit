@@ -33,4 +33,9 @@ class DataPointValue {
 
     return DataPointValue(value: value, date: date, units: units, sourceApp: sourceApp);
   }
+
+  @override
+  String toString() {
+    return 'DataPointValue{date: $date, value: $value, units: $units, sourceApp: $sourceApp}';
+  }
 }
