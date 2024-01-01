@@ -2,8 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
+import 'package:flutter_health_fit_example/date_picker_edittext.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(
+      MaterialApp(
+        home: MyApp(),
+      ),
+    );
 
 class MyApp extends StatefulWidget {
   @override
@@ -17,6 +22,7 @@ class _MyAppState extends State<MyApp> {
   String _lastWeightString = "";
   String _activityData = "";
   String _heartData = "";
+  String _stepsData = "";
   List<String> _menstrualData = [];
   List<String> _bodyFatData = [];
   Iterable<String> _workoutData = [];
@@ -36,6 +42,7 @@ class _MyAppState extends State<MyApp> {
 
   List<String> _workoutUpdates = [];
   StreamSubscription? _workoutsObserverSubscription;
+  DateTime? _selectedStepsDate;
 
   Future _getAuthorized() async {
     final flutterHealthFit = FlutterHealthFit();
@@ -133,6 +140,57 @@ class _MyAppState extends State<MyApp> {
         _menstrualData = menstrualData.map((element) => "${element.date} : ${element.value}").toList();
       }
     });
+  }
+
+  _getStepsData() async {
+    if (_selectedStepsDate == null) {
+      _showErrorBottomSheet(context, "Please select a date for steps");
+      return;
+    }
+
+    final DateTime selectedDate = _selectedStepsDate!;
+    final start = _getStartOfDay(selectedDate).millisecondsSinceEpoch;
+    final end = _getEndOfDay(selectedDate).millisecondsSinceEpoch;
+    final steps = await FlutterHealthFit().getStepsBySegment(
+      start,
+      end,
+    );
+    setState(() {
+      if (steps != null) {
+        _stepsData = steps.toString();
+      }
+    });
+  }
+
+  void _showErrorBottomSheet(BuildContext context, String errorMessage) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          height: 150, // Adjust height as needed
+          color: Colors.red, // Color to indicate error (e.g., red)
+          child: Center(
+            child: Text(
+              errorMessage,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  DateTime _getStartOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  DateTime _getEndOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 23, 59, 59);
   }
 
   _getBodyFatPercentage() async {
@@ -245,6 +303,21 @@ class _MyAppState extends State<MyApp> {
                   itemBuilder: (context, index) => Text('\n${_menstrualData[index]}\n'),
                 ),
                 Divider(height: 1),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(child: Text("Get Steps for date"), onPressed: _getStepsData),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    DatePickerEditText(
+                      onDateSelected: (selectedDate) {
+                        _selectedStepsDate = selectedDate;
+                      },
+                    ),
+                  ],
+                ),
+                Text('\n$_stepsData\n'),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
