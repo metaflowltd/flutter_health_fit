@@ -12,6 +12,7 @@ class WorkoutSample {
   final double? energy; // kilo-Calories
   final double? distance; // meters
   final String source;
+  final List<HeartRateSample>? heartRateSamples;
 
   WorkoutSample({
     required this.id,
@@ -23,7 +24,10 @@ class WorkoutSample {
     required this.energy,
     required this.distance,
     required this.source,
+    this.heartRateSamples,
   });
+
+
 
   @override
   String toString() {
@@ -35,7 +39,9 @@ class WorkoutSample {
         'energy: $energy, '
         'distance: $distance, '
         'source: $source, '
-        'steps: $steps}';
+        'steps: $steps,'
+        'heartRateSamples: $heartRateSamples'
+        '}';
   }
 
   WorkoutSample.fromMap(Map<String, dynamic> map)
@@ -47,7 +53,13 @@ class WorkoutSample {
         energy = map["energy"],
         distance = map["distance"],
         steps = map["steps"],
-        source = map["source"];
+        source = map["source"],
+        heartRateSamples = map["heartRateSamples"] != null
+            ? (map["heartRateSamples"] as List<dynamic>)
+                .map((e) => HeartRateSample.fromMap(e))
+                .toList()
+            : null
+  ;
 
   static int calcDuration(Map<String, dynamic> map) {
     final duration = map["duration"];
@@ -671,5 +683,31 @@ class WorkoutSample {
       default:
         return WorkoutSampleType.other;
     }
+  }
+
+  WorkoutSample copyWith({
+    String? id,
+    WorkoutSampleType? type,
+    DateTime? start,
+    DateTime? end,
+    int? duration,
+    int? steps,
+    double? energy,
+    double? distance,
+    String? source,
+    List<HeartRateSample>? heartRateSamples,
+  }) {
+    return WorkoutSample(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      duration: duration ?? this.duration,
+      steps: steps ?? this.steps,
+      energy: energy ?? this.energy,
+      distance: distance ?? this.distance,
+      source: source ?? this.source,
+      heartRateSamples: heartRateSamples ?? this.heartRateSamples,
+    );
   }
 }
