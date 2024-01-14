@@ -686,19 +686,28 @@ class WorkoutSample {
   }
 
   WorkoutSample copyWith({
-    required List<HeartRateSample> heartRateSamples,
+    String? id,
+    WorkoutSampleType? type,
+    DateTime? start,
+    DateTime? end,
+    int? duration,
+    int? steps,
+    double? energy,
+    double? distance,
+    String? source,
+    List<HeartRateSample>? heartRateSamples,
   }) {
     return WorkoutSample(
-      id: this.id,
-      type: this.type,
-      start: this.start,
-      end: this.end,
-      duration: this.duration,
-      steps: this.steps,
-      energy: this.energy,
-      distance: this.distance,
-      source: this.source,
-      heartRateSamples: heartRateSamples,
+      id: id ?? this.id,
+      type: type ?? this.type,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      duration: duration ?? this.duration,
+      steps: steps ?? this.steps,
+      energy: energy ?? this.energy,
+      distance: distance ?? this.distance,
+      source: source ?? this.source,
+      heartRateSamples: heartRateSamples ?? this.heartRateSamples,
     );
   }
 }
