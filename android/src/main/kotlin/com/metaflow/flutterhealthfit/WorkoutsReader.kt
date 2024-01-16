@@ -9,7 +9,8 @@ import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.DataType
 import com.google.android.gms.fitness.data.Field
 import com.google.android.gms.fitness.request.DataReadRequest
-import java.util.*
+import com.google.android.gms.fitness.request.SessionReadRequest
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 class WorkoutsReader {
@@ -100,7 +101,8 @@ class WorkoutsReader {
                                     "\n Steps: $steps"
                         )
                         if (durationInMinutes > 15 ||
-                            (workoutType != walkingActivityType && workoutType != runningActivityType) ) {
+                            (workoutType != walkingActivityType && workoutType != runningActivityType)
+                        ) {
                             // we don't want to log walks and runs that are less than 15 minutes
                             Log.i(logTag, "logged workout")
                             createWorkoutMap(
@@ -143,29 +145,29 @@ class WorkoutsReader {
 
         val gsa = GoogleSignIn.getAccountForExtension(currentActivity, authorizedFitnessOptions)
 
-        val request = DataReadRequest.Builder()
-            .read(DataType.TYPE_WORKOUT_EXERCISE)
-            .enableServerQueries()
-            .aggregate(DataType.TYPE_CALORIES_EXPENDED)
-            .aggregate(aggregatedStepsType)
-            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .bucketBySession(1, TimeUnit.MINUTES)
+
+        val readRequest = SessionReadRequest.Builder()
+            .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+            .read(DataType.TYPE_ACTIVITY_SEGMENT)
+            .read(DataType.TYPE_CALORIES_EXPENDED)
+            .read(DataType.AGGREGATE_STEP_COUNT_DELTA)
+            .readSessionsFromAllApps()
+            .includeActivitySessions()
             .build()
 
         val outputList = mutableListOf<Map<String, Any>>()
 
-        Fitness.getHistoryClient(currentActivity, gsa).readData(request)
+        Fitness.getSessionsClient(currentActivity, gsa)
+            .readSession(readRequest)
             .addOnSuccessListener { response ->
-                response.buckets.forEach {
-                    if (it.session == null) {
-                        Log.w(logTag, "Failed to analyse session bucket: Session is null")
-                        return@forEach
-                    }
-                    val session = it.session!!
+                // Get a list of the sessions that match the criteria to check the result.
+                val sessions = response.sessions
+                Log.i(logTag, "Number of returned sessions is: ${sessions.size}")
 
+                for (session in sessions) {
                     if (session.isOngoing) {
                         Log.i(logTag, "An ongoing workout session skipped")
-                        return@forEach
+                        continue
                     }
 
                     if (session.activity !in listOf(
@@ -174,22 +176,37 @@ class WorkoutsReader {
                             FitnessActivities.IN_VEHICLE
                         )
                     ) {
-                        val caloriesDataPoint =
-                            it.getDataSet(DataType.TYPE_CALORIES_EXPENDED)?.dataPoints?.lastOrNull()
-                        val steps = it.getDataSet(aggregatedStepsType)?.dataPoints?.firstOrNull()
-                            ?.getValue(Field.FIELD_STEPS)?.asInt()
-                        val sessionStart = it.getStartTime(TimeUnit.MILLISECONDS)
-                        val sessionEnd = it.getEndTime(TimeUnit.MILLISECONDS)
-                        val workoutEnergy =
-                            caloriesDataPoint?.getValue(Field.FIELD_CALORIES)?.asFloat()
-                        val workoutSource = caloriesDataPoint?.originalDataSource?.appPackageName
-                            ?: caloriesDataPoint?.dataSource?.appPackageName
+                        // Process the session
+                        var steps = 0
+                        var workoutEnergy = 0.0f
+                        val workoutSource = session.appPackageName
+                        val sessionStart =
+                            session.getStartTime(TimeUnit.MILLISECONDS)
+                        val sessionEnd =
+                            session.getEndTime(TimeUnit.MILLISECONDS)
                         val sessionActiveTime = if (session.hasActiveTime()) {
                             session.getActiveTime(TimeUnit.MINUTES).toInt()
                         } else {
                             null
                         }
-                        val sessionTotalDuration = (sessionEnd - sessionStart) / 60000
+                        val sessionTotalDuration =
+                            (sessionEnd - sessionStart) / 60000
+
+                        for (dataSet in response.getDataSet(session)) {
+                            if (dataSet.dataType == DataType.TYPE_CALORIES_EXPENDED) {
+                                for (dataPoint in dataSet.dataPoints) {
+                                    workoutEnergy += dataPoint.getValue(Field.FIELD_CALORIES)
+                                        .asFloat()
+                                }
+                            }
+                            if (dataSet.dataType == aggregatedStepsType) {
+                                for (dataPoint in dataSet.dataPoints) {
+                                    steps += dataPoint.getValue(Field.FIELD_STEPS)
+                                        .asInt()
+                                }
+                            }
+                        }
+
                         Log.i(
                             logTag, "Session data:" +
                                     "\n Name: ${session.name}" +
@@ -220,7 +237,7 @@ class WorkoutsReader {
                                 steps = steps,
                             ).also { workout -> outputList.add(workout) }
                         } else {
-                            Log.i(logTag, "workout session was not logged")
+                            Log.i(logTag, "Skipped short walk/run session logging")
                         }
                     }
                 }
