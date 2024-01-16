@@ -60,7 +60,6 @@ class WorkoutsReader {
             .addOnSuccessListener { response ->
                 val caloriesExpendedField = caloriesDataType.fields[0]
                 val activityField = activitySummaryDataType.fields[0]
-
                 response.buckets.forEach {
                     val activityDataPoint =
                         it.getDataSet(activitySummaryDataType)?.dataPoints?.lastOrNull()
@@ -171,7 +170,8 @@ class WorkoutsReader {
                     if (session.activity !in listOf(
                             FitnessActivities.UNKNOWN,
                             FitnessActivities.STILL,
-                            FitnessActivities.IN_VEHICLE
+                            FitnessActivities.IN_VEHICLE,
+                            FitnessActivities.SLEEP,
                         )
                     ) {
                         val caloriesDataPoint =
