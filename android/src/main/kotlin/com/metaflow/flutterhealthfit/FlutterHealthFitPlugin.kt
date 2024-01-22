@@ -39,6 +39,7 @@ enum class LumenUnit(val value: String) {
     KCAL("kCal"),
     PERCENT("percent"),
     COUNT("count"),
+    L("l"),
 }
 
 class FlutterHealthFitPlugin : MethodCallHandler,
@@ -513,6 +514,23 @@ class FlutterHealthFitPlugin : MethodCallHandler,
                 }
             }
 
+            "getWaterConsumption" -> {
+                val start = call.argument<Long>("start")
+                val end = call.argument<Long>("end")
+                if (start == null || end == null) {
+                    sendNativeLog("${UserEnergyReader::class.java.simpleName} | Missing mandatory fields")
+                    result.error("Missing mandatory fields", "start, end", null)
+                } else {
+                    HydrationReader().getHydration(
+                        activity,
+                        start,
+                        end
+                    ) { list: List<DataPointValue>?, e: Throwable? ->
+                        handleDataPointValueListResponse(result = result, list = list, e = e)
+                    }
+                }
+            }
+
             "isAnyPermissionAuthorized" -> result.success(isAnyPermissionAuthorized())
 
             "isStepsAuthorized" -> result.success(isStepsAuthorized())
@@ -546,6 +564,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "isBodySensorsAuthorized" -> result.success(hasSensorPermissionCompat())
 
             "isRestingEnergyAuthorized" -> result.success(isRestingEnergyAuthorized())
+
+            "isWaterConsumptionAuthorized" -> result.success(isWaterConsumptionAuthorized())
 
             else -> result.notImplemented()
         }
@@ -616,7 +636,7 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isWorkoutsAuthorized(): Boolean {
         if (!isActivityRecognitionAuthorized()) {
-            return false;
+            return false
         }
 
         return isAuthorized(WorkoutsReader.authorizedFitnessOptions)
@@ -632,6 +652,10 @@ class FlutterHealthFitPlugin : MethodCallHandler,
 
     private fun isRestingEnergyAuthorized(): Boolean {
         return isAuthorized(UserEnergyReader.authorizedEnergyOptions)
+    }
+
+    private fun isWaterConsumptionAuthorized(): Boolean {
+        return isAuthorized(HydrationReader.authorizedHydrationOptions)
     }
 
     private fun isAuthorized(fitnessOptions: FitnessOptions): Boolean {
@@ -676,7 +700,8 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             || activity?.let {
         ContextCompat.checkSelfPermission(
             it,
-            Manifest.permission.ACTIVITY_RECOGNITION)
+            Manifest.permission.ACTIVITY_RECOGNITION
+        )
     } == PackageManager.PERMISSION_GRANTED)
 
     private fun recordDataPointsIfGranted(

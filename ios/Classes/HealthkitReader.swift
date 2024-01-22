@@ -193,6 +193,10 @@ class HealthkitReader: NSObject {
         return HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!
     }
     
+    var dietaryWater: HKQuantityType {
+        return HKQuantityType.quantityType(forIdentifier: .dietaryWater)!
+    }
+    
     @available(iOS 11.0, *)
     var restingHeartRateQuantityType: HKQuantityType {
         return HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
@@ -246,6 +250,10 @@ class HealthkitReader: NSObject {
     
     var restingEnergyQuantityType: HKQuantityType {
         return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.basalEnergyBurned)!
+    }
+    
+    var dietaryWaterQuantityType: HKQuantityType {
+        return HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.dietaryWater)!
     }
     
     func quantityTypesToRead() -> [HKQuantityType]{
@@ -343,7 +351,8 @@ class HealthkitReader: NSObject {
             HealthkitReader.heightQuantityType(),
             sleepCategoryType,
             activeEnergyQuantityType,
-            restingEnergyQuantityType
+            restingEnergyQuantityType,
+            dietaryWaterQuantityType
         ] + quantityTypesToRead())
     }
     

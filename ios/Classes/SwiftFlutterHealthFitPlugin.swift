@@ -348,6 +348,9 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
 
         case "getActiveEnergy":
             getActiveEnergy(call: call, result: result)
+
+        case "getWaterConsumption":
+            getWaterConsumption(call: call, result: result)
         
         case "isAnyPermissionAuthorized":
             // Not supposed to be invoked on iOS. Returns a fake result.
@@ -440,6 +443,10 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             let reader = HealthkitReader.sharedInstance
             getRequestStatus(types: [reader.activeEnergyQuantityType], result: result)
 
+        case "isWaterConsumptionAuthorized":
+            let reader = HealthkitReader.sharedInstance
+            getRequestStatus(types: [reader.dietaryWater], result: result)
+
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -507,6 +514,32 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.activeEnergyQuantityType,
                                                                    searchUnit: .kilocalorie(),
                                                                    reportUnit: .kCal,
+                                                                   start: startMillis.toTimeInterval,
+                                                                   end: endMillis.toTimeInterval) {[weak self] list, error in
+            if let error = error {
+                result(self?.createReportError(error: error))
+                return
+            }
+            
+            let resultList = list?.compactMap({ dataPointValue in
+                return dataPointValue.resultMap()
+            })
+            result(resultList)
+            
+        }
+    }
+   
+    private func getWaterConsumption(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let startMillis = args["start"] as? Int,
+              let endMillis = args["end"] as? Int else {
+                  result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+                  return
+              }
+        
+        HealthkitReader.sharedInstance.getSampleConsumedInInterval(sampleType: HealthkitReader.sharedInstance.dietaryWaterQuantityType,
+                                                                   searchUnit: .liter(),
+                                                                   reportUnit: .l,
                                                                    start: startMillis.toTimeInterval,
                                                                    end: endMillis.toTimeInterval) {[weak self] list, error in
             if let error = error {
