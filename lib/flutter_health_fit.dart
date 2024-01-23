@@ -641,6 +641,17 @@ class FlutterHealthFit {
     }
   }
 
+  /// Checks if permissions needed for dietary water(iOS)/Hydration Data(Android)
+  Future<bool> isWaterConsumptionAuthorized() async {
+    try {
+      final status = await _channel.invokeMethod("isWaterConsumptionAuthorized");
+      return status;
+    } catch (e) {
+      _logDeviceError("isWaterConsumptionAuthorized", e);
+      return false;
+    }
+  }
+
   /// Will ask to authorize, prompting the user if necessary.
   Future<HealthFitAuthorizationResult> authorize() async {
     HealthFitAuthorizationStatus status;
@@ -743,7 +754,7 @@ class FlutterHealthFit {
         return null;
       }
 
-      return samples?.map((e) => HeartRateSample.fromMap(Map<String, dynamic>.from(e))).toList();
+      return samples.map((e) => HeartRateSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
       _logDeviceError("getLatestHeartRate", e);
       return null;
@@ -964,6 +975,20 @@ class FlutterHealthFit {
       return dataPointValue;
     } catch (e) {
       _logDeviceError("getRestingEnergy", e);
+      return null;
+    }
+  }
+
+  Future<List<DataPointValue>?> getWaterConsumption(int start, int end) async {
+    try {
+      final dataList = await _channel.invokeListMethod<Map>("getWaterConsumption", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
+      return list;
+    } catch (e) {
+      _logDeviceError("getWaterConsumption", e);
       return null;
     }
   }

@@ -18,6 +18,7 @@ struct DataPointValue {
         case kCal = "kCal"
         case percent = "percent"
         case cm = "cm"
+        case l = "l"
     }
     
     let dateInMillis: Int
