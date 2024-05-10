@@ -11,11 +11,7 @@ class UserActivityDataPointValue extends DataPointValue {
     sourceApp,
   }) : super(value: value, date: date, units: units, sourceApp: sourceApp);
 
-  static UserActivityDataPointValue? fromMap(Map<String, Object>? map) {
-    if (map == null) {
-      return null;
-    }
-
+  static UserActivityDataPointValue? fromMap(Map<String, dynamic> map) {
     final endDateInMillis = map["endDateInMillis"] as int?;
     if (endDateInMillis == null) {
       return null;
@@ -28,10 +24,17 @@ class UserActivityDataPointValue extends DataPointValue {
 
     final endDate = DateTime.fromMillisecondsSinceEpoch(endDateInMillis);
 
-    return UserActivityDataPointValue(value: dataPointValue.value,
+    return UserActivityDataPointValue(
+      value: dataPointValue.value,
       date: dataPointValue.date,
       units: dataPointValue.units,
       sourceApp: dataPointValue.sourceApp,
-      endDate: endDate,);
+      endDate: endDate,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserActivityDataPointValue{date: $date, endDate: $endDate, value: $value, units: $units, sourceApp: $sourceApp}';
   }
 }

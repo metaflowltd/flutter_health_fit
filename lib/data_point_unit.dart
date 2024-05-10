@@ -8,6 +8,7 @@ enum DataPointUnit {
   percent,
   cm,
   l,
+  km,
 }
 
 extension DataPointUnitExtension on DataPointUnit {
@@ -27,6 +28,8 @@ extension DataPointUnitExtension on DataPointUnit {
         return "cm";
       case DataPointUnit.l:
         return "l";
+      case DataPointUnit.km:
+        return "km";
     }
   }
 }

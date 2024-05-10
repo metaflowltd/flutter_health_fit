@@ -286,19 +286,21 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             "getStepsBySegment" -> {
                 val start = call.argument<Long>("start")
                 val end = call.argument<Long>("end")
-                if (start == null || end == null) {
-                    result.error("Missing mandatory fields", "start, end", null)
+                val durationInMilliseconds = call.argument<Int>("duration")
+                if (start == null || end == null || durationInMilliseconds == null) {
+                    result.error("Missing mandatory fields", "start, end, duration", null)
                 } else {
                     UserActivityReader().getSteps(
                         activity,
                         start,
-                        end
-                    ) { dataPointValue: DataPointValue?, e: Throwable? ->
+                        end,
+                        durationInMilliseconds,
+                    ) { dataPointValues: List<DataPointValue>?, e: Throwable? ->
                         e?.let { error ->
                             sendNativeLog("${UserEnergyReader::class.java.simpleName} | failed: ${error.message}")
                             result.error("failed", e.message, null)
                         } ?: run {
-                            result.success(dataPointValue?.resultMap())
+                            result.success(dataPointValues?.map{it.resultMap()})
                         }
                     }
                 }

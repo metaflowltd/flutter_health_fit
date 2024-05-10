@@ -740,18 +740,22 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
                                  result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
               let startTime = args["start"] as? TimeInterval,
-              let endTime = args["end"] as? TimeInterval else {
-            result(FlutterError(code: "Missing args", message: "missing start and end params", details: call.method))
+              let endTime = args["end"] as? TimeInterval,
+              let duration = args["duration"] as? Int else {
+            result(FlutterError(code: "Missing args", message: "missing start and end or duration params", details: call.method))
             return
         }
         
         let startMillis = startTime / 1000
         let endMillis = endTime / 1000
+        let durationMinutes = duration / (60 * 1000)
+
+        let daysQuery = durationMinutes <= 0
         HealthkitReader.sharedInstance.getQuantityBySegment(quantityType: quantityType,
                                                             start: startMillis,
                                                             end: endMillis,
-                                                            duration: 1,
-                                                            unit: .days,
+                                                            duration: daysQuery ? 1 : durationMinutes,
+                                                            unit: daysQuery ? .days : .minutes,
                                                             options: [.cumulativeSum, .separateBySource]) { [weak self] _, results, error in
             if let error = error {
                 result(self?.createReportError(error: error))
@@ -765,24 +769,25 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
             
             let startDate = Date(timeIntervalSince1970: startMillis)
             let endDate = Date(timeIntervalSince1970: endMillis)
+            var dataPointValues: [DataPointValue] = []
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
                 if let sum = statistics.sumQuantity() {
-                    if sum.is(compatibleWith: .count()) == false {
-                        result(FlutterError(code: "\(-1)", message: "getUserActivity", details: "Cannd evaluate count for \(quantityType) "))
-                        return
-                    }
+                    let isCountUnit = quantityType.is(compatibleWith: HKUnit.count())
+                    let unit = isCountUnit ? HKUnit.count() : HKUnit.meterUnit(with: .kilo)
+                    let quantity = sum.doubleValue(for: unit)
+                    
+                    let lumenUnit = isCountUnit ? DataPointValue.LumenUnit.count : DataPointValue.LumenUnit.km
+                    
                     
                     let dataPointValue = DataPointValue(dateInMillis: Int(statistics.startDate.timeIntervalSince1970 * 1000),
-                                                        value: sum.doubleValue(for: .count()),
-                                                        units: .count,
+                                                        value: quantity,
+                                                        units: lumenUnit,
                                                         sourceApp: statistics.sources?.first?.bundleIdentifier,
                                                         additionalInfo: ["endDateInMillis" : Int(statistics.endDate.timeIntervalSince1970 * 1000)])
-                    result(dataPointValue.resultMap())
-                    return
+                    dataPointValues.append(dataPointValue)
                 }
-                
-                result(nil)
             }
+            result(dataPointValues.map { $0.resultMap()})
         }
     }
     
