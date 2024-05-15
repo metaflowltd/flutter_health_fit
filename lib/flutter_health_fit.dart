@@ -9,11 +9,14 @@ import 'package:flutter_health_fit/workout_sample.dart';
 
 abstract class HealthFitLog {
   void info(Object? message, [Object? error, StackTrace? stackTrace]);
+
   void warning(Object? message, [Object? error, StackTrace? stackTrace]);
+
   void severe(Object? message, [Object? error, StackTrace? stackTrace]);
 }
 
 enum TimeUnit { minutes, days }
+
 enum QuantityUnit {
   percent,
   cm,
@@ -36,10 +39,13 @@ extension QuantityUnitExtension on QuantityUnit {
 enum HealthFitAuthorizationStatus {
   /// Stands for successful authorization.
   authorized,
+
   /// Stands for general unsuccessful authorization.
   unauthorized,
+
   /// (Android) Specific status for authorization issue due to user cancellation on Android.
   userCancelled,
+
   /// Stands for other possible issues during authorization process.
   error,
 }
@@ -55,8 +61,10 @@ class HealthFitAuthorizationResult {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is HealthFitAuthorizationResult && runtimeType == other.runtimeType
-              && status == other.status && error == other.error;
+      other is HealthFitAuthorizationResult &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          error == other.error;
 
   @override
   int get hashCode => status.hashCode ^ error.hashCode;
@@ -340,8 +348,6 @@ class FlutterHealthFit {
   FlutterHealthFit.internal();
 
   static final _singleton = FlutterHealthFit.internal();
-
-
 
   /// NOTE: On iOS this only tells whether [authorize] has been called on the requested data types.
   /// There is no getter for the user's actual response.
@@ -703,7 +709,8 @@ class FlutterHealthFit {
 
   Future<DataPointValue?> getBodyFatPercentage(int start, int end) async {
     try {
-      final lastFatPercentage = await _channel.invokeMapMethod<String, Object>("getBodyFatPercentageBySegment", {"start": start, "end": end});
+      final lastFatPercentage =
+          await _channel.invokeMapMethod<String, Object>("getBodyFatPercentageBySegment", {"start": start, "end": end});
       return DataPointValue.fromMap(lastFatPercentage);
     } catch (e) {
       _logDeviceError("getBodyFatPercentageBySegment", e);
@@ -712,13 +719,12 @@ class FlutterHealthFit {
   }
 
   Future<List<DataPointValue>?> getMenstrualData(int start, int end) async {
-
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getMenstrualDataBySegment",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getMenstrualDataBySegment", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getMenstrualDataBySegment", e);
@@ -728,7 +734,8 @@ class FlutterHealthFit {
 
   Future<DataPointValue?> getWaistSize(int start, int end, {QuantityUnit unit = QuantityUnit.cm}) async {
     try {
-      final lastSize = await _channel.invokeMapMethod<String, Object>("getWaistSizeBySegment", {"start": start, "end": end});
+      final lastSize =
+          await _channel.invokeMapMethod<String, Object>("getWaistSizeBySegment", {"start": start, "end": end});
       return DataPointValue.fromMap(lastSize);
     } catch (e) {
       _logDeviceError("getWaistSizeBySegment", e);
@@ -738,7 +745,8 @@ class FlutterHealthFit {
 
   Future<DataPointValue?> getWeight(int start, int end) async {
     try {
-      final lastWeight = await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
+      final lastWeight =
+          await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
       return DataPointValue.fromMap(lastWeight);
     } catch (e) {
       _logDeviceError("getWeightInInterval", e);
@@ -764,7 +772,8 @@ class FlutterHealthFit {
   /// Get latest heart rate sample in the period (for both Platforms).
   Future<HeartRateSample?> getLatestHeartRate(int start, int end) async {
     try {
-      final sample = await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
+      final sample =
+          await _channel.invokeMapMethod<String, dynamic>("getLatestHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
       _logDeviceError("getLatestHeartRate", e);
@@ -779,7 +788,7 @@ class FlutterHealthFit {
 
     try {
       final sample =
-      await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
+          await _channel.invokeMapMethod<String, dynamic>("getAverageWalkingHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
       _logDeviceError("getAverageWalkingHeartRate", e);
@@ -794,7 +803,7 @@ class FlutterHealthFit {
 
     try {
       final sample =
-      await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
+          await _channel.invokeMapMethod<String, dynamic>("getAverageRestingHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
       _logDeviceError("getAverageRestingHeartRate", e);
@@ -804,7 +813,8 @@ class FlutterHealthFit {
 
   Future<HeartRateSample?> getAverageHeartRate(int start, int end) async {
     try {
-      final sample = await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
+      final sample =
+          await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRate", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
       _logDeviceError("getAverageHeartRate", e);
@@ -817,8 +827,8 @@ class FlutterHealthFit {
     if (!Platform.isIOS) return null;
 
     try {
-      final sample =
-      await _channel.invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
+      final sample = await _channel
+          .invokeMapMethod<String, dynamic>("getAverageHeartRateVariability", {"start": start, "end": end});
       return sample == null ? null : HeartRateSample.fromMap(sample);
     } catch (e) {
       _logDeviceError("getAverageHeartRateVariability", e);
@@ -865,14 +875,41 @@ class FlutterHealthFit {
     }
   }
 
-  Future<UserActivityDataPointValue?> getStepsBySegment(int start, int end) async {
+  Future<UserActivityDataPointValue?> getStepsBySegment(
+    int start,
+    int end,
+  ) async {
+    final result = await getStepsBySegmentInIntervals(start, end, duration: Duration.zero);
+    if (result?.isNotEmpty == true) {
+      return result?.first;
+    }
+    return null;
+  }
+
+  /// Returns list of steps in intervals(defined by [duration]) withing the given time range.
+  /// [start] and [end] specify the time range
+  /// [duration] is the interval in which the data is aggregated. Zero duration means no aggregation.
+  Future<List<UserActivityDataPointValue>?> getStepsBySegmentInIntervals(
+    int start,
+    int end, {
+    Duration duration = const Duration(hours: 1),
+  }) async {
     try {
       logger?.info("calling getStepsBySegment. start: $start, end: $end");
-      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getStepsBySegment",
-          {"start": start, "end": end});
-      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
-      logger?.info("data from getStepsBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
-      return dataPointValue;
+      final dataPointList = await _channel.invokeListMethod<Map>(
+        "getStepsBySegment",
+        {
+          "start": start,
+          "end": end,
+          "duration": duration.inMilliseconds,
+        },
+      );
+      final dataPointValues = dataPointList
+          ?.map((e) => UserActivityDataPointValue.fromMap(Map<String, dynamic>.from(e)))
+          .whereType<UserActivityDataPointValue>()
+          .toList();
+      logger?.info("data from getStepsBySegment, ${dataPointValues ?? ""}. start: $start, end: $end");
+      return dataPointValues;
     } catch (e) {
       _logDeviceError("getStepsBySegment", e);
       return null;
@@ -881,7 +918,8 @@ class FlutterHealthFit {
 
   Future<List<WorkoutSample>?> getWorkoutsBySegment(int start, int end) async {
     try {
-      List<Map>? rawSamples = await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
+      List<Map>? rawSamples =
+          await _channel.invokeListMethod<Map>("getWorkoutsBySegment", {"start": start, "end": end});
       return rawSamples?.map((e) => WorkoutSample.fromMap(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
       _logDeviceError("getWorkoutsBySegment", e);
@@ -913,28 +951,80 @@ class FlutterHealthFit {
     }
   }
 
-  Future<UserActivityDataPointValue?> getFlightsBySegment(int start, int end) async {
+  Future<UserActivityDataPointValue?> getFlightsBySegment(
+    int start,
+    int end,
+  ) async {
+    final result = await getFlightsBySegmentInIntervals(start, end, duration: Duration.zero);
+    if (result?.isNotEmpty == true) {
+      return result?.first;
+    }
+    return null;
+  }
+
+  /// See [getStepsBySegmentInIntervals] for more details.
+  Future<List<UserActivityDataPointValue>?> getFlightsBySegmentInIntervals(
+    int start,
+    int end, {
+    Duration duration = const Duration(hours: 1),
+  }) async {
     try {
       logger?.info("calling getFlightsBySegment. start: $start, end: $end");
-      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getFlightsBySegment",
-          {"start": start, "end": end});
-      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
-      logger?.info("data from getFlightsBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
-      return dataPointValue;
+      final dataPointList = await _channel.invokeListMethod<Map>(
+        "getFlightsBySegment",
+        {
+          "start": start,
+          "end": end,
+          "duration": duration.inMilliseconds,
+        },
+      );
+
+      final dataPointValues = dataPointList
+          ?.map((e) => UserActivityDataPointValue.fromMap(Map<String, dynamic>.from(e)))
+          .whereType<UserActivityDataPointValue>()
+          .toList();
+      logger?.info("data from getFlightsBySegment, ${dataPointValues ?? ""}. start: $start, end: $end");
+      return dataPointValues;
     } catch (e) {
       _logDeviceError("getFlightsBySegment", e);
       return null;
     }
   }
 
-  Future<UserActivityDataPointValue?> getCyclingBySegment(int start, int end) async {
+  Future<UserActivityDataPointValue?> getCyclingBySegment(
+    int start,
+    int end,
+  ) async {
+    final result = await getCyclingBySegmentInIntervals(start, end, duration: Duration.zero);
+    if (result?.isNotEmpty == true) {
+      return result?.first;
+    }
+    return null;
+  }
+
+  /// See [getStepsBySegmentInIntervals] for more details.
+  Future<List<UserActivityDataPointValue>?> getCyclingBySegmentInIntervals(
+    int start,
+    int end, {
+    Duration duration = const Duration(hours: 1),
+  }) async {
     try {
       logger?.info("calling getCyclingBySegment. start: $start, end: $end");
-      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getCyclingDistanceBySegment",
-          {"start": start, "end": end});
-      final dataPointValue = UserActivityDataPointValue.fromMap(dataPointMap);
-      logger?.info("data from getCyclingBySegment, ${dataPointValue?.value ?? ""}. start: $start, end: $end");
-      return dataPointValue;
+      final dataPointList = await _channel.invokeListMethod<Map>(
+        "getCyclingDistanceBySegment",
+        {
+          "start": start,
+          "end": end,
+          "duration": duration.inMilliseconds,
+        },
+      );
+
+      final dataPointValues = dataPointList
+          ?.map((e) => UserActivityDataPointValue.fromMap(Map<String, dynamic>.from(e)))
+          .whereType<UserActivityDataPointValue>()
+          .toList();
+      logger?.info("data from getCyclingBySegment, ${dataPointValues ?? ""}. start: $start, end: $end");
+      return dataPointValues;
     } catch (e) {
       _logDeviceError("getCyclingBySegment", e);
       return null;
@@ -955,11 +1045,11 @@ class FlutterHealthFit {
     if (!Platform.isIOS) return null;
 
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getActiveEnergy",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getActiveEnergy", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getActiveEnergy", e);
@@ -969,8 +1059,8 @@ class FlutterHealthFit {
 
   Future<DataPointValue?> getRestingEnergy(int start, int end) async {
     try {
-      final dataPointMap = await _channel.invokeMapMethod<String, Object>("getRestingEnergy",
-          {"start": start, "end": end});
+      final dataPointMap =
+          await _channel.invokeMapMethod<String, Object>("getRestingEnergy", {"start": start, "end": end});
       final dataPointValue = DataPointValue.fromMap(dataPointMap);
       return dataPointValue;
     } catch (e) {
@@ -1040,8 +1130,8 @@ class FlutterHealthFit {
   /// params: [start], [end] in milliseconds, starting from epoch time.
   Future<List<Map<String, dynamic>>?> getRawSleepDataInRange(int start, int end) async {
     try {
-      final List<Map>? rawSleepData = await _channel.invokeListMethod<Map>(
-          "getRawSleepDataInRange", {"start": start, "end": end});
+      final List<Map>? rawSleepData =
+          await _channel.invokeListMethod<Map>("getRawSleepDataInRange", {"start": start, "end": end});
       return rawSleepData?.map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       _logDeviceError("getRawSleepDataInRange", e);
@@ -1049,16 +1139,15 @@ class FlutterHealthFit {
     }
   }
 
-
   /// Calories returned in kCal for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getEnergyConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getEnergyConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getEnergyConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getEnergyConsumed", e);
@@ -1070,11 +1159,11 @@ class FlutterHealthFit {
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getFiberConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getFiberConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getFiberConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getFiberConsumed", e);
@@ -1086,28 +1175,27 @@ class FlutterHealthFit {
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getCarbsConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getCarbsConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getCarbsConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getCarbsConsumed", e);
       return null;
     }
-
   }
 
   /// Sugar returned in grams for a given dated range, separated by sources.
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getSugarConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getSugarConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getSugarConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getSugarConsumed", e);
@@ -1119,11 +1207,11 @@ class FlutterHealthFit {
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getFatConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getFatConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getFatConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getFatConsumed", e);
@@ -1135,11 +1223,11 @@ class FlutterHealthFit {
   /// Note: Functionality for iOS only, on Android [null] value immediately returned.
   Future<List<DataPointValue>?> getProteinConsumed(int start, int end) async {
     try {
-      final dataList = await _channel.invokeListMethod<Map>("getProteinConsumed",
-          {"start": start, "end": end});
-      final list = dataList?.map((e) =>
-          DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
-          .whereType<DataPointValue>().toList();
+      final dataList = await _channel.invokeListMethod<Map>("getProteinConsumed", {"start": start, "end": end});
+      final list = dataList
+          ?.map((e) => DataPointValue.fromMap(e.map((key, value) => MapEntry(key.toString(), value))))
+          .whereType<DataPointValue>()
+          .toList();
       return list;
     } catch (e) {
       _logDeviceError("getProteinConsumed", e);
@@ -1188,12 +1276,10 @@ class FlutterHealthFit {
     if (e is PlatformException) {
       if (e.code == "healthkit not available") {
         logger?.info("healthkit not available");
-      }
-      else {
+      } else {
         logger?.severe("Error when calling $method. ${e.code}: ${e.message}, details-${e.details ?? ""}");
       }
-    }
-    else {
+    } else {
       logger?.severe("Error when calling $method. ${e.toString()}");
     }
   }

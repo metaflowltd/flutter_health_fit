@@ -18,13 +18,15 @@ class UserActivityReader {
         currentActivity: Activity?,
         startTime: Long,
         endTime: Long,
-        result: (DataPointValue?, Throwable?) -> Unit,
+        durationInMilliseconds: Int,
+        result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
         getUserActivity(
             dataType = stepsDataType,
             currentActivity = currentActivity,
             startTime = startTime,
             endTime = endTime,
+            durationInMilliseconds = durationInMilliseconds,
             result = result)
     }
 
@@ -33,7 +35,8 @@ class UserActivityReader {
         currentActivity: Activity?,
         startTime: Long,
         endTime: Long,
-        result: (DataPointValue?, Throwable?) -> Unit,
+        durationInMilliseconds: Int,
+        result: (List<DataPointValue>?, Throwable?) -> Unit,
     ) {
         if (currentActivity == null) {
             result(null, null)
@@ -52,32 +55,38 @@ class UserActivityReader {
             .setStreamName("estimated_steps")
             .build()
 
+        var bucketDuration = durationInMilliseconds
+        if (bucketDuration <= 0) {
+            bucketDuration = (endTime - startTime + 1).toInt()
+        }
         val request = DataReadRequest.Builder()
             .aggregate(ds)
-            .bucketByTime((endTime - startTime + 1).toInt(), TimeUnit.MILLISECONDS)
+            .bucketByTime(bucketDuration, TimeUnit.MILLISECONDS)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
             .build()
 
         Fitness.getHistoryClient(currentActivity, gsa).readData(request).addOnSuccessListener { response ->
             val outputList = mutableListOf<DataPointValue>()
 
-            response.buckets.firstOrNull()?.dataSets?.firstOrNull()?.dataPoints?.firstOrNull()?.let { dp ->
-                val count = dp.getValue(FlutterHealthFitPlugin.aggregatedDataType.fields[0]).asInt()
-                val appPackageName = dp.dataSource.appPackageName
-                val dpStartTime = dp.getStartTime(TimeUnit.MILLISECONDS)
-                val dpEndTime = dp.getEndTime(TimeUnit.MILLISECONDS)
+            for (bucket in response.buckets) {
+                bucket.dataSets.firstOrNull()?.dataPoints?.firstOrNull()?.let { dp ->
+                    val count = dp.getValue(FlutterHealthFitPlugin.aggregatedDataType.fields[0]).asInt()
+                    val appPackageName = dp.dataSource.appPackageName
+                    val dpStartTime = dp.getStartTime(TimeUnit.MILLISECONDS)
+                    val dpEndTime = dp.getEndTime(TimeUnit.MILLISECONDS)
 
-                val dataPointValue = DataPointValue(
-                    dateInMillis = dpStartTime,
-                    value = count.toFloat(),
-                    units = LumenUnit.COUNT,
-                    sourceApp = appPackageName,
-                    additionalInfo = hashMapOf("endDateInMillis" to dpEndTime),
-                )
-                outputList.add(dataPointValue)
+                    val dataPointValue = DataPointValue(
+                        dateInMillis = dpStartTime,
+                        value = count.toFloat(),
+                        units = LumenUnit.COUNT,
+                        sourceApp = appPackageName,
+                        additionalInfo = hashMapOf("endDateInMillis" to dpEndTime),
+                    )
+                    outputList.add(dataPointValue)
+                }
             }
 
-            result(outputList.firstOrNull(), null)
+            result(outputList, null)
         }.addOnFailureListener { e ->
             result(null, e)
         }

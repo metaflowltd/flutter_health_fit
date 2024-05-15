@@ -13,7 +13,7 @@ class DataPointValue {
     this.sourceApp,
   });
 
-  static DataPointValue? fromMap(Map<String, Object>? map) {
+  static DataPointValue? fromMap(Map<String, dynamic>? map) {
     if (map == null) {
       return null;
     }

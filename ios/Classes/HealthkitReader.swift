@@ -493,6 +493,7 @@ class HealthkitReader: NSObject {
             interval.day = duration
         case .minutes:
             anchorComponents = Calendar.current.dateComponents([.day, .month, .year, .hour, .second], from: Date())
+            anchorComponents.second = 0
             interval.minute = duration
         }
         
