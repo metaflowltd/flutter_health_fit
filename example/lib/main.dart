@@ -154,7 +154,6 @@ class _MyAppState extends State<MyApp> {
     final steps = await FlutterHealthFit().getStepsBySegment(
       start,
       end,
-      duration: Duration(minutes: 5),
     );
     setState(() {
       if (steps != null) {
