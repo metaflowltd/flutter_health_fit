@@ -611,6 +611,9 @@ class FlutterHealthFitPlugin : MethodCallHandler,
     }
 
     private fun isStepsAuthorized(): Boolean {
+        if (!isActivityRecognitionAuthorized()) {
+            return false
+        }
         return isAuthorized(
             FitnessOptions.builder().addDataType(UserActivityReader.stepsDataType)
                 .addDataType(aggregatedDataType)
