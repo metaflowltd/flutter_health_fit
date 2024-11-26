@@ -192,19 +192,23 @@ public class SwiftFlutterHealthFitPlugin: NSObject, FlutterPlugin {
         case "getWeightInInterval":
             guard let myArgs = call.arguments as? [String: Int],
                   let startMillis = myArgs["start"],
-                  let endMillis = myArgs["end"] else {
-                      result(FlutterError(code: "Missing args", message: "missing start and end params", details:""))
+                  let endMillis = myArgs["end"],
+                  let maxEntries = myArgs["maxEntries"] else {
+                      result(FlutterError(code: "Missing args", message: "missing start, end, or maxEntries params", details: ""))
                       return
                   }
             let start = startMillis.toTimeInterval
             let end = endMillis.toTimeInterval
-            HealthkitReader.sharedInstance.getWeight(start: start, end: end) { [weak self] (weight: DataPointValue?, error: Error?) in
+
+            HealthkitReader.sharedInstance.getWeights(start: start, end: end, maxEntries: maxEntries) { [weak self] (weights: [DataPointValue]?, error: Error?) in
                 if let error = error {
                     result(self?.createReportError(error: error))
                     return
                 }
-                
-                result(weight?.resultMap())
+
+                // Map the list of weights to their resultMap representations
+                let mappedWeights = weights?.map { $0.resultMap() } ?? []
+                result(mappedWeights)
             }
             
         case "getWorkoutsBySegment":
