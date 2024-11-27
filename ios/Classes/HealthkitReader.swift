@@ -647,31 +647,36 @@ class HealthkitReader: NSObject {
     }
     
     
-    func getWeight(start: TimeInterval, end: TimeInterval, completion: @escaping (DataPointValue?, Error?) -> Void) {
+    func getWeights(start: TimeInterval, end: TimeInterval, maxEntries: Int, completion: @escaping ([DataPointValue]?, Error?) -> Void) {
         let startDate = Date(timeIntervalSince1970: start)
         let endDate = Date(timeIntervalSince1970: end)
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [.strictStartDate])
-        
-        // Since we are interested in retrieving the user's latest sample, we sort the samples in descending order, and set the limit to 1.
+
+        // Sort samples in descending order
         let timeSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
-        let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: 1, sortDescriptors: [timeSortDescriptor]){
-            query, results, error in
-            
-            guard let results = results,
-                  let quantitySample = results.first as? HKQuantitySample else {
-                completion(nil, error);
-                return;
+
+        // Query with the specified limit
+        let query = HKSampleQuery(sampleType: HealthkitReader.weightQuantityType(), predicate: predicate, limit: maxEntries, sortDescriptors: [timeSortDescriptor]) { query, results, error in
+
+            guard let results = results as? [HKQuantitySample] else {
+                completion(nil, error)
+                return
             }
-            
-            let value = DataPointValue(dateInMillis: Int(quantitySample.startDate.timeIntervalSince1970 * 1000),
-                                       value: quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo)),
-                                       units: .kg,
-                                       sourceApp: quantitySample.sourceRevision.source.bundleIdentifier,
-                                       additionalInfo: nil)
-            completion(value, error)
+
+            // Map the results to DataPointValue
+            let weights = results.map { quantitySample in
+                DataPointValue(
+                    dateInMillis: Int(quantitySample.startDate.timeIntervalSince1970 * 1000),
+                    value: quantitySample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo)),
+                    units: .kg,
+                    sourceApp: quantitySample.sourceRevision.source.bundleIdentifier,
+                    additionalInfo: nil
+                )
+            }
+
+            completion(weights, nil)
         }
-        
+
         healthStore.execute(query)
     }
     

@@ -743,14 +743,28 @@ class FlutterHealthFit {
     }
   }
 
-  Future<DataPointValue?> getWeight(int start, int end) async {
+  Future<List<DataPointValue>> getWeights(int start, int end, int maxEntries) async {
     try {
-      final lastWeight =
-          await _channel.invokeMapMethod<String, Object>("getWeightInInterval", {"start": start, "end": end});
-      return DataPointValue.fromMap(lastWeight);
-    } catch (e) {
+      final List<dynamic>? weights = await _channel.invokeMethod<List<dynamic>>(
+        "getWeightInInterval",
+        <String, dynamic>{
+          "start": start,
+          "end": end,
+          "maxEntries": maxEntries,
+        },
+      );
+
+      if (weights != null) {
+        return weights
+            .whereType<Map<Object?, Object?>>()
+            .map((weight) => DataPointValue.fromMap(weight.map((key, value) => MapEntry(key as String, value))))
+            .whereType<DataPointValue>()
+            .toList();
+      }
+      return [];
+    } catch (e, stackTrace) {
       _logDeviceError("getWeightInInterval", e);
-      return null;
+      return [];
     }
   }
 

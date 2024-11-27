@@ -24,7 +24,7 @@ class DataPointValue {
     }
     final date = DateTime.fromMillisecondsSinceEpoch(dateInMillis);
     final value = map["value"] as double?;
-    final units = DataPointUnitUtils.getUnit(fromString: map["units"] as String?);
+    final units = DataPointUnitUtils.getUnit(fromString: (map["units"] as String).toLowerCase());
     final sourceApp = map["sourceApp"] as String?;
 
     if (value == null || units == null) {
