@@ -151,18 +151,29 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             }
 
             "getWeightInInterval" -> {
-                val start = call.argument<Long>("start")
-                val end = call.argument<Long>("end")
-                if (start == null || end == null) {
-                    result.error("failed", "missing start and end params", null)
+                val start = call.argument<Number>("start")?.toLong()
+                val end = call.argument<Number>("end")?.toLong()
+                val maxEntries = call.argument<Number>("maxEntries")?.toInt()
+
+                if (start == null || end == null || maxEntries == null) {
+                    result.error("failed", "Missing start, end, or maxEntries parameters", null)
                     return
                 }
 
-                getWeight(start, end) { value: DataPointValue?, e: Throwable? ->
+                getWeights(start, end, maxEntries) { values: List<DataPointValue>?, e: Throwable? ->
                     if (e != null) {
                         result.error("failed", e.message, null)
                     } else {
-                        result.success(value?.resultMap())
+                        val resultList = values?.map { dataPoint ->
+                            mapOf(
+                                "dateInMillis" to dataPoint.dateInMillis,
+                                "value" to dataPoint.value,
+                                "units" to dataPoint.units.name,
+                                "sourceApp" to dataPoint.sourceApp
+                            )
+                        } ?: emptyList()
+
+                        result.success(resultList)
                     }
                 }
             }
