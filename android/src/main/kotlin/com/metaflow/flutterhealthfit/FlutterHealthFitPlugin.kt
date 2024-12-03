@@ -1201,54 +1201,60 @@ class FlutterHealthFitPlugin : MethodCallHandler,
             }
     }
 
-    private fun getWeight(
+    private fun getWeights(
         startTime: Long,
         endTime: Long,
-        result: (DataPointValue?, Throwable?) -> Unit,
+        maxEntries: Int,
+        result: (List<DataPointValue>?, Throwable?) -> Unit
     ) {
-        val fitnessOptions = FitnessOptions.builder().addDataType(weightDataType).build()
+        val fitnessOptions = FitnessOptions.builder()
+            .addDataType(weightDataType, FitnessOptions.ACCESS_READ)
+            .build()
 
-        val activity = activity ?: return
+        val activity = activity ?: run {
+            result(null, IllegalStateException("Activity is null. Cannot fetch weights."))
+            return
+        }
+
         val gsa = GoogleSignIn.getAccountForExtension(activity, fitnessOptions)
 
-        val request = DataReadRequest.Builder().read(DataType.TYPE_WEIGHT)
+        val request = DataReadRequest.Builder()
+            .read(DataType.TYPE_WEIGHT)
             .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .setLimit(1)
+            .setLimit(maxEntries)
             .build()
 
         val response = Fitness.getHistoryClient(activity, gsa).readData(request)
 
+        // Run the operation in a background thread
         Thread {
             try {
                 val readDataResult = Tasks.await(response)
-                val dp =
-                    readDataResult.dataSets.lastOrNull()?.dataPoints?.lastOrNull()
-                val lastWeight = dp?.getValue(weightDataType.fields[0])?.asFloat()
-                val dateInMillis = dp?.getTimestamp(TimeUnit.MILLISECONDS)
+                val dataPoints = readDataResult.dataSets
+                    .flatMap { it.dataPoints }
+                    .sortedByDescending { it.getTimestamp(TimeUnit.MILLISECONDS) }
+                    .take(maxEntries)
 
-                if (lastWeight != null && dateInMillis != null) {
-                    val value = DataPointValue(
-                        dateInMillis = dateInMillis,
-                        value = lastWeight,
+                val values = dataPoints.map { dp ->
+                    DataPointValue(
+                        dateInMillis = dp.getTimestamp(TimeUnit.MILLISECONDS),
+                        value = dp.getValue(weightDataType.fields[0]).asFloat(),
                         units = LumenUnit.KG,
-                        sourceApp = dp.originalDataSource.appPackageName,
+                        sourceApp = dp.originalDataSource.appPackageName.orEmpty()
                     )
-                    activity.runOnUiThread {
-                        result(value, null)
-                    }
-                } else {
-                    activity.runOnUiThread {
-                        result(null, null)
-                    }
+                }
+
+                // Send the result back on the main thread
+                activity.runOnUiThread {
+                    result(values, null)
                 }
             } catch (e: Throwable) {
-                sendNativeLog("$TAG | failed: ${e.message}")
+                sendNativeLog("$TAG | Failed to fetch weights: ${e.message}")
                 handleGoogleDisconnection(e, activity)
                 activity.runOnUiThread {
                     result(null, e)
                 }
             }
-
         }.start()
     }
 
