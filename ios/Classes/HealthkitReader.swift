@@ -59,7 +59,7 @@ enum LMNUnit: String {
 class HealthkitReader: NSObject {
     var workoutPredicate =  [
         HKQuery.predicateForWorkouts(with: .americanFootball),
-        HKQuery.predicateForWorkouts(with: .archery),
+        HKQuery.predicateForWorkouts(with: .archery),
         HKQuery.predicateForWorkouts(with: .australianFootball),
         HKQuery.predicateForWorkouts(with: .badminton),
         HKQuery.predicateForWorkouts(with: .baseball),
@@ -130,6 +130,10 @@ class HealthkitReader: NSObject {
         HKQuery.predicateForWorkouts(with: .mixedCardio),
         HKQuery.predicateForWorkouts(with: .handCycling),
         HKQuery.predicateForWorkouts(with: .other),
+        //deprecated types, but some app still use them
+        HKQuery.predicateForWorkouts(with: .dance),
+        HKQuery.predicateForWorkouts(with: .danceInspiredTraining),
+        HKQuery.predicateForWorkouts(with: .mixedMetabolicCardioTraining),
     ]
     
     
@@ -943,9 +947,16 @@ class HealthkitReader: NSObject {
                 HKQuery.predicateForWorkouts(with: .cardioDance),
                 HKQuery.predicateForWorkouts(with: .socialDance),
             ]
-        } else {
+        }
+        if #available(iOS 16.0, *) {
             workoutPredicate += [
-                HKQuery.predicateForWorkouts(with: .dance),
+                HKQuery.predicateForWorkouts(with: .swimBikeRun),
+                HKQuery.predicateForWorkouts(with: .transition),
+            ]
+        }
+        if #available(iOS 17.0, *) {
+            workoutPredicate += [
+                HKQuery.predicateForWorkouts(with: .underwaterDiving),
             ]
         }
         let timePredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
