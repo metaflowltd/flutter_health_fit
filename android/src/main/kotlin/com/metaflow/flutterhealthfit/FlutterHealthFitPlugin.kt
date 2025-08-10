@@ -24,7 +24,6 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -60,18 +59,6 @@ class FlutterHealthFitPlugin : MethodCallHandler,
         val bodyFatDataType: DataType = DataType.TYPE_BODY_FAT_PERCENTAGE
         val menstruationDataType: DataType = HealthDataTypes.TYPE_MENSTRUATION
         val TAG: String = FlutterHealthFitPlugin::class.java.simpleName
-
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            if (registrar.activity() == null) return
-
-            val plugin = FlutterHealthFitPlugin()
-            plugin.activity = registrar.activity()
-            registrar.addActivityResultListener(plugin)
-            registrar.addRequestPermissionsResultListener(plugin)
-
-            plugin.onAttachedToEngine(registrar.messenger())
-        }
     }
 
     private var logger: EventChannel.EventSink? = null
